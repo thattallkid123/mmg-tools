@@ -40,51 +40,53 @@ You need to link it to GitHub instead.
 7. Build command: *(leave blank)*
 8. Click **Save and deploy**
 
-### Site 2: calculator.mrmallorcagolf.com (new site)
+### Site 2: deals.mrmallorcagolf.com
 
-1. https://app.netlify.com → **Add new site → Import an existing project**
-2. GitHub → `thattallkid123/mmg-tools`
-3. Branch: `master`
-4. Base directory: `calculator`
-5. Publish directory: `calculator`
-6. Build command: *(leave blank)*
-7. Click **Deploy site**
-8. Once deployed, go to **Domain management → Add custom domain** → `calculator.mrmallorcagolf.com`
+The existing Netlify site (`mallorca-golf-calculator`) — link it to GitHub.
+
+1. Go to https://app.netlify.com → open `mallorca-golf-calculator`
+2. **Site configuration → Build & deploy → Link repository**
+3. Choose GitHub → `thattallkid123/mmg-tools`
+4. Branch: `master`
+5. Base directory: `calculator`
+6. Publish directory: `calculator`
+7. Build command: *(leave blank)*
+8. Click **Save and deploy**
+9. Domain management → Add custom domain → `deals.mrmallorcagolf.com`
 
 ### Site 3: day-cost.mrmallorcagolf.com
 
-The existing Netlify site (`mmg-day-cost`) — same as Site 1 above but for day-cost.
+The existing Netlify site (`mmg-day-cost`) — same process.
 
 1. Go to https://app.netlify.com → open `mmg-day-cost`
 2. **Site configuration → Build & deploy → Link repository**
-3. GitHub → `thattallkid123/mmg-tools`
+3. Choose GitHub → `thattallkid123/mmg-tools`
 4. Branch: `master`
 5. Base directory: `day-cost`
 6. Publish directory: `day-cost`
 7. Build command: *(leave blank)*
 8. Click **Save and deploy**
+9. Domain management → Add custom domain → `day-cost.mrmallorcagolf.com`
 
 ---
 
 ## Step 3 — DNS (Cloudflare)
 
-For `calculator.mrmallorcagolf.com` (the new one — the other two already have DNS):
+For each subdomain, add a CNAME in Cloudflare → mrmallorcagolf.com → DNS:
 
-1. Go to Cloudflare → mrmallorcagolf.com → DNS
-2. Add a new CNAME record:
-   - Type: `CNAME`
-   - Name: `calculator`
-   - Target: `[your-new-netlify-site-name].netlify.app` (shown in Netlify dashboard)
-   - Proxy: **DNS only** (grey cloud) — Netlify handles SSL
-3. Save
+| Name | Target | Proxy |
+|---|---|---|
+| `deals` | `mallorca-golf-calculator.netlify.app` | DNS only (grey) |
+| `day-cost` | `mmg-day-cost.netlify.app` | DNS only (grey) |
+| `guide` | `mr-mallorca-golf-course-guides-2026.netlify.app` | DNS only (grey) |
 
-Then back in Netlify → Domain management → click **Verify DNS** → it'll provision an SSL cert automatically.
+Then in each Netlify site → Domain management → **Verify DNS configuration** → SSL provisions automatically.
 
 ---
 
 ## After setup: daily workflow
 
-Just edit the file, then:
+Edit the file in the relevant folder, then:
 
 ```bash
 cd C:\Users\andyg\Desktop\cursor\mmg-tools
@@ -93,7 +95,7 @@ git commit -m "update guide"
 git push
 ```
 
-All 3 sites check for changes independently — only the site whose folder changed will redeploy.
+All 3 sites deploy independently — only the folder that changed will redeploy.
 
 ---
 
