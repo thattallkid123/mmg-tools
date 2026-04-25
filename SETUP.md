@@ -40,7 +40,7 @@ You need to link it to GitHub instead.
 7. Build command: *(leave blank)*
 8. Click **Save and deploy**
 
-### Site 2: deals.mrmallorcagolf.com
+### Site 2: deals.mrmallorcagolf.com and calculator.mrmallorcagolf.com
 
 The existing Netlify site (`mallorca-golf-calculator`) — link it to GitHub.
 
@@ -53,6 +53,7 @@ The existing Netlify site (`mallorca-golf-calculator`) — link it to GitHub.
 7. Build command: *(leave blank)*
 8. Click **Save and deploy**
 9. Domain management → Add custom domain → `deals.mrmallorcagolf.com`
+10. Domain management → Add domain alias → `calculator.mrmallorcagolf.com`
 
 ### Site 3: day-cost.mrmallorcagolf.com
 
@@ -77,6 +78,7 @@ For each subdomain, add a CNAME in Cloudflare → mrmallorcagolf.com → DNS:
 | Name | Target | Proxy |
 |---|---|---|
 | `deals` | `mallorca-golf-calculator.netlify.app` | DNS only (grey) |
+| `calculator` | `mallorca-golf-calculator.netlify.app` | DNS only (grey) |
 | `day-cost` | `mmg-day-cost.netlify.app` | DNS only (grey) |
 | `guide` | `mr-mallorca-golf-course-guides-2026.netlify.app` | DNS only (grey) |
 

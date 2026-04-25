@@ -5,7 +5,7 @@ Static HTML tools for Mr Mallorca Golf. Each subfolder is a standalone web app d
 | Folder | Netlify site | Live URL |
 |---|---|---|
 | `guide/` | mr-mallorca-golf-course-guides-2026 | guide.mrmallorcagolf.com |
-| `calculator/` | mallorca-golf-calculator | deals.mrmallorcagolf.com |
+| `calculator/` | mallorca-golf-calculator | deals.mrmallorcagolf.com, calculator.mrmallorcagolf.com |
 | `day-cost/` | mmg-day-cost | day-cost.mrmallorcagolf.com |
 
 ## Workflow
