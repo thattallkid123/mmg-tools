@@ -61,7 +61,7 @@ function Draw-Icon($app, $size, $path) {
   $graphics.FillRectangle($background, 0, 0, $size, $size)
 
   $accentHeight = [Math]::Max(12, [int]($size * 0.045))
-  $graphics.FillRectangle($accent, 0, $size - $accentHeight, $size, $accentHeight)
+  $graphics.FillRectangle($accent, 0, 0, $size, $accentHeight)
 
   $logo = [System.Drawing.Image]::FromFile($app.Logo)
   $logoSize = [int]($size * 0.62)
