@@ -1,0 +1,24 @@
+{
+  "name": "Mallorca Golf Course Guides",
+  "short_name": "MMG Guide",
+  "description": "Every Mallorca golf course reviewed, rated and mapped by Mr Mallorca Golf.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F4EF",
+  "theme_color": "#2D4A3E",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
