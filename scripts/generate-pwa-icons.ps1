@@ -16,7 +16,7 @@ $apps = @(
   },
   @{
     Slug = "day-cost"
-    Label = @("Mr Mallorca Golf", "Day Costs")
+    Label = @("MMG", "Day Costs")
     Logo = Join-Path $logoRoot "MMG_Logo_White_Transparent.png"
     Background = "#2D4A3E"
     Foreground = "#F7F4EF"
@@ -62,7 +62,7 @@ function Draw-Icon($app, $size, $path) {
   $graphics.FillRectangle($background, 0, 0, $size, $size)
 
   # Padding constants
-  $pad       = [int]($size * 0.10)   # 10% padding on all sides
+  $pad       = [int]($size * 0.06)   # 6% padding   # 10% padding on all sides
   $accentH   = [Math]::Max(10, [int]($size * 0.04))
 
   # Gold accent bar at BOTTOM
@@ -91,7 +91,7 @@ function Draw-Icon($app, $size, $path) {
   $textLeft       = $pad
 
   for ($i = 0; $i -lt $app.Label.Count; $i++) {
-    $fontSize = [int]($size * 0.13)
+    $fontSize = [int]($size * 0.17)
     do {
       if ($font) { $font.Dispose() }
       $font = New-Object System.Drawing.Font $fontFamily, $fontSize, ([System.Drawing.FontStyle]::Bold), ([System.Drawing.GraphicsUnit]::Pixel)
