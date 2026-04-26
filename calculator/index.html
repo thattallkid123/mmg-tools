@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1624,27 +1624,140 @@ footer a { color: rgba(247,244,239,.5); }
 
 <script>
 const GOLFCARD_VOUCHER = {
-  alcanada:    {terms:'2FOR1 &middot; two players, one green fee', when:'1 Jan&ndash;28 Feb, 15 May&ndash;15 Sep, 1 Nov&ndash;31 Dec &middot; Sun&ndash;Tue from 12:00 only', save:'up to &euro;200', also:'10% off any time, no voucher needed'},
-  // andratx: NOT in Golfcard book &middot; covered by Golf Pass only
-  bendinat:    {terms:'2FOR1 or special price for two', when:'2FOR1: 1 Jan&ndash;5 Jan, 15 May&ndash;22 Jun, 1&ndash;16 Nov, 22&ndash;31 Dec from 12:00 &middot; Special price 2 GF &euro;95 (&euro;125 with buggy): 6 Jan&ndash;28 Feb from 12:00', save:'up to &euro;110', also:'10% off any time, no voucher needed'},
-  capdepera:   {terms:'Special price &middot; 2 greenfees &euro;129', when:'Jan/Feb/Nov/Dec: before 09:30 or after 12:00 &middot; Mar&ndash;May & 15 Sep&ndash;31 Oct: before 09:00 and after 13:00 &middot; Jun&ndash;14 Sep: any time', save:'up to &euro;121', also:'10% off any time, no voucher needed'},
-  maioris:     {terms:'2FOR1 &middot; two players, one green fee', when:'1 Jan&ndash;28 Feb, 15 Jun&ndash;14 Sep & 15 Nov&ndash;31 Dec from 13:00 &middot; 1 Mar&ndash;14 Jun & 15 Sep&ndash;14 Nov (check exact window)', save:'up to &euro;110', also:'10% off any time, no voucher needed'},
-  palma_pp:    {terms:'2FOR1 &middot; two players, one green fee', when:'Year-round, any day', save:'', also:'10% off any time, no voucher needed'},
-  pollenca:    {terms:'2FOR1 &middot; two players, one green fee', when:'Sun&ndash;Fri from 13:00, year-round', save:'up to &euro;65', also:'10% off any time, no voucher needed'},
-  pula:        {terms:'Special price &middot; 2 greenfees &euro;139 (low) or &euro;199 (peak)', when:'Low season (1 Jan&ndash;2 Mar, 2 Jun&ndash;14 Sep, 17 Nov&ndash;31 Dec): all day &middot; Peak season (3 Mar&ndash;1 Jun, 15 Sep&ndash;16 Nov): before 09:00 or after 13:00', save:'', also:'10% off any time, no voucher needed'},
-  santa_ponsa: {terms:'2FOR1 or special price for two', when:'2FOR1: 1&ndash;5 Jan, 15 May&ndash;22 Jun, specific dates from 12:00 &middot; Special price 2 GF &euro;96 (&euro;126 with buggy): 6 Jan&ndash;28 Feb from 12:00', save:'up to &euro;115', also:'10% off any time, no voucher needed'},
-  son_antem_e: {terms:'2FOR1 &middot; two players, one green fee', when:'1 Jan&ndash;28 Feb, 15 May&ndash;15 Sep, 1 Nov&ndash;31 Dec from 11:00', save:'up to &euro;130', also:'10% off any time, no voucher needed'},
-  son_antem_w: {terms:'2FOR1 &middot; two players, one green fee', when:'1 Jan&ndash;28 Feb, 15 May&ndash;15 Sep, 1 Nov&ndash;31 Dec from 11:00', save:'up to &euro;135', also:'10% off any time, no voucher needed'},
-  son_gual:    {terms:'2FOR1 &middot; two players, one green fee', when:'Specific Wednesdays only: 26 Feb, 12 Mar, 25 Jun, 23 Jul, 27 Aug, 19 Nov, 17 Dec 2026. Also: 2 greenfees + buggy + tokens Tue&ndash;Thu all year.', save:'up to &euro;135', also:'10% off any time, no voucher needed &middot; Full Golfcard only (not in &agrave; la Card)'},
-  son_muntaner:{terms:'Special price &middot; 2 greenfees + buggy &euro;235', when:'1 Jan&ndash;15 Mar, 1 Jun&ndash;6 Sep, 9 Nov&ndash;31 Dec from 12:00', save:'', also:'Buggy is included in the voucher price &middot; 10% off any time &middot; Full Golfcard only (not in &agrave; la Card)'},
-  son_quint:   {terms:'Special price &middot; 2 greenfees + buggy &euro;180', when:'1 Jan&ndash;15 Mar, 1 Jun&ndash;6 Sep, 9 Nov&ndash;31 Dec from 12:00', save:'', also:'10% off any time, no voucher needed'},
-  son_servera: {terms:'2FOR1 &middot; two players, one green fee', when:'Jan&ndash;Feb: 08:00&ndash;09:00 or from 12:00 &middot; Other months: check voucher for exact time window', save:'up to &euro;140', also:'10% off any time, no voucher needed'},
-  son_termes:  {terms:'2FOR1 or 2 greenfees + buggy deal', when:'2FOR1: Jan, Feb, Jun, Jul, Aug, Dec all day &middot; 2 GF + buggy &euro;170 (high season) or &euro;125 (low): year-round', save:'up to &euro;80', also:'10% off any time, no voucher needed'},
-  son_vida:    {terms:'Special price &middot; 2 greenfees + buggy &euro;190', when:'1 Jan&ndash;15 Mar, 1 Jun&ndash;6 Sep, 9 Nov&ndash;31 Dec from 12:00', save:'', also:'10% off any time, no voucher needed'},
-  t_golf_calvia:{terms:'Special price &middot; 2 greenfees &euro;200', when:'Limited dates. Check 2026 voucher for exact windows.', save:'', also:'10% off any time &middot; Full Golfcard only (not in &agrave; la Card)'},
-  t_golf_palma: {terms:'Special price &middot; 2 greenfees &euro;150', when:'Limited dates. Check 2026 voucher for exact windows.', save:'', also:'10% off any time, no voucher needed'},
-  vall_dor:    {terms:'Special price &middot; 2 greenfees + buggy included', when:'High season: &euro;257.50 per pair &middot; Low season: &euro;211.60 per pair &middot; Year-round, any day', save:'', also:'10% off any time, no voucher needed'},
-};
+  alcanada:    {
+    terms:'2FOR1 &middot; two players, one green fee',
+    when:'1 Jan&ndash;28 Feb, 15 May&ndash;15 Sep, 1 Nov&ndash;31 Dec &middot; Sun / Mon / Tue only &middot; from 12:00',
+    save:'up to &euro;220',
+    also:'10% off any time with the ID card &middot; HCP limit: Ladies 35 / Gents 33',
+    hcp:'Ladies 35 / Gents 33'
+  },
+  bendinat:    {
+    terms:'2FOR1 or special price for two',
+    when:'2FOR1: 1&ndash;5 Jan, 15 May&ndash;22 Jun, 1&ndash;16 Nov, 22&ndash;31 Dec &middot; from 12:00 &middot; Special price (2 GF &euro;104 or 2 GF + buggy &euro;139): 6 Jan&ndash;28 Feb, 23 Jun&ndash;6 Sep, 17 Nov&ndash;21 Dec &middot; from 12:00',
+    save:'up to &euro;123',
+    also:'10% off any time with the ID card &middot; HCP limit: 36',
+    hcp:'36'
+  },
+  capdepera:   {
+    terms:'Special price &middot; 2 greenfees &euro;135 (18 holes)',
+    when:'Jan/Feb &amp; 16 Nov&ndash;31 Dec: before 09:30 or from 12:00 &middot; Mar&ndash;7 Jun &amp; 14 Sep&ndash;15 Nov: before 09:00 or from 13:00 &middot; 8 Jun&ndash;13 Sep: no restriction',
+    save:'up to &euro;135 vs two full-price tickets',
+    also:'Also: 9-hole voucher 2 players &euro;89 &middot; 12-hole voucher 2 players &euro;89 &middot; 10% off any time with ID card &middot; HCP: 44 (18h) / 54 (9 &amp; 12h)',
+    hcp:'44 (18-hole) / 54 (9 &amp; 12-hole)'
+  },
+  maioris:     {
+    terms:'2FOR1 &middot; two players, one green fee',
+    when:'All year &middot; Sun&ndash;Fri (Saturdays excluded) &middot; from 13:00',
+    save:'Low season max pay &euro;91 &middot; High season max pay &euro;110',
+    also:'10% off any time with the ID card &middot; HCP limit: 54',
+    hcp:'54'
+  },
+  palma_pp:    {
+    terms:'% discount voucher (Arabella)',
+    when:'30% off Jan, Feb, Jun, Jul, Aug, Nov, Dec &middot; 15% off Mar, Apr, May, Sep, Oct &middot; Book via Arabella reservations',
+    save:'',
+    also:'10% off any time with ID card',
+    hcp:null
+  },
+  pollenca:    {
+    terms:'2FOR1 &middot; two players, one green fee',
+    when:'Sun&ndash;Fri from 13:00, all year &middot; Also 9-hole 2FOR1 on same terms (save up to &euro;59)',
+    save:'up to &euro;75 (18h) / &euro;59 (9h)',
+    also:'10% off any time with the ID card &middot; HCP limit: 54',
+    hcp:'54'
+  },
+  pula:        {
+    terms:'Special price &middot; 2 greenfees &euro;145 (low) or &euro;199 (shoulder)',
+    when:'Low &euro;145: 1 Jan&ndash;1 Mar, 6 Jun&ndash;13 Sep, 16 Nov&ndash;31 Dec &middot; no tee-time restriction &middot; Shoulder &euro;199: 2 Mar&ndash;5 Jun, 14 Sep&ndash;15 Nov &middot; before 09:00 or after 13:00',
+    save:'',
+    also:'10% off any time with the ID card &middot; HCP limit: 54',
+    hcp:'54'
+  },
+  santa_ponsa: {
+    terms:'2FOR1 or special price for two',
+    when:'2FOR1: 1&ndash;5 Jan, 15 May&ndash;22 Jun, 1&ndash;16 Nov, 22&ndash;31 Dec &middot; from 12:00 &middot; Special price (2 GF &euro;106 or 2 GF + buggy &euro;141): 6 Jan&ndash;28 Feb, 23 Jun&ndash;6 Sep, 17 Nov&ndash;21 Dec &middot; from 12:00',
+    save:'up to &euro;126',
+    also:'10% off any time with the ID card &middot; HCP limit: 36',
+    hcp:'36'
+  },
+  son_antem_e: {
+    terms:'2FOR1 &middot; two players, one green fee',
+    when:'1 Jan&ndash;28 Feb, 15 May&ndash;15 Sep, 1 Nov&ndash;31 Dec &middot; from 12:00',
+    save:'up to &euro;140',
+    also:'10% off any time with the ID card &middot; HCP limit: 54',
+    hcp:'54'
+  },
+  son_antem_w: {
+    terms:'2FOR1 &middot; two players, one green fee',
+    when:'Specific Wednesdays only: 26 Feb, 12 Mar, 25 Jun, 23 Jul, 27 Aug, 19 Nov, 17 Dec 2026 &middot; from 12:00',
+    save:'up to &euro;145',
+    also:'10% off any time with the ID card &middot; HCP limit: 36 &middot; Different dates to Son Antem East',
+    hcp:'36'
+  },
+  son_gual:    {
+    terms:'2FOR1 on specific Wednesdays &middot; and Package (Tue&ndash;Thu) all year',
+    when:'2FOR1 Wednesdays: 25 Feb, 11 Mar, 24 Jun, 22 Jul, 26 Aug, 18 Nov, 16 Dec 2026 &middot; Package (2 GF + buggy + 2 range tokens + half-way meal) Tue&ndash;Thu: High &euro;362 / Mid &euro;302 / Low &euro;262',
+    save:'up to &euro;165 on 2FOR1 Wednesdays',
+    also:'10% off any time with the ID card &middot; Full Golfcard only (not in &Agrave; la Card)',
+    hcp:null
+  },
+  son_muntaner:{
+    terms:'% discount &middot; 30% or 15% off green fee',
+    when:'30% off: Jan, Feb, Jun, Jul, Aug, Nov, Dec &middot; 15% off: Mar, Apr, May, Sep, Oct &middot; Book via Arabella +34 971 783 000 &middot; Valid for cardholder + 1 guest',
+    save:'',
+    also:'10% off any time with ID card &middot; HCP limit: 36 &middot; Full Golfcard only (not in &Agrave; la Card)',
+    hcp:'36'
+  },
+  son_quint:   {
+    terms:'% discount &middot; 30% or 15% off green fee',
+    when:'30% off: Jan, Feb, Jun, Jul, Aug, Nov, Dec &middot; 15% off: Mar, Apr, May, Sep, Oct &middot; Book via Arabella +34 971 783 000 &middot; Valid for cardholder + 1 guest',
+    save:'',
+    also:'10% off any time with ID card &middot; HCP limit: 36',
+    hcp:'36'
+  },
+  son_servera: {
+    terms:'2FOR1 &middot; two players, one green fee',
+    when:'Jan&ndash;Feb: 08:00&ndash;09:00 or from 12:00 &middot; 1 Jun&ndash;15 Sep: 08:00&ndash;09:00 or 12:00&ndash;14:00 &middot; 16&ndash;30 Sep: 08:00&ndash;08:30 or 14:00&ndash;16:30 &middot; Nov&ndash;Dec: 08:00&ndash;09:00 or from 12:00 &middot; NOT valid Mar&ndash;May or Oct',
+    save:'up to &euro;145',
+    also:'Package also available: 2 GF + buggy &euro;175 (low demand dates) or &euro;215 (shoulder dates) &middot; 10% off any time with ID card &middot; HCP limit: 36',
+    hcp:'36'
+  },
+  son_termes:  {
+    terms:'2FOR1 all year (no tee-time restriction) &middot; and Package (2 GF + buggy)',
+    when:'2FOR1: all year, any day, any time, no restriction &middot; Package: High season (Mar&ndash;Nov) &euro;190 / Low season (Jan, Feb, Jun, Jul, Aug, Dec) &euro;145',
+    save:'up to &euro;110 on 2FOR1 &middot; save &euro;70&ndash;&euro;75 on package',
+    also:'No HCP limit &middot; 10% off any time with ID card',
+    hcp:'None'
+  },
+  son_vida:    {
+    terms:'% discount &middot; 30% or 15% off green fee',
+    when:'30% off: Jan, Feb, Jun, Jul, Aug, Nov, Dec &middot; 15% off: Mar, Apr, May, Sep, Oct &middot; Book via Arabella +34 971 783 000 &middot; Valid for cardholder + 1 guest',
+    save:'',
+    also:'10% off any time with ID card &middot; HCP limit: 36',
+    hcp:'36'
+  },
+  t_golf_calvia:{
+    terms:'Special price &middot; 2 greenfees &euro;220',
+    when:'7 Jan&ndash;28 Feb, 4 Jul&ndash;11 Sep, 9 Nov&ndash;26 Dec',
+    save:'',
+    also:'10% off any time with ID card &middot; HCP limit: Gents 28 / Ladies 34 &middot; Full Golfcard only (not in &Agrave; la Card)',
+    hcp:'Gents 28 / Ladies 34'
+  },
+  t_golf_palma: {
+    terms:'Special price &middot; 2 greenfees &euro;150',
+    when:'7 Jan&ndash;28 Feb, 4 Jul&ndash;11 Sep, 9 Nov&ndash;26 Dec',
+    save:'',
+    also:'10% off any time with ID card &middot; HCP limit: Gents 28 / Ladies 34',
+    hcp:'Gents 28 / Ladies 34'
+  },
+  vall_dor:    {
+    terms:'Package &middot; 2 greenfees + buggy included',
+    when:'High season (15 Mar&ndash;14 Jun, 15 Sep&ndash;14 Nov): &euro;274.40 per pair &middot; Low season (all other dates): &euro;218.30 per pair &middot; All year, any day',
+    save:'',
+    also:'10% off any time with ID card',
+    hcp:null
+  }
+}
 
 
 // &middot;&middot; LANGUAGE STRINGS &middot;&middot;
