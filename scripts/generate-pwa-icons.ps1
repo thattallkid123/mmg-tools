@@ -58,38 +58,48 @@ function Draw-Icon($app, $size, $path) {
   $foreground = New-Object System.Drawing.SolidBrush (ColorFromHex $app.Foreground)
   $accent = New-Object System.Drawing.SolidBrush (ColorFromHex $app.Accent)
 
+  # Fill background
   $graphics.FillRectangle($background, 0, 0, $size, $size)
 
-  $accentHeight = [Math]::Max(12, [int]($size * 0.045))
-  $graphics.FillRectangle($accent, 0, 0, $size, $accentHeight)
+  # Padding constants
+  $pad       = [int]($size * 0.10)   # 10% padding on all sides
+  $accentH   = [Math]::Max(10, [int]($size * 0.04))
 
+  # Gold accent bar at BOTTOM
+  $graphics.FillRectangle($accent, 0, ($size - $accentH), $size, $accentH)
+
+  # Logo: sits in top portion with padding, doesn't touch gold bar
+  $logoSize  = [int]($size * 0.54)   # slightly smaller so it fits with padding
+  $logoX     = [int](($size - $logoSize) / 2)
+  $logoY     = $pad                  # top padding respected
   $logo = [System.Drawing.Image]::FromFile($app.Logo)
-  $logoSize = [int]($size * 0.62)
-  $logoX = [int](($size - $logoSize) / 2)
-  $logoY = [int]($size * 0.045)
   $graphics.DrawImage($logo, $logoX, $logoY, $logoSize, $logoSize)
   $logo.Dispose()
 
+  # Text: sits between logo bottom and accent bar, with side padding
   $fontFamily = if ($fontCollection.Families.Count -gt 0) { $fontCollection.Families[0] } else { New-Object System.Drawing.FontFamily "Georgia" }
   $format = New-Object System.Drawing.StringFormat
   $format.Alignment = [System.Drawing.StringAlignment]::Center
   $format.LineAlignment = [System.Drawing.StringAlignment]::Center
   $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoClip
 
-  $textTop = [int]($size * 0.655)
-  $textWidth = [int]($size * 0.975)
-  $textLeft = [int](($size - $textWidth) / 2)
-  $lineHeight = [int]($size * 0.135)
+  $textAreaTop    = $logoY + $logoSize + [int]($size * 0.02)
+  $textAreaBottom = $size - $accentH - [int]($size * 0.02)
+  $textAreaHeight = $textAreaBottom - $textAreaTop
+  $lineHeight     = [int]($textAreaHeight / $app.Label.Count)
+  $textWidth      = $size - ($pad * 2)   # respect side padding
+  $textLeft       = $pad
+
   for ($i = 0; $i -lt $app.Label.Count; $i++) {
-    $fontSize = [int]($size * 0.15)
+    $fontSize = [int]($size * 0.13)
     do {
       if ($font) { $font.Dispose() }
       $font = New-Object System.Drawing.Font $fontFamily, $fontSize, ([System.Drawing.FontStyle]::Bold), ([System.Drawing.GraphicsUnit]::Pixel)
       $measured = $graphics.MeasureString($app.Label[$i], $font)
       $fontSize -= 1
-    } while ($measured.Width -gt $textWidth -and $fontSize -gt 18)
+    } while ($measured.Width -gt $textWidth -and $fontSize -gt 16)
 
-    $rect = New-Object System.Drawing.RectangleF $textLeft, ($textTop + ($i * $lineHeight)), $textWidth, ($lineHeight + 12)
+    $rect = New-Object System.Drawing.RectangleF $textLeft, ($textAreaTop + ($i * $lineHeight)), $textWidth, $lineHeight
     $graphics.DrawString($app.Label[$i], $font, $foreground, $rect, $format)
   }
 
@@ -111,4 +121,5 @@ foreach ($app in $apps) {
   Draw-Icon $app 512 (Join-Path $iconDir "icon-512.png")
   Draw-Icon $app 192 (Join-Path $iconDir "icon-192.png")
   Draw-Icon $app 180 (Join-Path $iconDir "apple-touch-icon.png")
+  Write-Host "Generated icons for $($app.Slug)"
 }
