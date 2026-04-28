@@ -165,9 +165,18 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
       <label>Paste enquiry text — courses, dates, times in any format</label>
       <textarea id="parseInput" placeholder="e.g.&#10;Son Gual 14th May 10am&#10;Alcanada 15/5 10:30&#10;Pollenca 16 May afternoon 4 players&#10;&#10;Add 'buggies needed' or 'club hire' anywhere in the text to pre-fill those rates for all rounds."></textarea>
     </div>
+    <div style="margin-bottom:.5rem;display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:.3rem;font-size:.85rem;cursor:pointer;">
+        <input type="checkbox" id="parseBuggies"> Buggies needed
+      </label>
+      <label style="display:flex;align-items:center;gap:.3rem;font-size:.85rem;cursor:pointer;">
+        <input type="checkbox" id="parseClubs"> Club hire needed
+      </label>
+      <span class="help" style="margin:0;">Tick before importing to pre-fill all rounds</span>
+    </div>
     <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
-      <button class="btn btn-gold" onclick="parseEnquiry(false)">Read enquiry &rarr; Build rounds list</button>
-      <button class="btn btn-pine btn-sm" onclick="parseEnquiry(true)">Add to existing rounds</button>
+      <button class="btn btn-gold" onclick="parseEnquiry(false)">Import text &rarr; Replace rounds</button>
+      <button class="btn btn-pine btn-sm" onclick="parseEnquiry(true)">Import text &rarr; Add to rounds</button>
     </div>
     <div class="help" id="parseStatus" style="margin-top:.4rem;"></div>
 
@@ -186,8 +195,8 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
       </table>
     </div>
     <div style="margin-top:.8rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
-      <button class="btn btn-pine btn-sm" onclick="addRow()">+ Add round manually</button>
-      <button class="btn btn-pine btn-sm" onclick="syncPlayers()">Sync all players to <strong id="syncNum">2</strong></button>
+      <button class="btn btn-pine btn-sm" onclick="addRow()">+ Blank round</button>
+      <button class="btn btn-pine btn-sm" onclick="syncPlayers()" title="Apply the player count above to every round in the list">Set all rounds to <strong id="syncNum">2</strong> players</button>
       <button class="btn btn-red btn-sm" onclick="clearRounds()">Clear all</button>
       <span style="margin-left:auto;display:flex;gap:.5rem;">
         <button class="btn btn-gold btn-sm" onclick="saveQuoteFile()">&#8659; Save quote</button>
@@ -646,9 +655,11 @@ function parseEnquiry(append){
   const numP=parseInt(document.getElementById('numPlayers').value)||2;
   const newRounds=[];
   const unmatched=[];
-  // Detect global buggy/clubs from full text (e.g. "buggies needed" or "buggy x3")
-  const globalBuggy=/buggy|buggie/i.test(raw);
-  const globalClubs=/club hire|hire clubs|clubs needed|club rental/i.test(raw);
+  // Buggy/clubs: use checkboxes OR text keywords in the paste
+  const buggyChk=document.getElementById('parseBuggies');
+  const clubsChk=document.getElementById('parseClubs');
+  const globalBuggy=(buggyChk&&buggyChk.checked)||/buggy|buggie/i.test(raw);
+  const globalClubs=(clubsChk&&clubsChk.checked)||/club hire|hire clubs|clubs needed|club rental/i.test(raw);
   for(const line of lines){
     const cid=findCourse(line);
     if(!cid){unmatched.push(line);continue;}
@@ -946,7 +957,7 @@ function renderProposal(){
     const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'Date TBC';
 
     const photoHtml=showPhotos&&img
-      ?`<div style="width:100%;height:180px;overflow:hidden;border-radius:4px;margin-bottom:8px;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;"></div>`
+      ?`<div style="width:120px;min-width:120px;height:80px;overflow:hidden;border-radius:3px;flex-shrink:0;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;"></div>`
       :'';
 
     const gcBadge=gcValid.ok
@@ -967,13 +978,15 @@ function renderProposal(){
     }
 
     roundsHtml+=`
-      <div style="padding:5px 0;border-bottom:1px solid #ede8e0;page-break-inside:avoid;">
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #ede8e0;page-break-inside:avoid;">
         ${photoHtml}
-        <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;line-height:1.2;">
-          <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:12.5pt;font-weight:600;color:#1A1916;">Round ${i+1} — ${c.name}</span>${gcBadge}
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:12pt;font-weight:600;color:#1A1916;line-height:1.2;">Round ${i+1} — ${c.name}</span>${gcBadge}
+          </div>
+          <div style="font-size:8.5pt;color:#666;line-height:1.4;">${dateStr}${r.time?' · '+r.time:''}</div>
+          ${detailHtml}
         </div>
-        <div style="font-size:9pt;color:#666;">${dateStr}${r.time?' · '+r.time:''}</div>
-        ${detailHtml}
       </div>`;
   });
 
@@ -1002,14 +1015,14 @@ function renderProposal(){
   const lockImgEl=document.querySelector('#lock img');
   const logoSrc=lockImgEl?lockImgEl.src:(document.getElementById('navLogo')?document.getElementById('navLogo').src:'');
   const logoHtml=logoSrc&&logoSrc.startsWith('data:')
-    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:38px;filter:brightness(0);">`
+    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:52px;filter:brightness(0);">`
     :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:680px;margin:0 auto;padding:14px 18px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:7px;border-bottom:2px solid #2D4A3E;margin-bottom:7px;">
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:680px;margin:0 auto;padding:10px 14px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:6px;border-bottom:2px solid #2D4A3E;margin-bottom:6px;">
         <div>${logoHtml}</div>
-        <div style="text-align:right;font-size:8pt;color:#777;line-height:1.35;">Andy Griffiths · PGA Advanced Professional<br>andy@mrmallorcagolf.com · mrmallorcagolf.com</div>
+        <div style="text-align:right;font-size:8.5pt;color:#555;line-height:1.5;">Andy Griffiths<br>PGA Advanced Professional<br>andy@mrmallorcagolf.com<br>mrmallorcagolf.com</div>
       </div>
       <div style="margin-bottom:5px;">
         <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15pt;font-weight:600;color:#2D4A3E;">Golf Itinerary${clientName?' — '+clientName:''}</span>
