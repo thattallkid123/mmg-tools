@@ -163,11 +163,11 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     <h3>Smart Parser</h3>
     <div style="margin-bottom:.6rem;">
       <label>Paste enquiry text — courses, dates, times in any format</label>
-      <textarea id="parseInput" placeholder="e.g.&#10;Son Gual 14th May 10am&#10;Alcanada 15/5 10:30&#10;Pollenca 16 May afternoon 4 players"></textarea>
+      <textarea id="parseInput" placeholder="e.g.&#10;Son Gual 14th May 10am&#10;Alcanada 15/5 10:30&#10;Pollenca 16 May afternoon 4 players&#10;&#10;Add 'buggies needed' or 'club hire' anywhere in the text to pre-fill those rates for all rounds."></textarea>
     </div>
     <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
-      <button class="btn btn-gold" onclick="parseEnquiry(false)">Parse &amp; Replace Rounds</button>
-      <button class="btn btn-pine btn-sm" onclick="parseEnquiry(true)">Parse &amp; Append</button>
+      <button class="btn btn-gold" onclick="parseEnquiry(false)">Read enquiry &rarr; Build rounds list</button>
+      <button class="btn btn-pine btn-sm" onclick="parseEnquiry(true)">Add to existing rounds</button>
     </div>
     <div class="help" id="parseStatus" style="margin-top:.4rem;"></div>
 
@@ -298,28 +298,31 @@ const PASSCODE = 'mmg2710';
 const LOGO_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAAA5ZDbSAAArOElEQVR42u1dd5ydZZV+zi0zk8lkJpOZkEJIIAQIIUKEIEUKUkSUBVQQ17os'; // truncated for size - loaded from DOM
 
 const COURSE_LIST = [
-  {id:'alcanada',     name:'Golf Alcanada',       low:115, mid:170, peak:220, buggyMin:35, buggyMax:48, clubsMin:25, clubsMax:38, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'bendinat',     name:'Golf Bendinat',        low:74,  mid:99,  peak:123, buggyMin:33, buggyMax:43, clubsMin:30, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'capdepera',    name:'Golf Capdepera',       low:75,  mid:105, peak:125, buggyMin:35, buggyMax:45, clubsMin:35, clubsMax:35, gcType:'special', golfcard:true,  licence:false},
-  {id:'canyamel',     name:'Golf Canyamel',        low:85,  mid:110, peak:145, buggyMin:30, buggyMax:45, clubsMin:35, clubsMax:35, gcType:'none',    golfcard:false, licence:false},
-  {id:'maioris',      name:'Golf Maioris',         low:69,  mid:81,  peak:81,  buggyMin:36, buggyMax:47, clubsMin:33, clubsMax:33, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'palma_pp',     name:'Golf Park Puntiro',    low:15,  mid:25,  peak:25,  buggyMin:0,  buggyMax:0,  clubsMin:0,  clubsMax:0,  gcType:'disc',    golfcard:true,  licence:false},
-  {id:'pollenca',     name:'Golf Pollenca',        low:55,  mid:65,  peak:65,  buggyMin:25, buggyMax:35, clubsMin:18, clubsMax:25, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'pula',         name:'Golf Pula',            low:68,  mid:110, peak:145, buggyMin:40, buggyMax:45, clubsMin:35, clubsMax:35, gcType:'special', golfcard:true,  licence:false},
-  {id:'santa_ponsa',  name:'Golf Santa Ponsa',     low:77,  mid:100, peak:126, buggyMin:33, buggyMax:43, clubsMin:30, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'son_antem_e',  name:'Son Antem East',       low:105, mid:115, peak:140, buggyMin:35, buggyMax:45, clubsMin:35, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'son_antem_w',  name:'Son Antem West',       low:109, mid:110, peak:135, buggyMin:35, buggyMax:45, clubsMin:35, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'son_gual',     name:'Son Gual',             low:80,  mid:135, peak:165, buggyMin:45, buggyMax:45, clubsMin:35, clubsMax:45, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'son_muntaner', name:'Son Muntaner',         low:96,  mid:180, peak:259, buggyMin:0,  buggyMax:0,  clubsMin:40, clubsMax:40, gcType:'disc',    golfcard:true,  licence:true},
-  {id:'son_quint',    name:'Son Quint',            low:90,  mid:105, peak:115, buggyMin:0,  buggyMax:0,  clubsMin:35, clubsMax:40, gcType:'disc',    golfcard:true,  licence:false},
-  {id:'son_servera',  name:'Golf Son Servera',     low:78,  mid:98,  peak:130, buggyMin:38, buggyMax:49, clubsMin:29, clubsMax:39, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'son_termes',   name:'Son Termes',           low:80,  mid:95,  peak:100, buggyMin:35, buggyMax:40, clubsMin:35, clubsMax:35, gcType:'2for1',   golfcard:true,  licence:false},
-  {id:'son_vida',     name:'Son Vida',             low:81,  mid:130, peak:192, buggyMin:0,  buggyMax:0,  clubsMin:38, clubsMax:38, gcType:'disc',    golfcard:true,  licence:false},
-  {id:'t_golf_calvia',name:"T-Golf Calvia",        low:80,  mid:120, peak:210, buggyMin:35, buggyMax:42, clubsMin:35, clubsMax:38, gcType:'special', golfcard:true,  licence:false},
-  {id:'t_golf_palma', name:'T-Golf Palma',         low:105, mid:130, peak:150, buggyMin:35, buggyMax:40, clubsMin:35, clubsMax:38, gcType:'special', golfcard:true,  licence:false},
-  {id:'vall_dor',     name:"Vall d'Or",            low:99,  mid:105, peak:132, buggyMin:35, buggyMax:50, clubsMin:34, clubsMax:34, gcType:'pkg',     golfcard:true,  licence:false},
-  {id:'andratx',      name:'Golf de Andratx',      low:96,  mid:105, peak:140, buggyMin:30, buggyMax:30, clubsMin:35, clubsMax:40, gcType:'none',    golfcard:false, licence:false},
-  {id:'santa_ponsa2', name:'Santa Ponsa II',       low:70,  mid:85,  peak:100, buggyMin:30, buggyMax:35, clubsMin:30, clubsMax:35, gcType:'none',    golfcard:false, licence:false},
+  {id:'andratx',         name:'Golf de Andratx',        low:96,  mid:105, peak:140, buggyMin:30, buggyMax:30, clubsMin:35, clubsMax:40, gcType:'none',    golfcard:false, licence:false},
+  {id:'alcanada',        name:'Golf Alcanada',           low:115, mid:170, peak:220, buggyMin:35, buggyMax:48, clubsMin:25, clubsMax:38, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'bendinat',        name:'Golf Bendinat',           low:74,  mid:99,  peak:123, buggyMin:33, buggyMax:43, clubsMin:30, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'canyamel',        name:'Golf Canyamel',           low:85,  mid:110, peak:145, buggyMin:30, buggyMax:45, clubsMin:35, clubsMax:35, gcType:'none',    golfcard:false, licence:false},
+  {id:'capdepera',       name:'Golf Capdepera',          low:75,  mid:105, peak:125, buggyMin:35, buggyMax:45, clubsMin:35, clubsMax:35, gcType:'special', golfcard:true,  licence:false},
+  {id:'maioris',         name:'Golf Maioris',            low:69,  mid:81,  peak:81,  buggyMin:36, buggyMax:47, clubsMin:33, clubsMax:33, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'golf_park',       name:'Golf Park Puntiro',       low:55,  mid:70,  peak:80,  buggyMin:25, buggyMax:35, clubsMin:25, clubsMax:30, gcType:'disc',    golfcard:true,  licence:false},
+  {id:'pollenca',        name:'Golf Pollenca',           low:55,  mid:65,  peak:65,  buggyMin:25, buggyMax:35, clubsMin:18, clubsMax:25, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'pula',            name:'Golf Pula',               low:68,  mid:110, peak:145, buggyMin:40, buggyMax:45, clubsMin:35, clubsMax:35, gcType:'special', golfcard:true,  licence:false},
+  {id:'santa_ponsa',     name:'Golf Santa Ponsa',        low:77,  mid:100, peak:126, buggyMin:33, buggyMax:43, clubsMin:30, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'santa_ponsa2',    name:'Golf Santa Ponsa II',     low:70,  mid:85,  peak:100, buggyMin:30, buggyMax:35, clubsMin:30, clubsMax:35, gcType:'none',    golfcard:false, licence:false},
+  {id:'santa_ponsa3',    name:'Golf Santa Ponsa III',    low:60,  mid:75,  peak:90,  buggyMin:28, buggyMax:35, clubsMin:28, clubsMax:35, gcType:'none',    golfcard:false, licence:false},
+  {id:'son_servera',     name:'Golf Son Servera',        low:78,  mid:98,  peak:130, buggyMin:38, buggyMax:49, clubsMin:29, clubsMax:39, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'palma_pp',        name:'Palma Pitch & Putt',      low:12,  mid:15,  peak:18,  buggyMin:0,  buggyMax:0,  clubsMin:8,  clubsMax:10, gcType:'none',    golfcard:false, licence:false},
+  {id:'rotana',          name:'Rotana Golf',             low:85,  mid:110, peak:130, buggyMin:30, buggyMax:40, clubsMin:30, clubsMax:35, gcType:'none',    golfcard:false, licence:false},
+  {id:'son_antem_e',     name:'Son Antem East',          low:105, mid:115, peak:140, buggyMin:35, buggyMax:45, clubsMin:35, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_antem_w',     name:'Son Antem West',          low:109, mid:110, peak:135, buggyMin:35, buggyMax:45, clubsMin:35, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_gual',        name:'Son Gual',                low:80,  mid:135, peak:165, buggyMin:45, buggyMax:45, clubsMin:35, clubsMax:45, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_muntaner',    name:'Son Muntaner',            low:96,  mid:180, peak:259, buggyMin:0,  buggyMax:0,  clubsMin:40, clubsMax:40, gcType:'disc',    golfcard:true,  licence:true},
+  {id:'son_quint',       name:'Son Quint',               low:90,  mid:105, peak:115, buggyMin:0,  buggyMax:0,  clubsMin:35, clubsMax:40, gcType:'disc',    golfcard:true,  licence:false},
+  {id:'son_termes',      name:'Son Termes',              low:80,  mid:95,  peak:100, buggyMin:35, buggyMax:40, clubsMin:35, clubsMax:35, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_vida',        name:'Son Vida',                low:81,  mid:130, peak:192, buggyMin:0,  buggyMax:0,  clubsMin:38, clubsMax:38, gcType:'disc',    golfcard:true,  licence:false},
+  {id:'t_golf_calvia',   name:'T-Golf Calvia',           low:80,  mid:120, peak:210, buggyMin:35, buggyMax:42, clubsMin:35, clubsMax:38, gcType:'special', golfcard:true,  licence:false},
+  {id:'t_golf_palma',    name:'T-Golf Palma',            low:105, mid:130, peak:150, buggyMin:35, buggyMax:40, clubsMin:35, clubsMax:38, gcType:'special', golfcard:true,  licence:false},
+  {id:'vall_dor',        name:"Vall d'Or",               low:99,  mid:105, peak:132, buggyMin:35, buggyMax:50, clubsMin:34, clubsMax:34, gcType:'pkg',     golfcard:true,  licence:false},
 ];
 
 // Season bands (global — same for all courses)
@@ -383,29 +386,31 @@ function getClubsRate(courseId){
 
 
 const COURSE_ALIASES = {
-  alcanada:    ['alcanada','alca\xf1ada'],
-  bendinat:    ['bendinat'],
-  capdepera:   ['capdepera','cap depera'],
-  canyamel:    ['canyamel'],
-  maioris:     ['maioris','maiori\xeds'],
-  palma_pp:    ['puntiro','punti\xf3','park puntiro','palma pp','golf park'],
-  pollenca:    ['pollenca','polle\xf1ca','pollensa'],
-  pula:        ['pula','golf pula'],
-  santa_ponsa: ['santa ponsa','santa pon\xe7a','santa ponsa 1','santa ponsa i'],
-  son_antem_e: ['son antem e','son antem east','antem east'],
-  son_antem_w: ['son antem w','son antem west','antem west'],
-  son_antem:   null, // handled below
-  son_gual:    ['son gual','gual'],
-  son_muntaner:['son muntaner','muntaner'],
-  son_quint:   ['son quint','quint'],
-  son_servera: ['son servera','severa','son severa','servera'],
-  son_termes:  ['son termes','termes'],
-  son_vida:    ['son vida','vida'],
-  t_golf_calvia:['t golf calvia','t-golf calvia','tgolf calvia'],
-  t_golf_palma: ['t golf palma','t-golf palma','tgolf palma'],
-  vall_dor:    ["vall d'or",'vallddor','valldor','vall dor',"val d'or"],
-  andratx:     ['andratx','de andratx'],
-  santa_ponsa2:['santa ponsa 2','santa ponsa ii'],
+  alcanada:      ['alcanada','alca\xf1ada','golf alcanada'],
+  andratx:       ['andratx','de andratx','golf andratx','golf de andratx'],
+  bendinat:      ['bendinat','golf bendinat'],
+  canyamel:      ['canyamel','golf canyamel'],
+  capdepera:     ['capdepera','cap depera','golf capdepera'],
+  golf_park:     ['puntiro','punti\xf3','park puntiro','golf park','golf park puntiro'],
+  maioris:       ['maioris','maiori\xeds','golf maioris'],
+  palma_pp:      ['palma pp','pitch putt','pitch & putt','pitch and putt','palma pitch'],
+  pollenca:      ['pollenca','polle\xf1ca','pollensa','golf pollenca'],
+  pula:          ['pula','golf pula'],
+  rotana:        ['rotana','rotana golf'],
+  santa_ponsa:   ['santa ponsa','santa pon\xe7a','santa ponsa 1','santa ponsa i','golf santa ponsa'],
+  santa_ponsa2:  ['santa ponsa 2','santa ponsa ii','golf santa ponsa 2','golf santa ponsa ii'],
+  santa_ponsa3:  ['santa ponsa 3','santa ponsa iii','golf santa ponsa 3','golf santa ponsa iii'],
+  son_antem_e:   ['son antem e','son antem east','antem east'],
+  son_antem_w:   ['son antem w','son antem west','antem west'],
+  son_gual:      ['son gual','gual'],
+  son_muntaner:  ['son muntaner','muntaner'],
+  son_quint:     ['son quint','quint'],
+  son_servera:   ['son servera','severa','son severa','servera','golf son servera'],
+  son_termes:    ['son termes','termes'],
+  son_vida:      ['son vida','vida'],
+  t_golf_calvia: ['t golf calvia','t-golf calvia','tgolf calvia','t golf calvia'],
+  t_golf_palma:  ['t golf palma','t-golf palma','tgolf palma','t golf palma'],
+  vall_dor:      ["vall d'or",'vallddor','valldor','vall dor',"val d'or",'valldor'],
 };
 
 const COURSE_IMAGES = {
@@ -640,21 +645,29 @@ function parseEnquiry(append){
   const numP=parseInt(document.getElementById('numPlayers').value)||2;
   const newRounds=[];
   const unmatched=[];
+  // Detect global buggy/clubs from full text (e.g. "buggies needed" or "buggy x3")
+  const globalBuggy=/buggy|buggie/i.test(raw);
+  const globalClubs=/club hire|hire clubs|clubs needed|club rental/i.test(raw);
   for(const line of lines){
     const cid=findCourse(line);
     if(!cid){unmatched.push(line);continue;}
     const date=parseDate(line);
     const time=parseTime(line);
-    // check for per-line player count override
+    // per-line player count override
     const pm=line.match(/(\d+)\s*(?:player|pax|person|people)/i);
     const players=pm?parseInt(pm[1]):numP;
-    const c=COURSE_LIST.find(x=>x.id===cid);
-    newRounds.push({id:nextId++,cid,date,time,players,gf:c?c.rack:0,buggy:0,clubs:0,licence:hasLicence(cid)});
+    // per-line buggy/clubs override
+    const lineBuggy=globalBuggy||/buggy|buggie/i.test(line);
+    const lineClubs=globalClubs||/club hire|hire clubs|clubs/i.test(line);
+    const gf=getRackGF(cid,date)||0;
+    const buggyRate=lineBuggy?getBuggyRate(cid):0;
+    const clubsRate=lineClubs?getClubsRate(cid):0;
+    newRounds.push({id:nextId++,cid,date,time,players,gf,buggy:buggyRate,clubs:clubsRate,licence:hasLicence(cid)});
   }
   if(!append) rounds=newRounds;
   else rounds=rounds.concat(newRounds);
-  let msg=newRounds.length+' round(s) '+(append?'appended':'loaded')+'.';
-  if(unmatched.length) msg+=' Not recognised: '+unmatched.join(', ');
+  let msg=newRounds.length+' round'+(newRounds.length!==1?'s':'')+' '+(append?'added to list':'loaded')+'.';
+  if(unmatched.length) msg+=' Couldn\'t match: '+unmatched.join(', ');
   document.getElementById('parseStatus').textContent=msg;
   saveState(); renderTable();
 }
@@ -791,7 +804,7 @@ function renderTable(){
       +'<td style="color:#666;font-size:.8rem">'+(i+1)+'</td>'
       +'<td><select onchange="updateRound('+r.id+',\'cid\',this.value)">'+COURSE_LIST.map(cl=>'<option value="'+cl.id+'"'+(cl.id===r.cid?' selected':'')+'>'+cl.name+'</option>').join('')+'</select></td>'
       +'<td><input type="date" value="'+r.date+'" onchange="updateRound('+r.id+',\'date\',this.value)" style="width:130px;">'
-      +(r.date?'<div style="font-size:.7rem;color:var(--gold);margin-top:1px;">'+getSeasonLabel(r.date)+' season</div>':'')
+      +(r.date?'<div style="font-size:.7rem;color:var(--pine);margin-top:1px;">'+new Date(r.date+'T12:00:00').toLocaleDateString(\'en-GB\',{weekday:\'short\'})+' &middot; '+getSeasonLabel(r.date)+' season</div>':'')
       +'</td>'
       +'<td><input type="time" value="'+r.time+'" onchange="updateRound('+r.id+',\'time\',this.value)" style="width:100px;"></td>'
       +'<td><input type="number" value="'+r.players+'" min="1" max="20" onchange="updateRound('+r.id+',\'players\',+this.value)" style="width:55px;"></td>'
@@ -912,110 +925,116 @@ function renderProposal(){
   const andyFee=dayType==='solo'?soloFee*andyDays:dayType==='group'?groupFee*andyDays:0;
 
   const el=document.getElementById('proposalOut');
-  if(!rounds.length){el.innerHTML='<p style="padding:1.5rem;color:#999;font-family:sans-serif;">No rounds added yet.</p>';return;}
+  if(!rounds.length){el.innerHTML='<p style="padding:1rem;color:#999;font-family:sans-serif;">No rounds added yet.</p>';return;}
 
-  // Build visual HTML proposal
   let roundsHtml='';
   let grandTotal=0;
 
   rounds.forEach((r,i)=>{
     const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid};
     const img=COURSE_IMAGES[r.cid]||null;
-    const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'Date TBC';
-    const gfTotal=r.gf*(r.players||1);
-    const buggyTotal=(r.buggy||0)*(r.players||1);
-    const clubsTotal=(r.clubs||0)*(r.players||1);
+    const gf=parseFloat(r.gf)||getRackGF(r.cid,r.date)||0;
+    const buggy=parseFloat(r.buggy)||0;
+    const clubs=parseFloat(r.clubs)||0;
+    const players=parseInt(r.players)||1;
+    const gfTotal=gf*players;
+    const buggyTotal=buggy*players;
+    const clubsTotal=clubs*players;
     const sub=gfTotal+buggyTotal+clubsTotal;
     grandTotal+=sub;
 
     const gcValid=useGC&&c.golfcard?isGolfcardValid(r.cid,r.date,r.time):{ok:false};
+    const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'Date TBC';
 
     const photoHtml=showPhotos&&img
-      ?`<div style="width:200px;min-width:200px;height:130px;overflow:hidden;border-radius:4px;flex-shrink:0;">
-          <img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;">
-        </div>`
+      ?`<div style="width:100%;height:180px;overflow:hidden;border-radius:4px;margin-bottom:8px;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;"></div>`
       :'';
 
-    const detailRows=[];
+    const gcBadge=gcValid.ok
+      ?`<span style="background:#2D4A3E;color:#B8973C;font-size:8.5pt;padding:2px 6px;border-radius:3px;font-weight:600;margin-left:8px;">Golf Card</span>`:'';
+
+    // Itemised: show breakdown per round
+    let detailHtml='';
     if(fmt==='itemised'){
-      detailRows.push(`<tr><td style="color:#666;font-size:11pt;">Green fee &times;${r.players}</td><td style="text-align:right;font-size:11pt;">€${gfTotal}</td></tr>`);
-      if(r.buggy) detailRows.push(`<tr><td style="color:#666;font-size:11pt;">Buggy hire</td><td style="text-align:right;font-size:11pt;">€${buggyTotal}</td></tr>`);
-      if(r.clubs) detailRows.push(`<tr><td style="color:#666;font-size:11pt;">Club hire &times;${r.players}</td><td style="text-align:right;font-size:11pt;">€${clubsTotal}</td></tr>`);
+      const rows=[];
+      rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Green fee &times;${players}</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${gfTotal}</td></tr>`);
+      if(buggy) rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Buggy hire &times;${players}</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${buggyTotal}</td></tr>`);
+      if(clubs) rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Club hire &times;${players}</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${clubsTotal}</td></tr>`);
+      rows.push(`<tr><td style="font-weight:600;font-size:10pt;padding:3px 0;border-top:1px solid #ddd;color:#2D4A3E;">Subtotal</td><td style="text-align:right;font-weight:600;font-size:10pt;padding:3px 0;border-top:1px solid #ddd;color:#2D4A3E;">€${sub}</td></tr>`);
+      detailHtml=`<table style="width:100%;border-collapse:collapse;margin-top:4px;">${rows.join('')}</table>`;
+    } else {
+      // Clean: just players count, no per-round price shown
+      detailHtml=`<div style="font-size:10pt;color:#666;">${players} player${players>1?'s':''}</div>`;
     }
 
-    const subLine=fmt==='itemised'
-      ?`<div style="margin-top:6px;font-weight:600;font-size:11pt;color:#2D4A3E;">Subtotal: €${sub}</div>`
-      :`<div style="font-size:11pt;color:#444;">€${r.gf} per person${r.buggy?' &nbsp;·&nbsp; Buggy: €'+r.buggy:''}${r.clubs?' &nbsp;·&nbsp; Club hire: €'+r.clubs+'/set':''}</div>`;
-
-    const gcBadge=gcValid.ok
-      ?`<span style="background:#2D4A3E;color:#B8973C;font-size:9pt;padding:2px 7px;border-radius:3px;font-weight:600;margin-top:4px;display:inline-block;">Golf Card valid</span>`:'';
-
     roundsHtml+=`
-      <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid #e8e3da;">
+      <div style="padding:10px 0;border-bottom:1px solid #e8e3da;page-break-inside:avoid;">
         ${photoHtml}
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
-            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:16pt;font-weight:600;color:#1A1916;">Round ${i+1}: ${c.name}</div>
-            ${gcBadge}
-          </div>
-          <div style="color:#444;font-size:11pt;margin:3px 0;">${dateStr}${r.time?' &nbsp;·&nbsp; Tee time: '+r.time:''}</div>
-          <div style="color:#444;font-size:11pt;margin-bottom:6px;">${r.players} player${r.players>1?'s':''}</div>
-          ${detailRows.length?`<table style="width:100%;border-collapse:collapse;">${detailRows.join('')}</table>`:''}
-          ${subLine}
+        <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">
+          <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:14pt;font-weight:600;color:#1A1916;">Round ${i+1} — ${c.name}</div>
+          ${gcBadge}
         </div>
+        <div style="font-size:10pt;color:#555;margin-top:2px;">${dateStr}${r.time?' · '+r.time:''}</div>
+        ${detailHtml}
       </div>`;
   });
 
+  // Totals block
   let totalsHtml='';
   if(fmt==='itemised'){
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:11pt;"><span>Green fees &amp; extras</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:10pt;color:#444;"><span>Green fees &amp; extras</span><span>€${grandTotal}</span></div>`;
     if(includeFee&&andyFee>0){
-      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:11pt;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:10pt;color:#444;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
       grandTotal+=andyFee;
     }
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:13pt;font-weight:700;color:#2D4A3E;border-top:2px solid #2D4A3E;margin-top:4px;"><span>Total</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12pt;font-weight:700;color:#2D4A3E;border-top:2px solid #2D4A3E;margin-top:4px;"><span>Total</span><span>€${grandTotal}</span></div>`;
+  } else {
+    // Clean version: single total line at end
+    if(includeFee&&andyFee>0){
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:10pt;color:#444;"><span>Golf fees &amp; extras (${rounds.length} round${rounds.length>1?'s':''})</span><span>€${grandTotal}</span></div>`;
+      grandTotal+=andyFee;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:10pt;color:#444;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
+    }
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12pt;font-weight:700;color:#2D4A3E;border-top:2px solid #2D4A3E;margin-top:4px;"><span>Total</span><span>€${grandTotal}</span></div>`;
   }
 
   const notesHtml=notes
-    ?`<div style="margin:20px 0;padding:14px 16px;background:#f9f7f3;border-left:3px solid #B8973C;font-size:11pt;line-height:1.7;color:#333;">${notes.replace(/\n/g,'<br>')}</div>`:'';
+    ?`<div style="margin:10px 0;padding:10px 14px;background:#f9f7f3;border-left:3px solid #B8973C;font-size:10pt;line-height:1.6;color:#333;">${notes.replace(/\n/g,'<br>')}</div>`:'';
 
   const navLogo=document.getElementById('navLogo');
   const logoSrc=navLogo?navLogo.src:'';
   const logoHtml=logoSrc&&logoSrc.startsWith('data:')
-    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:48px;filter:brightness(0);">`
-    :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
+    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:36px;">`
+    :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:780px;margin:0 auto;padding:32px 36px;">
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:720px;margin:0 auto;padding:20px 24px;">
 
-      <!-- HEADER -->
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:16px;border-bottom:2px solid #2D4A3E;margin-bottom:20px;">
+      <!-- HEADER: logo left, contact right, tight -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:2px solid #2D4A3E;margin-bottom:12px;">
         <div>${logoHtml}</div>
-        <div style="text-align:right;font-size:9.5pt;color:#666;line-height:1.6;">
-          Andy Griffiths, PGA Advanced Professional<br>
-          andy@mrmallorcagolf.com<br>
-          mrmallorcagolf.com
+        <div style="text-align:right;font-size:8.5pt;color:#666;line-height:1.5;">
+          Andy Griffiths · PGA Advanced Professional<br>andy@mrmallorcagolf.com · mrmallorcagolf.com
         </div>
       </div>
 
       <!-- CLIENT INFO -->
-      <div style="margin-bottom:20px;">
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22pt;font-weight:600;color:#2D4A3E;margin-bottom:6px;">Golf Itinerary${clientName?' — '+clientName:''}</div>
-        ${clientEmail||clientPhone||clientNationality?`<div style="font-size:10pt;color:#666;">${[clientEmail,clientPhone,clientNationality].filter(Boolean).join(' &nbsp;·&nbsp; ')}</div>`:''}
+      <div style="margin-bottom:10px;">
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18pt;font-weight:600;color:#2D4A3E;line-height:1.2;">Golf Itinerary${clientName?' — '+clientName:''}</div>
+        ${clientEmail||clientPhone||clientNationality?`<div style="font-size:9pt;color:#777;margin-top:2px;">${[clientEmail,clientPhone,clientNationality].filter(Boolean).join(' · ')}</div>`:''}
       </div>
 
       ${notesHtml}
 
       <!-- ROUNDS -->
-      <div style="margin-bottom:24px;">${roundsHtml}</div>
+      <div style="margin-bottom:14px;">${roundsHtml}</div>
 
       <!-- TOTALS -->
-      ${totalsHtml?`<div style="margin-bottom:24px;">${totalsHtml}</div>`:''}
+      <div style="margin-bottom:14px;">${totalsHtml}</div>
 
       <!-- FOOTER -->
-      <div style="font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:12px;line-height:1.6;">
-        All prices in euros. Subject to tee-time availability. Bookings managed by Andy Griffiths, PGA Advanced Professional.<br>
-        <span style="color:#B8973C;">mrmallorcagolf.com</span>
+      <div style="font-size:8pt;color:#aaa;border-top:1px solid #e8e3da;padding-top:8px;line-height:1.5;">
+        All prices in euros. Subject to tee-time availability. Bookings managed by Andy Griffiths, PGA Advanced Professional · mrmallorcagolf.com
       </div>
     </div>`;
 }
