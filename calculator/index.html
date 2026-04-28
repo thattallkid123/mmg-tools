@@ -910,7 +910,7 @@ footer a { color: rgba(247,244,239,.5); }
 
   <!-- CALCULATOR CARD -->
   <div class="card">
-    <div class="card-title" data-i18n="card_round">Your Round</div>
+    <div class="card-title" data-i18n="card_round">Your Round</div><button class="admin-unlock-btn" onclick="promptAdminUnlock()" title="Admin price override">&#9998;</button>
 
     <div class="form-grid">
       <div class="form-group">
@@ -1613,7 +1613,19 @@ footer a { color: rgba(247,244,239,.5); }
   .pwap-right{border-left:none!important;padding-left:0!important;border-top:1px solid rgba(184,151,60,.2)!important;padding-top:32px!important;}
   section{padding-left:20px!important;padding-right:20px!important;}
 }
-</style>
+/* Price override panel */
+.admin-unlock-btn { float:right; background:none; border:1px solid var(--linen); color:var(--taupe); font-size:13px; padding:3px 8px; border-radius:4px; cursor:pointer; margin-top:-2px; }
+.admin-unlock-btn:hover { color:var(--gold); border-color:var(--gold); }
+.override-panel { background:#fff; border:1.5px solid var(--gold); border-radius:8px; padding:16px 20px 12px; margin:0 0 16px; }
+.override-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.override-title { font-size:11px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--deep); }
+.override-badge { background:var(--gold); color:var(--deep); font-size:8px; padding:2px 6px; border-radius:99px; margin-left:6px; }
+.override-close { background:none; border:none; font-size:18px; color:var(--taupe); cursor:pointer; line-height:1; }
+.override-close:hover { color:var(--deep); }
+.override-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.override-grid input { border:1px solid var(--sand); border-radius:4px; padding:7px 10px; font-size:14px; width:100%; background:var(--cream); }
+.override-note { font-size:11px; color:var(--taupe); margin-top:8px; }
+@media(max-width:600px){ .override-grid { grid-template-columns:1fr 1fr; } }</style>
 
 <footer>
   <p>
@@ -2906,6 +2918,8 @@ function isGPLow(d){
 }
 
 function getGF(c,d,h){
+  const ovGF=getOverrideGF ? getOverrideGF() : null;
+  if(ovGF!==null) return ovGF;
   let gf=isHighSeason(d)?c.peak:isLowSeason(d)?c.low:(c.mid||Math.round((c.peak+c.low)/2));
   if(c.twilightFrom&&h>=c.twilightFrom&&c.twilight) gf=c.twilight;
   else if(c.earlybird&&h<c.earlybird.before) gf=c.earlybird.price;
@@ -2926,14 +2940,189 @@ function clubsMid(c){ return Math.round((c.clubs.min+c.clubs.max)/2); }
 
 function extrasAmt(c,n){
   let e=0;
-  if(c.buggy.max>0) e+=buggyMid(c)*extras.buggy;
-  if(c.clubs.max>0) e+=clubsMid(c)*extras.clubs;
+  const ovBuggy=getOverrideBuggy ? getOverrideBuggy() : null;
+  const ovClubs=getOverrideClubs ? getOverrideClubs() : null;
+  if(c.buggy.max>0) e+=(ovBuggy!==null?ovBuggy:buggyMid(c))*extras.buggy;
+  if(c.clubs.max>0) e+=(ovClubs!==null?ovClubs:clubsMid(c))*extras.clubs;
   if(extras.lic&&c.licence) e+=3*n;
   return e;
 }
 
 function fmt(n){ return '&euro;'+Math.round(n).toLocaleString('en-GB'); }
 
+// Returns {ok:bool, note:string} â€” whether the golfcard voucher is valid for this course/date/time
+function isGolfcardVoucherValid(cid, d, h) {
+  const m = getMonth(d), day = getDay(d), dow = d.getDay(); // 0=Sun,1=Mon,...,6=Sat
+
+  switch(cid) {
+
+    case 'alcanada': {
+      // Valid: Jan1-Feb28, May15-Sep15, Nov1-Dec31 | Sun/Mon/Tue only | from 12:00
+      const inWindow =
+        (m===1) ||
+        (m===2) ||
+        (m===5 && day>=15) || (m===6) || (m===7) || (m===8) || (m===9 && day<=15) ||
+        (m===11) || (m===12);
+      if(!inWindow) return {ok:false, note:'Voucher not valid this month (valid Jan&ndash;Feb, 15 May&ndash;15 Sep, Nov&ndash;Dec)'};
+      if(dow!==0 && dow!==1 && dow!==2) return {ok:false, note:'Voucher only valid on Sunday, Monday, or Tuesday'};
+      if(h < 12) return {ok:false, note:'Voucher valid from 12:00 &mdash; move tee time to 12:00 or later'};
+      return {ok:true, note:''};
+    }
+
+    case 'bendinat': {
+      // 2FOR1: Jan1-5, May15-Jun22, Nov1-16, Dec22-31 from 12:00
+      // Special price: Jan6-Feb28, Jun23-Sep6, Nov17-Dec21 from 12:00
+      const is2for1 =
+        (m===1 && day<=5) ||
+        (m===5 && day>=15) || (m===6 && day<=22) ||
+        (m===11 && day<=16) ||
+        (m===12 && day>=22);
+      const isSpecial =
+        (m===1 && day>=6) || (m===2) ||
+        (m===6 && day>=23) || (m===7) || (m===8) || (m===9 && day<=6) ||
+        (m===11 && day>=17) ||
+        (m===12 && day>=17 && day<=21);
+      if(!is2for1 && !isSpecial) return {ok:false, note:'No Golfcard voucher for this date'};
+      if(h < 12) return {ok:false, note:'Voucher valid from 12:00 &mdash; move tee time to 12:00 or later'};
+      return {ok:true, note:''};
+    }
+
+    case 'capdepera': {
+      // All year but tee-time windows vary by season
+      // Jan/Feb & Nov16-Dec31: before 09:30 or from 12:00
+      // Mar-Jun7 & Sep14-Nov15: before 09:00 or from 13:00
+      // Jun8-Sep13: any time
+      const summerFree = (m===6 && day>=8)||(m===7)||(m===8)||(m===9 && day<=13);
+      if(summerFree) return {ok:true, note:''};
+      const restrictedA = (m===1)||(m===2)||(m===11 && day>=16)||(m===12);
+      if(restrictedA) {
+        if(h < 9.5 || h >= 12) return {ok:true, note:''};
+        return {ok:false, note:'Voucher valid before 09:30 or from 12:00 for this period'};
+      }
+      // Mar-Jun7 & Sep14-Nov15
+      if(h < 9 || h >= 13) return {ok:true, note:''};
+      return {ok:false, note:'Voucher valid before 09:00 or from 13:00 for this period'};
+    }
+
+    case 'maioris': {
+      // All year Sun-Fri from 13:00
+      if(dow === 6) return {ok:false, note:'Voucher not valid on Saturdays'};
+      if(h < 13) return {ok:false, note:'Voucher valid from 13:00 &mdash; move tee time to 13:00 or later'};
+      return {ok:true, note:''};
+    }
+
+    case 'pollenca': {
+      // All year Sun-Fri from 13:00
+      if(dow === 6) return {ok:false, note:'Voucher not valid on Saturdays'};
+      if(h < 13) return {ok:false, note:'Voucher valid from 13:00 &mdash; move tee time to 13:00 or later'};
+      return {ok:true, note:''};
+    }
+
+    case 'pula': {
+      // Low season (Jan1-Mar1, Jun6-Sep13, Nov16-Dec31): any time
+      // Shoulder (Mar2-Jun5, Sep14-Nov15): before 09:00 or after 13:00
+      const lowSeason =
+        (m===1)||(m===2)||(m===3 && day<=1)||
+        (m===6 && day>=6)||(m===7)||(m===8)||(m===9 && day<=13)||
+        (m===11 && day>=16)||(m===12);
+      if(lowSeason) return {ok:true, note:''};
+      if(h < 9 || h >= 13) return {ok:true, note:''};
+      return {ok:false, note:'Voucher valid before 09:00 or after 13:00 for this period (Mar&ndash;Jun, Sep&ndash;Nov)'};
+    }
+
+    case 'santa_ponsa': {
+      const is2for1 =
+        (m===1 && day<=5) ||
+        (m===5 && day>=15) || (m===6 && day<=22) ||
+        (m===11 && day<=16) ||
+        (m===12 && day>=22);
+      const isSpecial =
+        (m===1 && day>=6) || (m===2) ||
+        (m===6 && day>=23) || (m===7) || (m===8) || (m===9 && day<=6) ||
+        (m===11 && day>=17) ||
+        (m===12 && day>=17 && day<=21);
+      if(!is2for1 && !isSpecial) return {ok:false, note:'No Golfcard voucher for this date'};
+      if(h < 12) return {ok:false, note:'Voucher valid from 12:00 &mdash; move tee time to 12:00 or later'};
+      return {ok:true, note:''};
+    }
+
+    case 'son_antem_e': {
+      // Jan1-Feb28, May15-Sep15, Nov1-Dec31 from 12:00
+      const inWindow =
+        (m===1)||(m===2)||
+        (m===5 && day>=15)||(m===6)||(m===7)||(m===8)||(m===9 && day<=15)||
+        (m===11)||(m===12);
+      if(!inWindow) return {ok:false, note:'Voucher not valid this period (valid Jan&ndash;Feb, 15 May&ndash;15 Sep, Nov&ndash;Dec)'};
+      if(h < 12) return {ok:false, note:'Voucher valid from 12:00 &mdash; move tee time to 12:00 or later'};
+      return {ok:true, note:''};
+    }
+
+    case 'son_antem_w': {
+      // Specific Wednesdays only: 26 Feb, 12 Mar, 25 Jun, 23 Jul, 27 Aug, 19 Nov, 17 Dec 2026
+      const validDates = ['2026-02-26','2026-03-12','2026-06-25','2026-07-23','2026-08-27','2026-11-19','2026-12-17'];
+      const dateStr = d.toISOString().slice(0,10);
+      if(!validDates.includes(dateStr)) return {ok:false, note:'Voucher only valid on 7 specific Wednesdays: 26 Feb, 12 Mar, 25 Jun, 23 Jul, 27 Aug, 19 Nov, 17 Dec 2026'};
+      if(h < 12) return {ok:false, note:'Voucher valid from 12:00 &mdash; move tee time to 12:00 or later'};
+      return {ok:true, note:''};
+    }
+
+    case 'son_gual': {
+      // 2FOR1: specific Wednesdays: 25 Feb, 11 Mar, 24 Jun, 22 Jul, 26 Aug, 18 Nov, 16 Dec 2026
+      // Package: Tue-Thu all year
+      const validWeds = ['2026-02-25','2026-03-11','2026-06-24','2026-07-22','2026-08-26','2026-11-18','2026-12-16'];
+      const dateStr = d.toISOString().slice(0,10);
+      const isValidWed = validWeds.includes(dateStr);
+      const isPkgDay = (dow===2||dow===3||dow===4); // Tue/Wed/Thu
+      if(isValidWed) return {ok:true, note:''};
+      if(isPkgDay) return {ok:true, note:''};
+      return {ok:false, note:'2FOR1 only on 7 specific Wednesdays &middot; Package (2 GF+buggy+meal) available Tue&ndash;Thu'};
+    }
+
+    case 'son_servera': {
+      // NOT valid Mar-May or Oct
+      if(m>=3 && m<=5) return {ok:false, note:'Voucher not valid March&ndash;May'};
+      if(m===10) return {ok:false, note:'Voucher not valid in October'};
+      // Jan-Feb & Nov-Dec: 08:00-09:00 or from 12:00
+      if(m===1||m===2||m===11||m===12) {
+        if((h>=8 && h<9) || h>=12) return {ok:true, note:''};
+        return {ok:false, note:'Voucher valid 08:00&ndash;09:00 or from 12:00 for Jan/Feb/Nov/Dec'};
+      }
+      // Jun 1-Sep 15: 08:00-09:00 or 12:00-14:00
+      if((m===6)||(m===7)||(m===8)||(m===9 && day<=15)) {
+        if((h>=8 && h<9) || (h>=12 && h<14)) return {ok:true, note:''};
+        return {ok:false, note:'Voucher valid 08:00&ndash;09:00 or 12:00&ndash;14:00 for Jun&ndash;15 Sep'};
+      }
+      // Sep 16-30: 08:00-08:30 or 14:00-16:30
+      if(m===9 && day>=16) {
+        if((h>=8 && h<8.5) || (h>=14 && h<16.5)) return {ok:true, note:''};
+        return {ok:false, note:'Voucher valid 08:00&ndash;08:30 or 14:00&ndash;16:30 for 16&ndash;30 Sep'};
+      }
+      return {ok:true, note:''};
+    }
+
+    case 'son_termes': {
+      // All year, no restriction
+      return {ok:true, note:''};
+    }
+
+    default:
+      // For courses with % discount or packages (son_muntaner, son_quint, son_vida, palma_pp)
+      // and fixed-price courses (t_golf_calvia, t_golf_palma) â€” check date windows
+      if(cid==='t_golf_calvia'||cid==='t_golf_palma') {
+        // 7 Jan-28 Feb, 4 Jul-11 Sep, 9 Nov-26 Dec
+        const inWindow =
+          (m===1 && day>=7)||(m===2 && day<=28)||
+          (m===7 && day>=4)||(m===8)||(m===9 && day<=11)||
+          (m===11 && day>=9)||(m===12 && day<=26);
+        if(!inWindow) return {ok:false, note:'Special price not available for this date (valid 7 Jan&ndash;28 Feb, 4 Jul&ndash;11 Sep, 9 Nov&ndash;26 Dec)'};
+        return {ok:true, note:''};
+      }
+      // vall_dor: all year
+      if(cid==='vall_dor') return {ok:true, note:''};
+      // Arabella % discount courses (son_muntaner, son_quint, son_vida, palma_pp): all year
+      return {ok:true, note:''};
+  }
+}
 function calc(){
   const cid=document.getElementById('course').value;
   if(!cid){
@@ -3062,14 +3251,14 @@ function calc(){
       gcPP=fmt(Math.round(gcTot/n))+'/person';
       gcBreakdown=`Voucher: 2 GF &euro;150 per pair${n>2?' &middot; '+Math.ceil(n/2)+' pairs':''}${extLabel||''}`;
     } else if(cid==='vall_dor'&&n>=2){
-      const vdPrice = isHighSeason(d) ? 257.5 : 211.6;
+      const vdPrice = isHighSeason(d) ? 274.4 : 218.3;
       gcTot=vdPrice*Math.ceil(n/2)+( (extras.clubs>0&&c.clubs.max>0)?clubsMid(c)*extras.clubs:0 )+( (extras.lic&&c.licence)?3*n:0 );
       gcPP=fmt(Math.round(gcTot/n))+'/person';
       gcBreakdown=`Voucher: 2 GF + buggy &euro;${vdPrice} per pair${n>2?' &middot; '+Math.ceil(n/2)+' pairs':''}`;
-    } else if(voucherTerms.includes('&euro;129')&&n>=2){ // Capdepera
-      gcTot=129*Math.ceil(n/2)+ext;
+    } else if(voucherTerms.includes('&euro;135')&&n>=2){ // Capdepera
+      gcTot=135*Math.ceil(n/2)+ext;
       gcPP=fmt(Math.round(gcTot/n))+'/person';
-      gcBreakdown=`Voucher: 2 GF &euro;129 per pair${extLabel||''}`;
+      gcBreakdown=`Voucher: 2 GF &euro;135 per pair${extLabel||''}`;
     } else if(voucherTerms.includes('2FOR1')&&n>=2){
       const paid=Math.ceil(n/2);
       gcTot=baseGF*paid+ext;
@@ -3085,14 +3274,17 @@ function calc(){
     // Build structured multi-line description
     const gcDesc = buildGolfcardDescHtml(cid, gvText);
 
+    const gcValid = isGolfcardVoucherValid(cid, d, h);
     rows.push({
       name:'Mallorca Golfcard 2026',
       descHtml: gcDesc,
-      total:gcTot, pp:gcPP,
-      breakdown:gcBreakdown,
-      avail:true, upfront:164,
-      saveVsDirect:directTotal-gcTot,
-      breakevenRounds: gcTot<directTotal ? Math.ceil(164/(directTotal-gcTot)) : null,
+      total: gcValid.ok ? gcTot : null,
+      pp: gcValid.ok ? gcPP : null,
+      breakdown: gcValid.ok ? gcBreakdown : null,
+      note: gcValid.ok ? null : gcValid.note,
+      avail: gcValid.ok, upfront:164,
+      saveVsDirect: gcValid.ok ? directTotal-gcTot : null,
+      breakevenRounds: gcValid.ok && gcTot<directTotal ? Math.ceil(164/(directTotal-gcTot)) : null,
       bookUrl:'https://shop.rheingolf.de/EN/Mallorca-Golfcard-2026/SW10327'
     });
 
@@ -3117,9 +3309,9 @@ function calc(){
       rows.push({
         name:rt('alacard_name'),
         descHtml:buildAlaCardDescHtml(cid, gvText),
-        total:alTot, pp:alPP,
+        total: gcValid.ok ? alTot : null, pp: gcValid.ok ? alPP : null,
         breakdown:`Same voucher terms as Golfcard above (card &euro;109 one-off)`,
-        avail:true, upfront:109,
+        avail: gcValid.ok, upfront:109,
         saveVsDirect:directTotal-alTot,
         breakevenRounds: alTot<directTotal ? Math.ceil(109/(directTotal-alTot)) : null,
         bookUrl:'https://shop.rheingolf.de/EN/Mallorca-Golf-a-la-Card-2026/SW10328'
@@ -3296,7 +3488,23 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn) {
 document.querySelectorAll('.tab-panel').forEach(function(p) {
   p.style.display = p.classList.contains('active') ? 'block' : 'none';
 });
-</script>
+
+const ADMIN_CODE = 'mmg2026';
+function promptAdminUnlock(){
+  const code = prompt('Enter admin code:');
+  if(code === ADMIN_CODE){
+    document.getElementById('override-bar').style.display = 'block';
+  } else if(code !== null) {
+    alert('Incorrect code');
+  }
+}
+function getOverrideGF(){ const v=document.getElementById('ov-gf'); return v&&v.value?parseFloat(v.value):null; }
+function getOverrideBuggy(){ const v=document.getElementById('ov-buggy'); return v&&v.value?parseFloat(v.value):null; }
+function getOverrideClubs(){ const v=document.getElementById('ov-clubs'); return v&&v.value?parseFloat(v.value):null; }
+function clearOverrides(){
+  ['ov-gf','ov-buggy','ov-clubs'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  calc();
+}</script>
 </body>
 </html>
 
