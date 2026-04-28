@@ -990,7 +990,10 @@ function renderProposal(){
       detailHtml=`<table style="width:100%;border-collapse:collapse;margin-top:6px;">${rows.join('')}</table>`;
     } else {
       // Clean: just players count
-      detailHtml=`<div style="font-size:8.5pt;color:#8A7F74;margin-top:8px;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.1em;text-transform:uppercase;">${players} player${players>1?'s':''}</div>`;
+      const extrasLabel=[];
+      if(r.buggyQty>0) extrasLabel.push(r.buggyQty+(r.buggyQty===1?' buggy':' buggies'));
+      if(r.clubsQty>0) extrasLabel.push(r.clubsQty+' club hire');
+      detailHtml=`<div style="font-size:8.5pt;color:#8A7F74;margin-top:8px;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.1em;text-transform:uppercase;">${players} player${players>1?'s':''}${extrasLabel.length?' · '+extrasLabel.join(' · '):''}</div>`;
     }
 
     roundsHtml+=`
@@ -1035,16 +1038,19 @@ function renderProposal(){
     ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:76px;filter:brightness(0);">`
     :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
+  const prepDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:760px;margin:0 auto;padding:36px 40px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;border-bottom:1px solid #C4BAA9;margin-bottom:28px;">
-        <div>${logoHtml}</div>
-        <div style="text-align:right;font-size:11pt;color:#5a5550;line-height:1.9;font-family:'Jost',sans-serif;font-weight:300;">Andy Griffiths<br><span style="font-size:9.5pt;letter-spacing:.04em;color:#8A7F74;">PGA Advanced Professional</span><br>andy@mrmallorcagolf.com<br>mrmallorcagolf.com</div>
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:760px;margin:0 auto;padding:20px 28px 28px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:1px solid #C4BAA9;margin-bottom:0;">
+        <div style="line-height:0;">${logoHtml}</div>
+        <div style="text-align:right;font-size:10.5pt;color:#5a5550;line-height:1.7;font-family:'Jost',sans-serif;font-weight:300;margin-top:4px;">Andy Griffiths<br><span style="font-size:9pt;color:#8A7F74;">PGA Advanced Professional</span><br><span style="font-size:9pt;">andy@mrmallorcagolf.com &nbsp;·&nbsp; mrmallorcagolf.com</span></div>
       </div>
-      <div style="margin-bottom:28px;">
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:30pt;font-weight:500;color:#2D4A3E;line-height:1.1;margin-bottom:10px;">Golf Itinerary${clientName?' — '+clientName:''}</div>
-        <div style="width:36px;height:1px;background:#B8973C;margin-bottom:10px;"></div>
-        ${clientEmail||clientPhone?`<div style="font-size:10pt;color:#8A7F74;font-family:'Jost',sans-serif;font-weight:300;letter-spacing:.02em;">${[clientEmail,clientPhone].filter(Boolean).join(' · ')}</div>`:''}
+      <div style="padding:12px 0 14px;border-bottom:1px solid #E0D8CB;margin-bottom:16px;">
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:500;color:#2D4A3E;line-height:1.1;">${clientName?clientName+' — ':''}Golf Itinerary</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
+          <div style="width:36px;height:1px;background:#B8973C;flex-shrink:0;"></div>
+          <div style="font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;font-weight:300;letter-spacing:.02em;">${[clientEmail,clientPhone].filter(Boolean).join(' · ')}${(clientEmail||clientPhone)?' &nbsp;·&nbsp; ':''}<span style="color:#C4BAA9;">Prepared ${prepDate}</span></div>
+        </div>
       </div>
       ${notesHtml}
       ${roundsHtml}
