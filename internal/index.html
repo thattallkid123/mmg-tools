@@ -194,6 +194,13 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <tbody id="roundsBody"></tbody>
       </table>
     </div>
+    <div id="savedQuotesPanel" style="display:none;margin-bottom:.8rem;padding:.6rem .8rem;background:#f5f2ec;border-radius:4px;border:1px solid #ddd7cc;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
+        <strong style="font-size:.85rem;">Saved Quotes</strong>
+        <button class="btn btn-red btn-sm" onclick="toggleSavedQuotes()">&#10005;</button>
+      </div>
+      <div id="savedQuotesList" style="font-size:.82rem;"></div>
+    </div>
     <div style="margin-top:.8rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
       <button class="btn btn-pine btn-sm" onclick="addRow()">+ Blank round</button>
       <button class="btn btn-pine btn-sm" onclick="syncPlayers()" title="Apply the player count above to every round in the list">Set all rounds to <strong id="syncNum">2</strong> players</button>
@@ -588,7 +595,14 @@ function saveState(){
 function loadState(){
   try{
     const s=JSON.parse(localStorage.getItem('mmg_quote_state')||'{}');
-    rounds=s.rounds||[]; nextId=s.nextId||1;
+    rounds=(s.rounds||[]).map(r=>{
+      if(r.buggy!==undefined&&r.buggyQty===undefined){r.buggyRate=r.buggy||getBuggyRate(r.cid);r.buggyQty=r.buggy>0?Math.ceil((r.players||2)/2):0;delete r.buggy;}
+      if(r.clubs!==undefined&&r.clubsQty===undefined){r.clubsRate=r.clubs||getClubsRate(r.cid);r.clubsQty=r.clubs>0?(r.players||1):0;delete r.clubs;}
+      if(!r.gf&&r.cid) r.gf=getRackGF(r.cid,r.date)||0;
+      if(!r.buggyRate&&r.cid) r.buggyRate=getBuggyRate(r.cid);
+      if(!r.clubsRate&&r.cid) r.clubsRate=getClubsRate(r.cid);
+      return r;
+    }); nextId=s.nextId||1;
     if(s.clientName) document.getElementById('clientName').value=s.clientName;
     if(s.clientEmail) document.getElementById('clientEmail').value=s.clientEmail;
     if(s.clientPhone) document.getElementById('clientPhone').value=s.clientPhone;
@@ -674,7 +688,7 @@ function parseEnquiry(append){
     const gf=getRackGF(cid,date)||0;
     const buggyRate=lineBuggy?getBuggyRate(cid):0;
     const clubsRate=lineClubs?getClubsRate(cid):0;
-    newRounds.push({id:nextId++,cid,date,time,players,gf,buggy:buggyRate,clubs:clubsRate,licence:hasLicence(cid)});
+    newRounds.push({id:nextId++,cid,date,time,players,gf,buggyQty:lineBuggy?Math.ceil(players/2):0,buggyRate:getBuggyRate(cid),clubsQty:lineClubs?players:0,clubsRate:getClubsRate(cid),licence:hasLicence(cid)});
   }
   if(!append) rounds=newRounds;
   else rounds=rounds.concat(newRounds);
@@ -686,7 +700,7 @@ function parseEnquiry(append){
 function addRow(){
   const numP=parseInt(document.getElementById('numPlayers').value)||2;
   const c=COURSE_LIST[0];
-  rounds.push({id:nextId++,cid:c.id,date:'',time:'',players:numP,gf:getRackGF(c.id,''),buggy:0,clubs:0,licence:false});
+  rounds.push({id:nextId++,cid:c.id,date:'',time:'',players:numP,gf:getRackGF(c.id,''),buggyQty:Math.ceil(numP/2),buggyRate:getBuggyRate(c.id),clubsQty:0,clubsRate:getClubsRate(c.id),licence:false});
   saveState(); renderTable();
 }
 function clearRounds(){if(confirm('Clear all rounds?')){rounds=[];saveState();renderTable();}}
@@ -821,8 +835,8 @@ function renderTable(){
       +'<td><input type="time" value="'+r.time+'" onchange="updateRound('+r.id+',\'time\',this.value)" style="width:100px;"></td>'
       +'<td><input type="number" value="'+r.players+'" min="1" max="20" onchange="updateRound('+r.id+',\'players\',+this.value)" style="width:55px;"></td>'
       +'<td><input type="number" value="'+(r.gf||getRackGF(r.cid,r.date)||0)+'" min="0" onchange="updateRound('+r.id+',\'gf\',+this.value)" style="width:75px;color:'+(r.gf?'inherit':'#b06000')+'"></td>'
-      +'<td><input type="number" value="'+(r.buggy||0)+'" min="0" onchange="updateRound('+r.id+',\'buggy\',+this.value)" style="width:65px;"></td>'
-      +'<td><input type="number" value="'+(r.clubs||0)+'" min="0" onchange="updateRound('+r.id+',\'clubs\',+this.value)" style="width:65px;"></td>'
+      +'<td><select onchange="updateRound('+r.id+',\'buggyQty\',+this.value)" style="width:60px;">'+[0,1,2,3].map(n=>'<option value="'+n+'"'+(n===(r.buggyQty||0)?' selected':'')+'>'+n+'</option>').join('')+'</select></td>'
+      +'<td><select onchange="updateRound('+r.id+',\'clubsQty\',+this.value)" style="width:60px;">'+[0,1,2,3].map(n=>'<option value="'+n+'"'+(n===(r.clubsQty||0)?' selected':'')+'>'+n+'</option>').join('')+'</select></td>'
       +'<td><input type="checkbox" '+(r.licence?'checked':'')+' onchange="updateRound('+r.id+',\'licence\',this.checked)"></td>'
       +'<td>'+gcBadge+'</td>'
       +'<td><button class="btn btn-red btn-sm" onclick="removeRound('+r.id+')">&#10005;</button></td>'
@@ -835,6 +849,8 @@ function updateRound(id,key,val){
   if(key==='cid'){
     r.gf=getRackGF(val, r.date);
     r.licence=hasLicence(val);
+    r.buggyRate=getBuggyRate(val);
+    r.clubsRate=getClubsRate(val);
   }
   if(key==='date'){
     const c2=COURSE_LIST.find(x=>x.id===r.cid);
@@ -869,8 +885,8 @@ function renderMargin(){
     const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid,rack:0,gcType:'none',golfcard:false};
     let myCost=getMyCost(r.cid, r.date);
     const charge=r.gf||0;
-    const buggy=r.buggy||0;
-    const clubs=r.clubs||0;
+    const buggy=(r.buggyQty||0)*(r.buggyRate||getBuggyRate(r.cid));
+    const clubs=(r.clubsQty||0)*(r.clubsRate||getClubsRate(r.cid));
     const gcValid=useGC&&c.golfcard?isGolfcardValid(r.cid,r.date,r.time):{ok:false};
     let gcNote='';
     if(gcValid.ok&&c.gcType==='2for1'){gcNote='GC 2FOR1';myCost=myCost/2;}
@@ -944,8 +960,8 @@ function renderProposal(){
     const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid};
     const img=COURSE_IMAGES[r.cid]||null;
     const gf=parseFloat(r.gf)||getRackGF(r.cid,r.date)||0;
-    const buggy=parseFloat(r.buggy)||0;
-    const clubs=parseFloat(r.clubs)||0;
+    const buggy=(r.buggyQty||0)*(r.buggyRate||getBuggyRate(r.cid));
+    const clubs=(r.clubsQty||0)*(r.clubsRate||getClubsRate(r.cid));
     const players=parseInt(r.players)||1;
     const gfTotal=gf*players;
     const buggyTotal=buggy*players;
@@ -968,23 +984,23 @@ function renderProposal(){
     if(fmt==='itemised'){
       const rows=[];
       rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Green fee &times;${players}</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${gfTotal}</td></tr>`);
-      if(buggy) rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Buggy hire &times;${players}</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${buggyTotal}</td></tr>`);
-      if(clubs) rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Club hire &times;${players}</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${clubsTotal}</td></tr>`);
+      if(buggy) rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Buggy hire (${r.buggyQty||1} buggy)</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${buggyTotal}</td></tr>`);
+      if(clubs) rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Club hire (${r.clubsQty||1} set${(r.clubsQty||1)>1?"s":""})</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${clubsTotal}</td></tr>`);
       rows.push(`<tr><td style="font-weight:600;font-size:10pt;padding:3px 0;border-top:1px solid #ddd;color:#2D4A3E;">Subtotal</td><td style="text-align:right;font-weight:600;font-size:10pt;padding:3px 0;border-top:1px solid #ddd;color:#2D4A3E;">€${sub}</td></tr>`);
       detailHtml=`<table style="width:100%;border-collapse:collapse;margin-top:4px;">${rows.join('')}</table>`;
     } else {
       // Clean: just players count, no per-round price shown
-      detailHtml=`<div style="font-size:10pt;color:#666;">${players} player${players>1?'s':''}</div>`;
+      detailHtml=`<div style="font-size:8.5pt;color:#888;margin-top:0;">${players} player${players>1?'s':''}</div>`;
     }
 
     roundsHtml+=`
-      <div style="display:flex;gap:10px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #ede8e0;page-break-inside:avoid;">
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #ede8e0;page-break-inside:avoid;">
         ${photoHtml}
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:12pt;font-weight:600;color:#1A1916;line-height:1.2;">Round ${i+1} — ${c.name}</span>${gcBadge}
+        <div style="flex:1;min-width:0;line-height:1.25;">
+          <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;">
+            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:12pt;font-weight:600;color:#1A1916;">Round ${i+1} — ${c.name}</span>${gcBadge}
           </div>
-          <div style="font-size:8.5pt;color:#666;line-height:1.4;">${dateStr}${r.time?' · '+r.time:''}</div>
+          <div style="font-size:8.5pt;color:#666;margin-top:0;">${dateStr}${r.time?' · '+r.time:''}</div>
           ${detailHtml}
         </div>
       </div>`;
@@ -1114,9 +1130,13 @@ function loadQuoteFile(input){
       if(data.dayType){const r=document.querySelector('input[name=dayType][value="'+data.dayType+'"]');if(r)r.checked=true;}
       if(data.andyDays) document.getElementById('andyDays').value=data.andyDays;
       rounds=(data.rounds||[]).map(r=>{
-    if(!r.gf&&r.cid) r.gf=getRackGF(r.cid,r.date)||0;
-    return r;
-  });
+        if(r.buggy!==undefined&&r.buggyQty===undefined){r.buggyRate=r.buggy||getBuggyRate(r.cid);r.buggyQty=r.buggy>0?Math.ceil((r.players||2)/2):0;delete r.buggy;}
+        if(r.clubs!==undefined&&r.clubsQty===undefined){r.clubsRate=r.clubs||getClubsRate(r.cid);r.clubsQty=r.clubs>0?(r.players||1):0;delete r.clubs;}
+        if(!r.gf&&r.cid) r.gf=getRackGF(r.cid,r.date)||0;
+        if(!r.buggyRate&&r.cid) r.buggyRate=getBuggyRate(r.cid);
+        if(!r.clubsRate&&r.cid) r.clubsRate=getClubsRate(r.cid);
+        return r;
+      });
       nextId=data.nextId||rounds.length+1;
       toggleGCRow(); updateSyncNum(); saveState(); renderTable(); renderMargin(); renderProposal();
       alert('Quote loaded: '+(data.clientName||file.name));
@@ -1124,6 +1144,90 @@ function loadQuoteFile(input){
   };
   reader.readAsText(file);
   input.value='';
+}
+
+// ---- SAVED QUOTES (localStorage) ----
+function getSavedQuotes(){
+  try{return JSON.parse(localStorage.getItem('mmg_saved_quotes')||'[]');}catch(e){return [];}
+}
+function saveQuoteToList(){
+  const clientName=document.getElementById('clientName').value||'Unnamed';
+  const name=prompt('Save quote as:',clientName+' — '+new Date().toLocaleDateString('en-GB'));
+  if(!name) return;
+  const data={
+    savedAt:new Date().toISOString(),
+    name:name,
+    clientName:document.getElementById('clientName').value,
+    clientEmail:document.getElementById('clientEmail').value,
+    clientPhone:document.getElementById('clientPhone').value,
+    clientNationality:document.getElementById('clientNationality').value,
+    tripNotes:document.getElementById('tripNotes').value,
+    numPlayers:parseInt(document.getElementById('numPlayers').value)||2,
+    andyPlaying:document.getElementById('andyPlaying').checked,
+    useGolfcard:document.getElementById('useGolfcard').checked,
+    dayType:(document.querySelector('input[name=dayType]:checked')||{}).value||'group',
+    andyDays:parseInt(document.getElementById('andyDays').value)||1,
+    rounds:rounds,
+    nextId:nextId,
+  };
+  const list=getSavedQuotes();
+  list.unshift(data);
+  if(list.length>50) list.length=50;
+  localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
+  alert('Saved: '+name);
+}
+function toggleSavedQuotes(){
+  const panel=document.getElementById('savedQuotesPanel');
+  if(panel.style.display==='none'){panel.style.display='block';renderSavedQuotesList();}
+  else{panel.style.display='none';}
+}
+function renderSavedQuotesList(){
+  const list=getSavedQuotes();
+  const el=document.getElementById('savedQuotesList');
+  if(!list.length){el.innerHTML='<em style="color:#999;">No saved quotes yet.</em>';return;}
+  el.innerHTML=list.map(function(q,i){
+    var date=new Date(q.savedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    var rl=q.rounds?q.rounds.length+' round'+(q.rounds.length!==1?'s':''):'';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.25rem 0;border-bottom:1px solid #e4ddd4;">'
+      +'<div><strong>'+q.name+'</strong><span style="color:#999;margin-left:.5rem;">'+date+' · '+rl+'</span></div>'
+      +'<div style="display:flex;gap:.3rem;">'
+      +'<button class="btn btn-pine btn-sm" onclick="loadSavedQuote('+i+')" style="font-size:.75rem;">Load</button>'
+      +'<button class="btn btn-red btn-sm" onclick="deleteSavedQuote('+i+')" style="font-size:.75rem;">&#10005;</button>'
+      +'</div></div>';
+  }).join('');
+}
+function loadSavedQuote(idx){
+  var list=getSavedQuotes();
+  var data=list[idx]; if(!data) return;
+  if(!confirm('Load "'+data.name+'"? Current quote will be replaced.')) return;
+  if(data.clientName) document.getElementById('clientName').value=data.clientName;
+  if(data.clientEmail) document.getElementById('clientEmail').value=data.clientEmail;
+  if(data.clientPhone) document.getElementById('clientPhone').value=data.clientPhone;
+  if(data.clientNationality) document.getElementById('clientNationality').value=data.clientNationality;
+  if(data.tripNotes) document.getElementById('tripNotes').value=data.tripNotes;
+  if(data.numPlayers) document.getElementById('numPlayers').value=data.numPlayers;
+  document.getElementById('andyPlaying').checked=!!data.andyPlaying;
+  document.getElementById('useGolfcard').checked=!!data.useGolfcard;
+  if(data.dayType){var r2=document.querySelector('input[name=dayType][value="'+data.dayType+'"]');if(r2)r2.checked=true;}
+  if(data.andyDays) document.getElementById('andyDays').value=data.andyDays;
+  rounds=(data.rounds||[]).map(function(r){
+    if(r.buggy!==undefined&&r.buggyQty===undefined){r.buggyRate=r.buggy||getBuggyRate(r.cid);r.buggyQty=r.buggy>0?Math.ceil((r.players||2)/2):0;delete r.buggy;}
+    if(r.clubs!==undefined&&r.clubsQty===undefined){r.clubsRate=r.clubs||getClubsRate(r.cid);r.clubsQty=r.clubs>0?(r.players||1):0;delete r.clubs;}
+    if(!r.gf&&r.cid) r.gf=getRackGF(r.cid,r.date)||0;
+    if(!r.buggyRate&&r.cid) r.buggyRate=getBuggyRate(r.cid);
+    if(!r.clubsRate&&r.cid) r.clubsRate=getClubsRate(r.cid);
+    return r;
+  });
+  nextId=data.nextId||rounds.length+1;
+  document.getElementById('savedQuotesPanel').style.display='none';
+  toggleGCRow(); updateSyncNum(); saveState(); renderTable(); renderMargin(); renderProposal();
+}
+function deleteSavedQuote(idx){
+  var list=getSavedQuotes();
+  if(!confirm('Delete "'+list[idx].name+'"?')) return;
+  list.splice(idx,1);
+  localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
+  renderSavedQuotesList();
 }
 
 // ---- BOOT ----
