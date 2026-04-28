@@ -178,7 +178,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <thead>
           <tr>
             <th>#</th><th>Course</th><th>Date</th><th>Time</th><th>Players</th>
-            <th>GF/pp</th><th>Buggy</th><th>Clubs</th><th>Lic</th>
+            <th>GF/pp (charge)</th><th>Buggy</th><th>Clubs</th><th>Licence</th>
             <th>Golf Card</th><th></th>
           </tr>
         </thead>
@@ -269,7 +269,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     <div class="help" style="margin-bottom:.8rem;">My cost per person (leave blank = rack &times; 0.85). Check Lic if course charges a per-player licence fee.</div>
     <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>Course</th><th>Rack GF (&euro;)</th><th>My Cost/pp (&euro;)</th><th>Lic</th></tr></thead>
+        <thead><tr><th>Course</th><th>Rack GF (&euro;)</th><th>My Cost/pp (&euro;)</th><th>Licence</th></tr></thead>
         <tbody id="settingsBody"></tbody>
       </table>
     </div>
@@ -798,8 +798,8 @@ function renderProposal(){
       out+='Day '+(i+1)+': '+c.name+'\n';
       out+='  '+dateStr+(r.time?'  •  '+r.time:'')+'\n';
       out+='  Players: '+r.players+'  •  Green fee: €'+r.gf+' per person\n';
-      if(r.buggy) out+='  Buggy: €'+r.buggy+'\n';
-      if(r.clubs) out+='  Club hire: €'+r.clubs+' per set\n';
+      if(r.buggy) out+='  Buggy hire: €'+r.buggy+' (included)\n';
+      if(r.clubs) out+='  Club hire: €'+r.clubs+' per set (included)\n';
       out+='\n';
     });
     out+=line+'\nAll prices include course fees. Subject to availability.\nBookings managed by Andy Griffiths, PGA Pro.\n';
