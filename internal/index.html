@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MMG Internal — Quote Builder</title>
+<style>
+:root{
+  --cream:#F7F4EF;--pine:#2D4A3E;--gold:#B8973C;--deep:#1A1916;
+  --pine2:#3a5c4e;--red:#c0392b;--green:#27ae60;
+  font-family:'Jost',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--deep);color:var(--cream);min-height:100vh;}
+
+/* LOCK */
+#lock{position:fixed;inset:0;background:var(--deep);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:1.2rem;}
+#lock h1{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--gold);}
+#lock input{padding:.7rem 1.2rem;border:1px solid var(--gold);background:transparent;color:var(--cream);font-size:1rem;border-radius:4px;outline:none;width:220px;text-align:center;}
+#lock button{padding:.7rem 2rem;background:var(--gold);color:var(--deep);border:none;border-radius:4px;cursor:pointer;font-weight:600;font-size:1rem;}
+#lock .err{color:var(--red);font-size:.85rem;}
+
+/* NAV */
+nav{background:var(--pine);display:flex;gap:0;border-bottom:2px solid var(--gold);}
+nav button{flex:1;padding:.8rem;background:none;border:none;color:var(--cream);cursor:pointer;font-size:.9rem;font-family:inherit;transition:background .2s;}
+nav button.active,nav button:hover{background:var(--pine2);}
+nav button.active{border-bottom:3px solid var(--gold);}
+
+/* PANELS */
+.panel{display:none;padding:1.2rem;max-width:1100px;margin:0 auto;}
+.panel.active{display:block;}
+
+h2{font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:1.5rem;margin-bottom:1rem;}
+h3{color:var(--gold);font-size:1rem;margin:.8rem 0 .4rem;}
+
+label{display:block;font-size:.8rem;color:#aaa;margin-bottom:.2rem;}
+input,select,textarea{width:100%;padding:.55rem .8rem;background:#111;border:1px solid #333;color:var(--cream);border-radius:4px;font-family:inherit;font-size:.9rem;}
+textarea{resize:vertical;min-height:90px;}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);outline:none;}
+input[type=checkbox],input[type=radio]{width:auto;}
+
+.btn{display:inline-block;padding:.55rem 1.2rem;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:600;}
+.btn-gold{background:var(--gold);color:var(--deep);}
+.btn-pine{background:var(--pine);color:var(--cream);}
+.btn-red{background:var(--red);color:#fff;}
+.btn-sm{padding:.3rem .7rem;font-size:.78rem;}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;}
+@media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+.card{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:1rem;}
+
+table{width:100%;border-collapse:collapse;font-size:.85rem;}
+th{background:var(--pine);color:var(--cream);padding:.5rem .6rem;text-align:left;}
+td{padding:.45rem .6rem;border-bottom:1px solid #1e1e1e;vertical-align:middle;}
+tr:hover td{background:#1a1a1a;}
+td input,td select{padding:.3rem .5rem;font-size:.82rem;}
+
+.tag-ok{color:var(--green);font-size:.75rem;font-weight:700;}
+.tag-no{color:var(--red);font-size:.75rem;font-weight:700;}
+.tag-info{color:var(--gold);font-size:.75rem;}
+.total-row td{font-weight:700;background:#1a1a1a;border-top:2px solid var(--gold);}
+
+#proposalOut{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:1.2rem;white-space:pre-wrap;font-size:.88rem;line-height:1.6;min-height:100px;}
+.copy-bar{display:flex;gap:.6rem;margin-top:.6rem;}
+
+.profit-pos{color:var(--green);}
+.profit-neg{color:var(--red);}
+.stat-box{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:.8rem;text-align:center;}
+.stat-box .val{font-size:1.4rem;font-weight:700;font-family:'Cormorant Garamond',serif;}
+.stat-box .lbl{font-size:.75rem;color:#aaa;margin-top:.2rem;}
+
+.help{font-size:.78rem;color:#888;margin-top:.3rem;}
+.sep{border:none;border-top:1px solid #222;margin:1rem 0;}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:3px;font-size:.72rem;font-weight:700;}
+.badge-gc{background:var(--pine);color:var(--gold);}
+.badge-block{background:#333;color:#aaa;}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Jost:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lock">
+  <h1>MMG Internal</h1>
+  <input type="password" id="lockInput" placeholder="Enter passcode" onkeydown="if(event.key==='Enter')tryUnlock()">
+  <button class="btn btn-gold" onclick="tryUnlock()">Enter</button>
+  <div class="err" id="lockErr"></div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+  <nav>
+    <button class="active" onclick="tab('quote',this)">Quote Builder</button>
+    <button onclick="tab('margin',this)">Margin View</button>
+    <button onclick="tab('proposal',this)">Proposal</button>
+    <button onclick="tab('settings',this)">Settings</button>
+  </nav>
+
+  <!-- QUOTE BUILDER -->
+  <div id="pQuote" class="panel active">
+    <h2>Quote Builder</h2>
+    <div class="grid2" style="margin-bottom:1rem;">
+      <div>
+        <label>Client name</label>
+        <input id="clientName" placeholder="e.g. John Smith" oninput="saveState()">
+      </div>
+      <div>
+        <label>Number of players (client party)</label>
+        <input type="number" id="numPlayers" value="2" min="1" max="20" oninput="saveState();renderTable()">
+      </div>
+    </div>
+    <div style="margin-bottom:.8rem;">
+      <label><input type="checkbox" id="andyPlaying" onchange="saveState();renderTable();toggleGCRow()"> Andy is playing (enables Golf Card)</label>
+    </div>
+    <div id="gcRow" style="display:none;margin-bottom:.8rem;">
+      <label><input type="checkbox" id="useGolfcard" onchange="saveState();renderTable()"> Use Mallorca Golf Card 2026 vouchers where valid</label>
+      <div class="help">Golf Card is valid for cardholder + 1 guest only. Applies to Andy + one client.</div>
+    </div>
+
+    <hr class="sep">
+    <h3>Smart Parser</h3>
+    <div style="margin-bottom:.6rem;">
+      <label>Paste enquiry text (any format)</label>
+      <textarea id="parseInput" placeholder="e.g. Son Gual on 14th May, Alcanada 15 May at 10am, Pollenca 16 May afternoon 3 players"></textarea>
+    </div>
+    <button class="btn btn-gold" onclick="parseEnquiry()">Parse &amp; Add Rounds</button>
+    <div class="help" id="parseStatus"></div>
+
+    <hr class="sep">
+    <h3>Rounds</h3>
+    <div style="overflow-x:auto;">
+      <table id="roundsTable">
+        <thead>
+          <tr>
+            <th>Course</th><th>Date</th><th>Time</th><th>Players</th>
+            <th>GF/pp (charge)</th><th>Buggy</th><th>Clubs</th><th>Licence</th>
+            <th>Golf Card</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="roundsBody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:.8rem;display:flex;gap:.6rem;">
+      <button class="btn btn-pine btn-sm" onclick="addRow()">+ Add round manually</button>
+      <button class="btn btn-red btn-sm" onclick="clearRounds()">Clear all</button>
+    </div>
+  </div>
+
+  <!-- MARGIN VIEW -->
+  <div id="pMargin" class="panel">
+    <h2>Margin View</h2>
+    <div class="grid3" id="marginStats" style="margin-bottom:1.2rem;"></div>
+    <div style="overflow-x:auto;">
+      <table id="marginTable">
+        <thead>
+          <tr><th>Course</th><th>Date</th><th>Players</th><th>My Cost/pp</th><th>Charge/pp</th><th>GF Margin</th><th>Extras</th><th>Round Profit</th></tr>
+        </thead>
+        <tbody id="marginBody"></tbody>
+        <tfoot id="marginFoot"></tfoot>
+      </table>
+    </div>
+    <hr class="sep">
+    <div class="grid2">
+      <div class="card">
+        <h3 style="margin-top:0;">Andy's Day Fee</h3>
+        <label><input type="radio" name="dayType" value="solo" onchange="saveState();renderMargin()"> Solo (just Andy) &mdash; <span id="soloFeeLabel"></span></label><br>
+        <label><input type="radio" name="dayType" value="group" onchange="saveState();renderMargin()"> Group (client party) &mdash; <span id="groupFeeLabel"></span></label><br>
+        <label><input type="radio" name="dayType" value="none" onchange="saveState();renderMargin()"> No day fee (this trip)</label>
+        <div style="margin-top:.6rem;">
+          <label>Days</label>
+          <input type="number" id="andyDays" value="1" min="1" max="30" style="width:80px;" oninput="saveState();renderMargin()">
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0;">Trip Summary</h3>
+        <div id="tripSummary"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPOSAL -->
+  <div id="pProposal" class="panel">
+    <h2>Proposal Output</h2>
+    <div class="grid2" style="margin-bottom:.8rem;">
+      <div>
+        <label>Format</label>
+        <select id="propFormat" onchange="renderProposal()">
+          <option value="clean">Clean itinerary (client-facing)</option>
+          <option value="itemised">Itemised (full breakdown)</option>
+        </select>
+      </div>
+      <div>
+        <label>Include Andy's fee in itemised</label>
+        <select id="propIncludeFee" onchange="renderProposal()">
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+    </div>
+    <div id="proposalOut"></div>
+    <div class="copy-bar">
+      <button class="btn btn-gold btn-sm" onclick="copyProposal()">Copy text</button>
+      <button class="btn btn-pine btn-sm" onclick="copyWhatsapp()">WhatsApp copy</button>
+      <button class="btn btn-pine btn-sm" onclick="printProposal()">Print / PDF</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="pSettings" class="panel">
+    <h2>Settings</h2>
+    <div class="grid2" style="margin-bottom:1rem;">
+      <div>
+        <label>Andy's solo day fee (&euro;)</label>
+        <input type="number" id="setSoloFee" value="495" oninput="saveSettings()">
+      </div>
+      <div>
+        <label>Andy's group day fee (&euro;)</label>
+        <input type="number" id="setGroupFee" value="950" oninput="saveSettings()">
+      </div>
+    </div>
+    <hr class="sep">
+    <h3>Per-course negotiated costs</h3>
+    <div class="help" style="margin-bottom:.8rem;">Enter Andy's cost per person per round (leave blank to use rack &times; 0.85 estimate). Check Licence if this course charges a per-player licence fee.</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Course</th><th>Rack GF (&euro;)</th><th>My Cost/pp (&euro;)</th><th>Licence</th></tr></thead>
+        <tbody id="settingsBody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:1rem;">
+      <button class="btn btn-gold" onclick="saveSettings()">Save settings</button>
+      <span id="settingsSaved" style="margin-left:.8rem;color:var(--green);font-size:.85rem;display:none;">Saved.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const PASSCODE = 'mmg2026';
+
+const COURSE_LIST = [
+  {id:'alcanada',     name:'Golf Alcanada',      rack:220, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'bendinat',     name:'Golf Bendinat',       rack:130, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'capdepera',    name:'Golf Capdepera',      rack:140, gcType:'special', golfcard:true,  licence:false},
+  {id:'maioris',      name:'Golf Maioris',        rack:110, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'palma_pp',     name:'Golf Park Puntiro',   rack:80,  gcType:'disc',    golfcard:true,  licence:false},
+  {id:'pollenca',     name:'Golf Pollenca',       rack:75,  gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'pula',         name:'Golf Pula',           rack:160, gcType:'special', golfcard:true,  licence:false},
+  {id:'santa_ponsa',  name:'Golf Santa Ponsa',    rack:130, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_antem_e',  name:'Son Antem East',      rack:140, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_antem_w',  name:'Son Antem West',      rack:145, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_gual',     name:'Son Gual',            rack:165, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_muntaner', name:'Son Muntaner',        rack:180, gcType:'disc',    golfcard:true,  licence:false},
+  {id:'son_quint',    name:'Son Quint',           rack:130, gcType:'disc',    golfcard:true,  licence:false},
+  {id:'son_servera',  name:'Golf Son Servera',    rack:145, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_termes',   name:'Son Termes',          rack:110, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_vida',     name:'Son Vida',            rack:180, gcType:'disc',    golfcard:true,  licence:false},
+  {id:'t_golf_calvia',name:"T-Golf Calvia",       rack:150, gcType:'special', golfcard:true,  licence:false},
+  {id:'t_golf_palma', name:'T-Golf Palma',        rack:100, gcType:'special', golfcard:true,  licence:false},
+  {id:'vall_dor',     name:"Vall d'Or",           rack:160, gcType:'pkg',     golfcard:true,  licence:false},
+  {id:'andratx',      name:'Golf de Andratx',     rack:195, gcType:'none',    golfcard:false, licence:false},
+  {id:'santa_ponsa2', name:'Santa Ponsa II',      rack:100, gcType:'none',    golfcard:false, licence:false},
+];
+
+const COURSE_ALIASES = {
+  alcanada:    ['alcanada','alca\xf1ada'],
+  bendinat:    ['bendinat'],
+  capdepera:   ['capdepera','cap depera'],
+  maioris:     ['maioris','maiori\xeds'],
+  palma_pp:    ['puntiro','punti\xf3','park puntiro','palma pp'],
+  pollenca:    ['pollenca','polle\xf1ca','pollensa'],
+  pula:        ['pula','golf pula'],
+  santa_ponsa: ['santa ponsa','santa pon\xe7a','santa ponsa 1','santa ponsa i'],
+  son_antem_e: ['son antem e','son antem east','antem east','son antem'],
+  son_antem_w: ['son antem w','son antem west','antem west'],
+  son_gual:    ['son gual','gual'],
+  son_muntaner:['son muntaner','muntaner'],
+  son_quint:   ['son quint','quint'],
+  son_servera: ['son servera','servera'],
+  son_termes:  ['son termes','termes'],
+  son_vida:    ['son vida','vida'],
+  t_golf_calvia:['t golf calvia','t-golf calvia','tgolf calvia','calvia'],
+  t_golf_palma: ['t golf palma','t-golf palma','tgolf palma'],
+  vall_dor:    ["vall d'or",'vallddor','valldor','vall dor'],
+  andratx:     ['andratx','de andratx'],
+  santa_ponsa2:['santa ponsa 2','santa ponsa ii'],
+};
+
+let rounds = [];
+let settings = {};
+let nextId = 1;
+
+function tryUnlock(){
+  const v=document.getElementById('lockInput').value;
+  if(v===PASSCODE){
+    sessionStorage.setItem('mmg_unlocked','1');
+    document.getElementById('lock').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  } else {
+    document.getElementById('lockErr').textContent='Incorrect passcode.';
+  }
+}
+
+function init(){
+  loadSettings();
+  loadState();
+  renderSettingsTable();
+  renderTable();
+  renderMargin();
+  renderProposal();
+  const dt=(settings.dayType||'group');
+  const r=document.querySelector('input[name=dayType][value="'+dt+'"]');
+  if(r) r.checked=true;
+  document.getElementById('andyDays').value=settings.andyDays||1;
+  document.getElementById('clientName').value=settings.clientName||'';
+  document.getElementById('numPlayers').value=settings.numPlayers||2;
+  document.getElementById('andyPlaying').checked=!!settings.andyPlaying;
+  document.getElementById('useGolfcard').checked=!!settings.useGolfcard;
+  toggleGCRow();
+}
+
+function toggleGCRow(){
+  document.getElementById('gcRow').style.display=document.getElementById('andyPlaying').checked?'':'none';
+}
+
+function tab(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('p'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
+  btn.classList.add('active');
+  if(name==='margin') renderMargin();
+  if(name==='proposal') renderProposal();
+}
+
+function loadSettings(){
+  try{ settings=JSON.parse(localStorage.getItem('mmg_settings')||'{}'); }catch(e){ settings={}; }
+  document.getElementById('setSoloFee').value=settings.soloFee||495;
+  document.getElementById('setGroupFee').value=settings.groupFee||950;
+  document.getElementById('soloFeeLabel').textContent='€'+(settings.soloFee||495)+'/day';
+  document.getElementById('groupFeeLabel').textContent='€'+(settings.groupFee||950)+'/day';
+}
+
+function saveSettings(){
+  settings.soloFee=parseFloat(document.getElementById('setSoloFee').value)||495;
+  settings.groupFee=parseFloat(document.getElementById('setGroupFee').value)||950;
+  if(!settings.courses) settings.courses={};
+  document.querySelectorAll('[data-course-cost]').forEach(inp=>{
+    const id=inp.dataset.courseCost;
+    const v=parseFloat(inp.value);
+    if(!isNaN(v)&&v>0){ if(!settings.courses[id]) settings.courses[id]={}; settings.courses[id].myCost=v; }
+    else if(settings.courses[id]) delete settings.courses[id].myCost;
+  });
+  document.querySelectorAll('[data-course-lic]').forEach(chk=>{
+    const id=chk.dataset.courseLic;
+    if(!settings.courses[id]) settings.courses[id]={};
+    settings.courses[id].licence=chk.checked;
+  });
+  localStorage.setItem('mmg_settings',JSON.stringify(settings));
+  document.getElementById('soloFeeLabel').textContent='€'+settings.soloFee+'/day';
+  document.getElementById('groupFeeLabel').textContent='€'+settings.groupFee+'/day';
+  const s=document.getElementById('settingsSaved');
+  s.style.display=''; setTimeout(()=>s.style.display='none',2000);
+  renderTable(); renderMargin();
+}
+
+function renderSettingsTable(){
+  const tb=document.getElementById('settingsBody');
+  tb.innerHTML=COURSE_LIST.map(c=>{
+    const saved=(settings.courses||{})[c.id]||{};
+    return '<tr><td>'+c.name+'</td><td>€'+c.rack+'</td>'
+      +'<td><input type="number" data-course-cost="'+c.id+'" value="'+(saved.myCost||'')+'" placeholder="'+Math.round(c.rack*0.85)+'" style="width:90px;" oninput="saveSettings()"></td>'
+      +'<td><input type="checkbox" data-course-lic="'+c.id+'" '+(saved.licence?'checked':'')+' onchange="saveSettings()"> Yes</td></tr>';
+  }).join('');
+}
+
+function getMyCost(courseId){
+  const saved=(settings.courses||{})[courseId];
+  if(saved&&saved.myCost) return saved.myCost;
+  const c=COURSE_LIST.find(x=>x.id===courseId);
+  return c?Math.round(c.rack*0.85):0;
+}
+
+function hasLicence(courseId){
+  const saved=(settings.courses||{})[courseId];
+  if(saved&&saved.licence!=null) return saved.licence;
+  const c=COURSE_LIST.find(x=>x.id===courseId);
+  return c?c.licence:false;
+}
+
+function saveState(){
+  const s={
+    rounds,nextId,
+    clientName:document.getElementById('clientName').value,
+    numPlayers:parseInt(document.getElementById('numPlayers').value)||2,
+    andyPlaying:document.getElementById('andyPlaying').checked,
+    useGolfcard:document.getElementById('useGolfcard').checked,
+    dayType:(document.querySelector('input[name=dayType]:checked')||{}).value||'group',
+    andyDays:parseInt(document.getElementById('andyDays').value)||1,
+  };
+  localStorage.setItem('mmg_quote_state',JSON.stringify(s));
+}
+
+function loadState(){
+  try{
+    const s=JSON.parse(localStorage.getItem('mmg_quote_state')||'{}');
+    rounds=s.rounds||[];
+    nextId=s.nextId||1;
+    if(s.clientName) document.getElementById('clientName').value=s.clientName;
+    if(s.numPlayers) document.getElementById('numPlayers').value=s.numPlayers;
+    document.getElementById('andyPlaying').checked=!!s.andyPlaying;
+    document.getElementById('useGolfcard').checked=!!s.useGolfcard;
+    if(s.dayType){const r=document.querySelector('input[name=dayType][value="'+s.dayType+'"]');if(r)r.checked=true;}
+    if(s.andyDays) document.getElementById('andyDays').value=s.andyDays;
+  }catch(e){}
+}
+
+function findCourse(text){
+  const t=text.toLowerCase();
+  for(const [id,aliases] of Object.entries(COURSE_ALIASES)){
+    for(const a of aliases){ if(t.includes(a)) return id; }
+  }
+  return null;
+}
+
+function parseDate(text){
+  const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  let m;
+  m=text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+  if(m){
+    let y=m[3]?parseInt(m[3]):2026;
+    if(y<100) y+=2000;
+    return y+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
+  }
+  m=text.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([a-zA-Z]+)/);
+  if(m){
+    const mi=months.indexOf(m[2].toLowerCase().slice(0,3));
+    if(mi>=0) return '2026-'+String(mi+1).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
+  }
+  return '';
+}
+
+function parseTime(text){
+  const t=text.toLowerCase();
+  let m;
+  m=t.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/);
+  if(m){
+    let h=parseInt(m[1]),mn=parseInt(m[2]);
+    if(m[3]==='pm'&&h<12) h+=12;
+    if(m[3]==='am'&&h===12) h=0;
+    return String(h).padStart(2,'0')+':'+String(mn).padStart(2,'0');
+  }
+  m=t.match(/(\d{1,2})\s*(am|pm)/);
+  if(m){
+    let h=parseInt(m[1]);
+    if(m[2]==='pm'&&h<12) h+=12;
+    if(m[2]==='am'&&h===12) h=0;
+    return String(h).padStart(2,'0')+':00';
+  }
+  if(t.includes('morning')) return '09:00';
+  if(t.includes('afternoon')) return '13:00';
+  if(t.includes('evening')) return '17:00';
+  return '';
+}
+
+function parseEnquiry(){
+  const raw=document.getElementById('parseInput').value;
+  const lines=raw.split(/[\n,;]+/).map(l=>l.trim()).filter(Boolean);
+  let added=0;
+  const numP=parseInt(document.getElementById('numPlayers').value)||2;
+  for(const line of lines){
+    const cid=findCourse(line);
+    if(!cid) continue;
+    const date=parseDate(line);
+    const time=parseTime(line);
+    const c=COURSE_LIST.find(x=>x.id===cid);
+    const gf=c?c.rack:0;
+    rounds.push({id:nextId++,cid,date,time,players:numP,gf,buggy:0,clubs:0,licence:hasLicence(cid)});
+    added++;
+  }
+  document.getElementById('parseStatus').textContent=added?'Added '+added+' round(s).':'No courses recognised. Check spelling or add manually.';
+  saveState();
+  renderTable();
+}
+
+function addRow(){
+  const numP=parseInt(document.getElementById('numPlayers').value)||2;
+  const c=COURSE_LIST[0];
+  rounds.push({id:nextId++,cid:c.id,date:'',time:'',players:numP,gf:c.rack,buggy:0,clubs:0,licence:false});
+  saveState();
+  renderTable();
+}
+
+function clearRounds(){
+  if(confirm('Clear all rounds?')){rounds=[];saveState();renderTable();}
+}
+
+function isGolfcardValid(cid,dateStr,timeStr){
+  if(!dateStr||!timeStr) return {ok:false,note:'Set date & time to check'};
+  const d=new Date(dateStr);
+  const m=d.getMonth()+1,day=d.getDate(),dow=d.getDay();
+  const pts=timeStr.split(':');
+  const h=parseInt(pts[0])+(parseInt(pts[1]||0)/60);
+  const sun=dow===0,mon=dow===1,tue=dow===2,wed=dow===3,sat=dow===6;
+  switch(cid){
+    case 'alcanada':{
+      const seOk=(m<=2)||(m>=5&&m<=9)||(m>=11);
+      if(!seOk) return {ok:false,note:'Not valid Mar/Apr/Oct'};
+      if(!sun&&!mon&&!tue) return {ok:false,note:'Sun/Mon/Tue only'};
+      if(h<12) return {ok:false,note:'From 12:00 only'};
+      return {ok:true,note:''};
+    }
+    case 'bendinat':
+    case 'santa_ponsa':{
+      const twofor1=(m===1&&day<=5)||(m===5&&day>=15)||(m===6&&day<=22)||(m===11&&day<=16)||(m===12&&day>=22);
+      const special=(m===1&&day>=6)||(m===2)||(m===6&&day>=23)||(m>=7&&m<=9&&!(m===9&&day>6))||(m===11&&day>=17)||(m===12&&day>=17&&day<=21);
+      if(!twofor1&&!special) return {ok:false,note:'Not a valid voucher date'};
+      if(h<12) return {ok:false,note:'From 12:00 only'};
+      return {ok:true,note:special?'Special price applies':'2FOR1 applies'};
+    }
+    case 'capdepera':{
+      if(m>=6&&m<=9) return {ok:true,note:'No restriction Jun-Sep'};
+      if(m<=2||m>=11){if(h<9.5||h>=12) return {ok:true,note:''}; return {ok:false,note:'Before 09:30 or from 12:00'};}
+      if(h<9||h>=13) return {ok:true,note:''}; return {ok:false,note:'Before 09:00 or from 13:00'};
+    }
+    case 'maioris':{
+      if(sat) return {ok:false,note:'Not valid Saturdays'};
+      if(h>=13) return {ok:true,note:''};
+      return {ok:false,note:'From 13:00 only'};
+    }
+    case 'pollenca':{
+      if(sat) return {ok:false,note:'Not valid Saturdays'};
+      if(h>=13) return {ok:true,note:''};
+      return {ok:false,note:'From 13:00 only'};
+    }
+    case 'pula':{
+      const low=(m<=2)||(m>=6&&m<=9)||(m>=11);
+      if(low) return {ok:true,note:'Low season'};
+      if(h<9||h>=13) return {ok:true,note:'Shoulder: before 09:00 or from 13:00'};
+      return {ok:false,note:'Shoulder: before 09:00 or from 13:00'};
+    }
+    case 'son_antem_e':{
+      const seOk=(m<=2)||(m>=5&&m<=9)||(m>=11);
+      if(!seOk) return {ok:false,note:'Not valid Mar/Apr/Oct'};
+      if(h>=12) return {ok:true,note:''};
+      return {ok:false,note:'From 12:00 only'};
+    }
+    case 'son_antem_w':{
+      const wDates=[[2,26],[3,12],[6,25],[7,23],[8,27],[11,19],[12,17]];
+      const ok=wDates.some(([wm,wd])=>wm===m&&wd===day);
+      if(!ok) return {ok:false,note:'Specific Wednesdays only'};
+      if(h<12) return {ok:false,note:'From 12:00 only'};
+      return {ok:true,note:'Valid Wednesday'};
+    }
+    case 'son_gual':{
+      const wDates=[[2,25],[3,11],[6,24],[7,22],[8,26],[11,18],[12,16]];
+      const ok=wDates.some(([wm,wd])=>wm===m&&wd===day);
+      if(!ok) return {ok:false,note:'2FOR1 on specific Wednesdays only'};
+      if(h<12) return {ok:false,note:'From 12:00 only'};
+      return {ok:true,note:'2FOR1 Wednesday'};
+    }
+    case 'son_muntaner':
+    case 'son_quint':
+    case 'son_vida':
+    case 'palma_pp':
+      return {ok:true,note:'% discount - book via Arabella'};
+    case 'son_servera':{
+      if(m>=3&&m<=5) return {ok:false,note:'Not valid Mar-May'};
+      if(m===10) return {ok:false,note:'Not valid October'};
+      if(m===1||m===2||m===11||m===12){
+        if((h>=8&&h<9)||h>=12) return {ok:true,note:''};
+        return {ok:false,note:'08:00-09:00 or from 12:00 (Jan/Feb/Nov/Dec)'};
+      }
+      if(m>=6&&m<=8||(m===9&&day<=15)){
+        if((h>=8&&h<9)||(h>=12&&h<14)) return {ok:true,note:''};
+        return {ok:false,note:'08:00-09:00 or 12:00-14:00 (Jun-15 Sep)'};
+      }
+      if(m===9&&day>=16){
+        if((h>=8&&h<8.5)||(h>=14&&h<16.5)) return {ok:true,note:''};
+        return {ok:false,note:'08:00-08:30 or 14:00-16:30 (16-30 Sep)'};
+      }
+      return {ok:false,note:''};
+    }
+    case 'son_termes': return {ok:true,note:'2FOR1 all year, any time'};
+    case 't_golf_calvia':
+    case 't_golf_palma':{
+      const spOk=(m===1&&day>=7)||(m===2)||(m===7&&day>=4)||(m===8)||(m===9&&day<=11)||(m===11&&day>=9)||(m===12&&day<=26);
+      if(spOk) return {ok:true,note:'Special price period'};
+      return {ok:false,note:'Not a valid voucher date'};
+    }
+    case 'vall_dor': return {ok:true,note:'Package rate all year'};
+    default: return {ok:false,note:'No Golf Card voucher'};
+  }
+}
+
+function renderTable(){
+  const tb=document.getElementById('roundsBody');
+  const useGC=document.getElementById('useGolfcard').checked&&document.getElementById('andyPlaying').checked;
+  if(!rounds.length){
+    tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:#666;padding:1.2rem;">No rounds yet. Use the parser or add manually.</td></tr>';
+    return;
+  }
+  tb.innerHTML=rounds.map(r=>{
+    const c=COURSE_LIST.find(x=>x.id===r.cid)||COURSE_LIST[0];
+    const gcValid=useGC&&c.golfcard?isGolfcardValid(r.cid,r.date,r.time):{ok:false,note:''};
+    let gcBadge='<span style="color:#555;font-size:.75rem">N/A</span>';
+    if(useGC&&c.golfcard){
+      gcBadge=gcValid.ok
+        ?'<span class="badge badge-gc">GC ✓</span>'+(gcValid.note?'<div class="tag-info" style="font-size:.7rem">'+gcValid.note+'</div>':'')
+        :'<span class="badge badge-block">GC ✗</span>'+(gcValid.note?'<div class="tag-no" style="font-size:.7rem">'+gcValid.note+'</div>':'');
+    }
+    return '<tr>'
+      +'<td><select onchange="updateRound('+r.id+',\'cid\',this.value)">'+COURSE_LIST.map(cl=>'<option value="'+cl.id+'"'+(cl.id===r.cid?' selected':'')+'>'+cl.name+'</option>').join('')+'</select></td>'
+      +'<td><input type="date" value="'+r.date+'" onchange="updateRound('+r.id+',\'date\',this.value)" style="width:140px;"></td>'
+      +'<td><input type="time" value="'+r.time+'" onchange="updateRound('+r.id+',\'time\',this.value)" style="width:100px;"></td>'
+      +'<td><input type="number" value="'+r.players+'" min="1" max="20" onchange="updateRound('+r.id+',\'players\',+this.value)" style="width:60px;"></td>'
+      +'<td><input type="number" value="'+r.gf+'" min="0" onchange="updateRound('+r.id+',\'gf\',+this.value)" style="width:80px;"></td>'
+      +'<td><input type="number" value="'+(r.buggy||0)+'" min="0" onchange="updateRound('+r.id+',\'buggy\',+this.value)" style="width:70px;"></td>'
+      +'<td><input type="number" value="'+(r.clubs||0)+'" min="0" onchange="updateRound('+r.id+',\'clubs\',+this.value)" style="width:70px;"></td>'
+      +'<td><input type="checkbox" '+(r.licence?'checked':'')+' onchange="updateRound('+r.id+',\'licence\',this.checked)"></td>'
+      +'<td>'+gcBadge+'</td>'
+      +'<td><button class="btn btn-red btn-sm" onclick="removeRound('+r.id+')">✕</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function updateRound(id,key,val){
+  const r=rounds.find(x=>x.id===id);
+  if(!r) return;
+  r[key]=val;
+  if(key==='cid'){
+    const c=COURSE_LIST.find(x=>x.id===val);
+    if(c){r.gf=c.rack;r.licence=hasLicence(val);}
+  }
+  saveState();renderTable();
+}
+
+function removeRound(id){rounds=rounds.filter(x=>x.id!==id);saveState();renderTable();}
+
+function renderMargin(){
+  const useGC=document.getElementById('useGolfcard').checked&&document.getElementById('andyPlaying').checked;
+  const soloFee=parseFloat(document.getElementById('setSoloFee').value)||495;
+  const groupFee=parseFloat(document.getElementById('setGroupFee').value)||950;
+  document.getElementById('soloFeeLabel').textContent='€'+soloFee+'/day';
+  document.getElementById('groupFeeLabel').textContent='€'+groupFee+'/day';
+  const dayType=(document.querySelector('input[name=dayType]:checked')||{}).value||'group';
+  const andyDays=parseInt(document.getElementById('andyDays').value)||1;
+  const andyFee=dayType==='solo'?soloFee*andyDays:dayType==='group'?groupFee*andyDays:0;
+
+  let totalCost=0,totalCharge=0,totalExtras=0;
+  const tb=document.getElementById('marginBody');
+  if(!rounds.length){
+    tb.innerHTML='<tr><td colspan="8" style="color:#666;text-align:center;padding:1rem;">No rounds added.</td></tr>';
+    document.getElementById('marginFoot').innerHTML='';
+    document.getElementById('marginStats').innerHTML='';
+    document.getElementById('tripSummary').innerHTML='';
+    return;
+  }
+
+  tb.innerHTML=rounds.map(r=>{
+    const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid,rack:0,gcType:'none',golfcard:false};
+    let myCost=getMyCost(r.cid);
+    const charge=r.gf||0;
+    const buggy=r.buggy||0;
+    const clubs=r.clubs||0;
+    const gcValid=useGC&&c.golfcard?isGolfcardValid(r.cid,r.date,r.time):{ok:false};
+    let gcNote='';
+    if(gcValid.ok&&c.gcType==='2for1'){gcNote='GC 2FOR1';myCost=myCost/2;}
+    else if(gcValid.ok&&(c.gcType==='disc')){gcNote='GC disc';}
+    const players=r.players||1;
+    const rCost=myCost*players;
+    const rCharge=charge*players;
+    const rExtras=(buggy+clubs)*players;
+    const rProfit=(rCharge-rCost)+rExtras;
+    totalCost+=rCost;totalCharge+=rCharge;totalExtras+=rExtras;
+    return '<tr>'
+      +'<td>'+c.name+(gcNote?'<br><span class="tag-ok" style="font-size:.7rem">'+gcNote+'</span>':'')+'</td>'
+      +'<td>'+(r.date||'&mdash;')+'</td>'
+      +'<td>'+players+'</td>'
+      +'<td>€'+myCost.toFixed(0)+'</td>'
+      +'<td>€'+charge+'</td>'
+      +'<td class="'+(rCharge>=rCost?'profit-pos':'profit-neg')+'">€'+(rCharge-rCost).toFixed(0)+'</td>'
+      +'<td>€'+rExtras.toFixed(0)+'</td>'
+      +'<td class="'+(rProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+rProfit.toFixed(0)+'</strong></td>'
+      +'</tr>';
+  }).join('');
+
+  const totalGFProfit=totalCharge-totalCost;
+  const grandProfit=totalGFProfit+totalExtras+andyFee;
+  document.getElementById('marginFoot').innerHTML='<tr class="total-row">'
+    +'<td colspan="3">TOTALS</td>'
+    +'<td>€'+totalCost.toFixed(0)+'</td>'
+    +'<td>€'+totalCharge.toFixed(0)+'</td>'
+    +'<td class="'+(totalGFProfit>=0?'profit-pos':'profit-neg')+'">€'+totalGFProfit.toFixed(0)+'</td>'
+    +'<td>€'+totalExtras.toFixed(0)+'</td>'
+    +'<td class="'+(grandProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+grandProfit.toFixed(0)+'</strong></td>'
+    +'</tr>';
+
+  document.getElementById('marginStats').innerHTML=
+    '<div class="stat-box"><div class="val">€'+totalCharge.toFixed(0)+'</div><div class="lbl">Total GF charged</div></div>'
+    +'<div class="stat-box"><div class="val profit-pos">€'+totalGFProfit.toFixed(0)+'</div><div class="lbl">GF margin</div></div>'
+    +'<div class="stat-box"><div class="val '+(grandProfit>=0?'profit-pos':'profit-neg')+'">€'+grandProfit.toFixed(0)+'</div><div class="lbl">Est. trip profit</div></div>';
+
+  document.getElementById('tripSummary').innerHTML=
+    '<div style="font-size:.85rem;line-height:1.9;">'
+    +'Rounds: <strong>'+rounds.length+'</strong><br>'
+    +"Andy's fee: <strong>€"+andyFee.toFixed(0)+'</strong> ('+andyDays+' day'+(andyDays>1?'s':'')+', '+dayType+')<br>'
+    +'GF margin: <strong>€'+totalGFProfit.toFixed(0)+'</strong><br>'
+    +'<hr style="border-color:#222;margin:.4rem 0;">'
+    +'<strong>Est. total: €'+grandProfit.toFixed(0)+'</strong>'
+    +'</div>';
+}
+
+function renderProposal(){
+  const fmt=document.getElementById('propFormat').value;
+  const clientName=document.getElementById('clientName').value||'Client';
+  const useGC=document.getElementById('useGolfcard').checked&&document.getElementById('andyPlaying').checked;
+  const includeFee=document.getElementById('propIncludeFee').value==='yes';
+  const soloFee=parseFloat(document.getElementById('setSoloFee').value)||495;
+  const groupFee=parseFloat(document.getElementById('setGroupFee').value)||950;
+  const dayType=(document.querySelector('input[name=dayType]:checked')||{}).value||'group';
+  const andyDays=parseInt(document.getElementById('andyDays').value)||1;
+  const andyFee=dayType==='solo'?soloFee*andyDays:dayType==='group'?groupFee*andyDays:0;
+
+  if(!rounds.length){document.getElementById('proposalOut').textContent='No rounds to show.';return;}
+
+  let out='';
+  if(fmt==='clean'){
+    out+='Golf Itinerary - '+clientName+'\n'+'='.repeat(40)+'\n\n';
+    rounds.forEach((r,i)=>{
+      const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid};
+      const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'TBC';
+      out+='Day '+(i+1)+': '+c.name+'\n';
+      out+='  Date: '+dateStr+'\n';
+      out+='  Tee time: '+(r.time||'TBC')+'\n';
+      out+='  Players: '+r.players+'\n';
+      out+='  Green fee: €'+r.gf+' per person\n';
+      if(r.buggy) out+='  Buggy: €'+r.buggy+' per buggy\n';
+      if(r.clubs) out+='  Club hire: €'+r.clubs+' per set\n';
+      out+='\n';
+    });
+  } else {
+    out+='QUOTE - '+clientName+'\n'+'='.repeat(40)+'\n\n';
+    let total=0;
+    rounds.forEach((r,i)=>{
+      const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid};
+      const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}):'TBC';
+      const gfTotal=r.gf*(r.players||1);
+      const buggyTotal=(r.buggy||0)*(r.players||1);
+      const clubsTotal=(r.clubs||0)*(r.players||1);
+      const gcValid=useGC&&c.golfcard?isGolfcardValid(r.cid,r.date,r.time):{ok:false};
+      out+='Round '+(i+1)+': '+c.name+' - '+dateStr+(r.time?' '+r.time:'')+'\n';
+      out+='  Green fees ('+r.players+'x €'+r.gf+'): €'+gfTotal+'\n';
+      if(r.buggy) out+='  Buggy ('+r.players+'x €'+r.buggy+'): €'+buggyTotal+'\n';
+      if(r.clubs) out+='  Club hire ('+r.players+'x €'+r.clubs+'): €'+clubsTotal+'\n';
+      if(gcValid.ok) out+='  [Golf Card applied]\n';
+      const sub=gfTotal+buggyTotal+clubsTotal;
+      out+='  Subtotal: €'+sub+'\n\n';
+      total+=sub;
+    });
+    if(includeFee&&andyFee>0){
+      out+='Andy Griffiths PGA Pro fee ('+andyDays+' day'+(andyDays>1?'s':'')+', '+dayType+'): €'+andyFee+'\n';
+      total+=andyFee;
+    }
+    out+='='.repeat(40)+'\nTOTAL: €'+total+'\n';
+  }
+  document.getElementById('proposalOut').textContent=out;
+}
+
+function copyProposal(){
+  navigator.clipboard.writeText(document.getElementById('proposalOut').textContent);
+}
+
+function copyWhatsapp(){
+  let out='Hi, here\'s your golf itinerary:\n\n';
+  rounds.forEach((r,i)=>{
+    const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid};
+    const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'TBC';
+    out+='*'+c.name+'* - '+dateStr+(r.time?' '+r.time:'')+' - €'+r.gf+'pp\n';
+  });
+  navigator.clipboard.writeText(out);
+  alert('WhatsApp text copied to clipboard.');
+}
+
+function printProposal(){
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>MMG Quote</title></head><body><pre style="font-family:monospace;padding:2rem;font-size:13px;">'+document.getElementById('proposalOut').textContent+'</pre></body></html>');
+  w.document.close();
+  w.print();
+}
+
+// Boot
+if(sessionStorage.getItem('mmg_unlocked')==='1'){
+  document.getElementById('lock').style.display='none';
+  document.getElementById('app').style.display='block';
+  init();
+}
+</script>
+</body>
+</html>
