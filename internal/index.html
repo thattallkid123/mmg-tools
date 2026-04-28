@@ -892,8 +892,8 @@ function renderMargin(){
     if(gcValid.ok&&c.gcType==='2for1'){gcNote='GC 2FOR1';myCost=myCost/2;}
     else if(gcValid.ok) gcNote='GC disc';
     const players=r.players||1;
-    const rCost=myCost*players,rCharge=charge*players,rExtras=(buggy+clubs)*players;
-    const rProfit=(rCharge-rCost)+rExtras;
+    const rCost=(myCost+buggy+clubs)*players,rCharge=charge*players,rExtras=(buggy+clubs)*players;
+    const rProfit=rCharge-rCost;
     totalCost+=rCost;totalCharge+=rCharge;totalExtras+=rExtras;
     return '<tr>'
       +'<td>'+c.name+(gcNote?'<br><span class="tag-ok" style="font-size:.7rem">'+gcNote+'</span>':'')+'</td>'
@@ -908,7 +908,7 @@ function renderMargin(){
   }).join('');
 
   const totalGFProfit=totalCharge-totalCost;
-  const grandProfit=totalGFProfit+totalExtras+andyFee;
+  const grandProfit=totalGFProfit+andyFee;
   document.getElementById('marginFoot').innerHTML='<tr class="total-row">'
     +'<td colspan="3">TOTALS</td>'
     +'<td>€'+totalCost.toFixed(0)+'</td>'
@@ -920,7 +920,7 @@ function renderMargin(){
 
   document.getElementById('marginStats').innerHTML=
     '<div class="stat-box"><div class="val">€'+totalCharge.toFixed(0)+'</div><div class="lbl">Total GF charged</div></div>'
-    +'<div class="stat-box"><div class="val profit-pos">€'+totalGFProfit.toFixed(0)+'</div><div class="lbl">GF margin</div></div>'
+    +'<div class="stat-box"><div class="val profit-pos">€'+totalGFProfit.toFixed(0)+'</div><div class="lbl">GF margin (excl. extras)</div></div>'
     +'<div class="stat-box"><div class="val '+(grandProfit>=0?'profit-pos':'profit-neg')+'">€'+grandProfit.toFixed(0)+'</div><div class="lbl">Est. trip profit</div></div>';
 
   document.getElementById('tripSummary').innerHTML=
@@ -973,34 +973,34 @@ function renderProposal(){
     const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'Date TBC';
 
     const photoHtml=showPhotos&&img
-      ?`<div style="width:120px;min-width:120px;height:80px;overflow:hidden;border-radius:3px;flex-shrink:0;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;"></div>`
+      ?`<div style="width:180px;min-width:180px;height:120px;overflow:hidden;border-radius:4px;flex-shrink:0;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;"></div>`
       :'';
 
     const gcBadge=gcValid.ok
-      ?`<span style="background:#2D4A3E;color:#B8973C;font-size:8.5pt;padding:2px 6px;border-radius:3px;font-weight:600;margin-left:8px;">Golf Card</span>`:'';
+      ?`<span style="background:#2D4A3E;color:#B8973C;font-size:9pt;padding:3px 8px;border-radius:3px;font-weight:600;margin-left:10px;letter-spacing:.03em;">Golf Card</span>`:'';
 
     // Itemised: show breakdown per round
     let detailHtml='';
     if(fmt==='itemised'){
       const rows=[];
-      rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Green fee &times;${players}</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${gfTotal}</td></tr>`);
-      if(buggy) rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Buggy hire (${r.buggyQty||1} buggy)</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${buggyTotal}</td></tr>`);
-      if(clubs) rows.push(`<tr><td style="color:#555;font-size:10pt;padding:1px 0;">Club hire (${r.clubsQty||1} set${(r.clubsQty||1)>1?"s":""})</td><td style="text-align:right;font-size:10pt;padding:1px 0;">€${clubsTotal}</td></tr>`);
-      rows.push(`<tr><td style="font-weight:600;font-size:10pt;padding:3px 0;border-top:1px solid #ddd;color:#2D4A3E;">Subtotal</td><td style="text-align:right;font-weight:600;font-size:10pt;padding:3px 0;border-top:1px solid #ddd;color:#2D4A3E;">€${sub}</td></tr>`);
+      rows.push(`<tr><td style="color:#555;font-size:10.5pt;padding:2px 0;">Green fee &times;${players}</td><td style="text-align:right;font-size:10.5pt;padding:2px 0;">€${gfTotal}</td></tr>`);
+      if(buggy) rows.push(`<tr><td style="color:#555;font-size:10.5pt;padding:2px 0;">Buggy hire (${r.buggyQty||1} buggy)</td><td style="text-align:right;font-size:10.5pt;padding:2px 0;">€${buggyTotal}</td></tr>`);
+      if(clubs) rows.push(`<tr><td style="color:#555;font-size:10.5pt;padding:2px 0;">Club hire (${r.clubsQty||1} set${(r.clubsQty||1)>1?"s":""})</td><td style="text-align:right;font-size:10.5pt;padding:2px 0;">€${clubsTotal}</td></tr>`);
+      rows.push(`<tr><td style="font-weight:600;font-size:11pt;padding:4px 0;border-top:1px solid #ddd;color:#2D4A3E;">Subtotal</td><td style="text-align:right;font-weight:600;font-size:11pt;padding:4px 0;border-top:1px solid #ddd;color:#2D4A3E;">€${sub}</td></tr>`);
       detailHtml=`<table style="width:100%;border-collapse:collapse;margin-top:4px;">${rows.join('')}</table>`;
     } else {
       // Clean: just players count, no per-round price shown
-      detailHtml=`<div style="font-size:8.5pt;color:#888;margin-top:0;">${players} player${players>1?'s':''}</div>`;
+      detailHtml=`<div style="font-size:10pt;color:#777;margin-top:3px;">${players} player${players>1?'s':''}</div>`;
     }
 
     roundsHtml+=`
-      <div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #ede8e0;page-break-inside:avoid;">
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #e8e3da;page-break-inside:avoid;">
         ${photoHtml}
-        <div style="flex:1;min-width:0;line-height:1.25;">
-          <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;">
-            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:12pt;font-weight:600;color:#1A1916;">Round ${i+1} — ${c.name}</span>${gcBadge}
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:16pt;font-weight:600;color:#1A1916;line-height:1.2;">Round ${i+1} — ${c.name}</span>${gcBadge}
           </div>
-          <div style="font-size:8.5pt;color:#666;margin-top:0;">${dateStr}${r.time?' · '+r.time:''}</div>
+          <div style="font-size:10.5pt;color:#666;margin-bottom:4px;">${dateStr}${r.time?' · '+r.time:''}</div>
           ${detailHtml}
         </div>
       </div>`;
@@ -1009,12 +1009,12 @@ function renderProposal(){
   // Totals block
   let totalsHtml='';
   if(fmt==='itemised'){
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:10pt;color:#444;"><span>Green fees &amp; extras</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#555;"><span>Green fees &amp; extras</span><span>€${grandTotal}</span></div>`;
     if(includeFee&&andyFee>0){
       totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:10pt;color:#444;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
       grandTotal+=andyFee;
     }
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12pt;font-weight:700;color:#2D4A3E;border-top:2px solid #2D4A3E;margin-top:4px;"><span style="color:#2D4A3E;">Total</span><span style="color:#2D4A3E;">€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:14pt;font-weight:700;color:#2D4A3E;border-top:2px solid #2D4A3E;margin-top:6px;font-family:'Cormorant Garamond',Georgia,serif;"><span>Total</span><span>€${grandTotal}</span></div>`;
   } else {
     // Clean version: single total line at end
     if(includeFee&&andyFee>0){
@@ -1022,32 +1022,32 @@ function renderProposal(){
       grandTotal+=andyFee;
       totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:10pt;color:#444;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
     }
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12pt;font-weight:700;color:#2D4A3E;border-top:2px solid #2D4A3E;margin-top:4px;"><span>Total</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:14pt;font-weight:700;color:#2D4A3E;border-top:2px solid #2D4A3E;margin-top:6px;font-family:'Cormorant Garamond',Georgia,serif;"><span>Total</span><span>€${grandTotal}</span></div>`;
   }
 
   const notesHtml=notes
-    ?`<div style="margin:4px 0 6px;padding:6px 10px;background:#f9f7f3;border-left:3px solid #B8973C;font-size:9pt;line-height:1.5;color:#444;">${notes.replace(/\n/g,'<br>')}</div>`:'';
+    ?`<div style="margin:8px 0 14px;padding:10px 14px;background:#f9f7f3;border-left:3px solid #B8973C;font-size:10.5pt;line-height:1.6;color:#444;">${notes.replace(/\n/g,'<br>')}</div>`:'';
 
   const lockImgEl=document.querySelector('#lock img');
   const logoSrc=lockImgEl?lockImgEl.src:(document.getElementById('navLogo')?document.getElementById('navLogo').src:'');
   const logoHtml=logoSrc&&logoSrc.startsWith('data:')
-    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:52px;filter:brightness(0);">`
+    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:64px;filter:brightness(0);">`
     :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:680px;margin:0 auto;padding:10px 14px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:6px;border-bottom:2px solid #2D4A3E;margin-bottom:6px;">
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:720px;margin:0 auto;padding:24px 28px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #2D4A3E;margin-bottom:14px;">
         <div>${logoHtml}</div>
-        <div style="text-align:right;font-size:8.5pt;color:#555;line-height:1.5;">Andy Griffiths<br>PGA Advanced Professional<br>andy@mrmallorcagolf.com<br>mrmallorcagolf.com</div>
+        <div style="text-align:right;font-size:10pt;color:#555;line-height:1.6;">Andy Griffiths<br>PGA Advanced Professional<br>andy@mrmallorcagolf.com<br>mrmallorcagolf.com</div>
       </div>
-      <div style="margin-bottom:5px;">
-        <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15pt;font-weight:600;color:#2D4A3E;">Golf Itinerary${clientName?' — '+clientName:''}</span>
-        ${clientEmail||clientPhone||clientNationality?`<span style="font-size:8.5pt;color:#999;margin-left:8px;">${[clientEmail,clientPhone,clientNationality].filter(Boolean).join(' · ')}</span>`:''}
+      <div style="margin-bottom:16px;">
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:24pt;font-weight:600;color:#2D4A3E;line-height:1.2;margin-bottom:4px;">Golf Itinerary${clientName?' — '+clientName:''}</div>
+        ${clientEmail||clientPhone||clientNationality?`<div style="font-size:10pt;color:#888;">${[clientEmail,clientPhone,clientNationality].filter(Boolean).join(' · ')}</div>`:''}
       </div>
       ${notesHtml}
       ${roundsHtml}
       <div style="margin-top:4px;">${totalsHtml}</div>
-      <div style="font-size:7.5pt;color:#ccc;border-top:1px solid #eee;padding-top:5px;margin-top:7px;">All prices in euros · Subject to availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com</div>
+      <div style="font-size:9pt;color:#bbb;border-top:1px solid #eee;padding-top:8px;margin-top:14px;letter-spacing:.02em;">All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com</div>
     </div>`;
 }
 
