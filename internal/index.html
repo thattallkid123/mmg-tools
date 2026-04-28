@@ -185,10 +185,14 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <tbody id="roundsBody"></tbody>
       </table>
     </div>
-    <div style="margin-top:.8rem;display:flex;gap:.6rem;flex-wrap:wrap;">
+    <div style="margin-top:.8rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
       <button class="btn btn-pine btn-sm" onclick="addRow()">+ Add round manually</button>
       <button class="btn btn-pine btn-sm" onclick="syncPlayers()">Sync all players to <strong id="syncNum">2</strong></button>
       <button class="btn btn-red btn-sm" onclick="clearRounds()">Clear all</button>
+      <span style="margin-left:auto;display:flex;gap:.5rem;">
+        <button class="btn btn-gold btn-sm" onclick="saveQuoteFile()">&#8659; Save quote</button>
+        <label class="btn btn-pine btn-sm" style="cursor:pointer;margin:0;">&#8657; Load quote<input type="file" accept=".json" onchange="loadQuoteFile(this)" style="display:none;"></label>
+      </span>
     </div>
   </div>
 
@@ -805,7 +809,7 @@ function renderTable(){
       +'</td>'
       +'<td><input type="time" value="'+r.time+'" onchange="updateRound('+r.id+',\'time\',this.value)" style="width:100px;"></td>'
       +'<td><input type="number" value="'+r.players+'" min="1" max="20" onchange="updateRound('+r.id+',\'players\',+this.value)" style="width:55px;"></td>'
-      +'<td><input type="number" value="'+r.gf+'" min="0" onchange="updateRound('+r.id+',\'gf\',+this.value)" style="width:75px;"></td>'
+      +'<td><input type="number" value="'+(r.gf||getRackGF(r.cid,r.date)||0)+'" min="0" onchange="updateRound('+r.id+',\'gf\',+this.value)" style="width:75px;color:'+(r.gf?'inherit':'#b06000')+'"></td>'
       +'<td><input type="number" value="'+(r.buggy||0)+'" min="0" onchange="updateRound('+r.id+',\'buggy\',+this.value)" style="width:65px;"></td>'
       +'<td><input type="number" value="'+(r.clubs||0)+'" min="0" onchange="updateRound('+r.id+',\'clubs\',+this.value)" style="width:65px;"></td>'
       +'<td><input type="checkbox" '+(r.licence?'checked':'')+' onchange="updateRound('+r.id+',\'licence\',this.checked)"></td>'
@@ -822,11 +826,9 @@ function updateRound(id,key,val){
     r.licence=hasLicence(val);
   }
   if(key==='date'){
-    // Auto-update GF if it still matches the old rack (i.e. not manually overridden)
-    const oldRack=getRackGF(r.cid,'');
-    const newRack=getRackGF(r.cid,val);
-    // Update if GF hasn't been manually changed from rack
-    r.gf=newRack;
+    const c2=COURSE_LIST.find(x=>x.id===r.cid);
+    const anyRack=c2?[c2.peak,c2.mid,c2.low]:[];
+    if(!r.gf||anyRack.includes(r.gf)) r.gf=getRackGF(r.cid,val)||0;
   }
   saveState(); renderTable();
 }
@@ -965,13 +967,12 @@ function renderProposal(){
     }
 
     roundsHtml+=`
-      <div style="padding:10px 0;border-bottom:1px solid #e8e3da;page-break-inside:avoid;">
+      <div style="padding:5px 0;border-bottom:1px solid #ede8e0;page-break-inside:avoid;">
         ${photoHtml}
-        <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">
-          <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:14pt;font-weight:600;color:#1A1916;">Round ${i+1} — ${c.name}</div>
-          ${gcBadge}
+        <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;line-height:1.2;">
+          <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:12.5pt;font-weight:600;color:#1A1916;">Round ${i+1} — ${c.name}</span>${gcBadge}
         </div>
-        <div style="font-size:10pt;color:#555;margin-top:2px;">${dateStr}${r.time?' · '+r.time:''}</div>
+        <div style="font-size:9pt;color:#666;">${dateStr}${r.time?' · '+r.time:''}</div>
         ${detailHtml}
       </div>`;
   });
@@ -984,7 +985,7 @@ function renderProposal(){
       totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:10pt;color:#444;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
       grandTotal+=andyFee;
     }
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12pt;font-weight:700;color:#2D4A3E;border-top:2px solid #2D4A3E;margin-top:4px;"><span>Total</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12pt;font-weight:700;color:#2D4A3E;border-top:2px solid #2D4A3E;margin-top:4px;"><span style="color:#2D4A3E;">Total</span><span style="color:#2D4A3E;">€${grandTotal}</span></div>`;
   } else {
     // Clean version: single total line at end
     if(includeFee&&andyFee>0){
@@ -996,43 +997,28 @@ function renderProposal(){
   }
 
   const notesHtml=notes
-    ?`<div style="margin:10px 0;padding:10px 14px;background:#f9f7f3;border-left:3px solid #B8973C;font-size:10pt;line-height:1.6;color:#333;">${notes.replace(/\n/g,'<br>')}</div>`:'';
+    ?`<div style="margin:4px 0 6px;padding:6px 10px;background:#f9f7f3;border-left:3px solid #B8973C;font-size:9pt;line-height:1.5;color:#444;">${notes.replace(/\n/g,'<br>')}</div>`:'';
 
-  const navLogo=document.getElementById('navLogo');
-  const logoSrc=navLogo?navLogo.src:'';
+  const lockImgEl=document.querySelector('#lock img');
+  const logoSrc=lockImgEl?lockImgEl.src:(document.getElementById('navLogo')?document.getElementById('navLogo').src:'');
   const logoHtml=logoSrc&&logoSrc.startsWith('data:')
-    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:36px;">`
+    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:38px;filter:brightness(0);">`
     :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:720px;margin:0 auto;padding:20px 24px;">
-
-      <!-- HEADER: logo left, contact right, tight -->
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:2px solid #2D4A3E;margin-bottom:12px;">
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:680px;margin:0 auto;padding:14px 18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:7px;border-bottom:2px solid #2D4A3E;margin-bottom:7px;">
         <div>${logoHtml}</div>
-        <div style="text-align:right;font-size:8.5pt;color:#666;line-height:1.5;">
-          Andy Griffiths · PGA Advanced Professional<br>andy@mrmallorcagolf.com · mrmallorcagolf.com
-        </div>
+        <div style="text-align:right;font-size:8pt;color:#777;line-height:1.35;">Andy Griffiths · PGA Advanced Professional<br>andy@mrmallorcagolf.com · mrmallorcagolf.com</div>
       </div>
-
-      <!-- CLIENT INFO -->
-      <div style="margin-bottom:10px;">
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18pt;font-weight:600;color:#2D4A3E;line-height:1.2;">Golf Itinerary${clientName?' — '+clientName:''}</div>
-        ${clientEmail||clientPhone||clientNationality?`<div style="font-size:9pt;color:#777;margin-top:2px;">${[clientEmail,clientPhone,clientNationality].filter(Boolean).join(' · ')}</div>`:''}
+      <div style="margin-bottom:5px;">
+        <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15pt;font-weight:600;color:#2D4A3E;">Golf Itinerary${clientName?' — '+clientName:''}</span>
+        ${clientEmail||clientPhone||clientNationality?`<span style="font-size:8.5pt;color:#999;margin-left:8px;">${[clientEmail,clientPhone,clientNationality].filter(Boolean).join(' · ')}</span>`:''}
       </div>
-
       ${notesHtml}
-
-      <!-- ROUNDS -->
-      <div style="margin-bottom:14px;">${roundsHtml}</div>
-
-      <!-- TOTALS -->
-      <div style="margin-bottom:14px;">${totalsHtml}</div>
-
-      <!-- FOOTER -->
-      <div style="font-size:8pt;color:#aaa;border-top:1px solid #e8e3da;padding-top:8px;line-height:1.5;">
-        All prices in euros. Subject to tee-time availability. Bookings managed by Andy Griffiths, PGA Advanced Professional · mrmallorcagolf.com
-      </div>
+      ${roundsHtml}
+      <div style="margin-top:4px;">${totalsHtml}</div>
+      <div style="font-size:7.5pt;color:#ccc;border-top:1px solid #eee;padding-top:5px;margin-top:7px;">All prices in euros · Subject to availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com</div>
     </div>`;
 }
 
@@ -1114,7 +1100,10 @@ function loadQuoteFile(input){
       document.getElementById('useGolfcard').checked=!!data.useGolfcard;
       if(data.dayType){const r=document.querySelector('input[name=dayType][value="'+data.dayType+'"]');if(r)r.checked=true;}
       if(data.andyDays) document.getElementById('andyDays').value=data.andyDays;
-      rounds=data.rounds||[];
+      rounds=(data.rounds||[]).map(r=>{
+    if(!r.gf&&r.cid) r.gf=getRackGF(r.cid,r.date)||0;
+    return r;
+  });
       nextId=data.nextId||rounds.length+1;
       toggleGCRow(); updateSyncNum(); saveState(); renderTable(); renderMargin(); renderProposal();
       alert('Quote loaded: '+(data.clientName||file.name));
