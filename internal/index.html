@@ -119,6 +119,14 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     </nav>
   </header>
 
+  <div id="savedQuotesPanel" style="display:none;max-width:1100px;margin:.9rem auto 0;padding:.7rem .9rem;background:#f5f2ec;color:#1A1916;border-radius:4px;border:1px solid #ddd7cc;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
+      <strong style="font-size:.9rem;">Saved quotes & proposals</strong>
+      <button class="btn btn-red btn-sm" onclick="toggleSavedQuotes()">&#10005;</button>
+    </div>
+    <div id="savedQuotesList" style="font-size:.82rem;"></div>
+  </div>
+
   <!-- QUOTE BUILDER -->
   <div id="pQuote" class="panel active">
     <h2>Quote Builder</h2>
@@ -194,19 +202,14 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <tbody id="roundsBody"></tbody>
       </table>
     </div>
-    <div id="savedQuotesPanel" style="display:none;margin-bottom:.8rem;padding:.6rem .8rem;background:#f5f2ec;border-radius:4px;border:1px solid #ddd7cc;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
-        <strong style="font-size:.85rem;">Saved Quotes</strong>
-        <button class="btn btn-red btn-sm" onclick="toggleSavedQuotes()">&#10005;</button>
-      </div>
-      <div id="savedQuotesList" style="font-size:.82rem;"></div>
-    </div>
     <div style="margin-top:.8rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
       <button class="btn btn-pine btn-sm" onclick="addRow()">+ Blank round</button>
       <button class="btn btn-pine btn-sm" onclick="syncPlayers()" title="Apply the player count above to every round in the list">Set all rounds to <strong id="syncNum">2</strong> players</button>
       <button class="btn btn-red btn-sm" onclick="clearRounds()">Clear all</button>
       <span style="margin-left:auto;display:flex;gap:.5rem;">
-        <button class="btn btn-gold btn-sm" onclick="saveQuoteFile()">&#8659; Save quote</button>
+        <button class="btn btn-gold btn-sm" onclick="saveQuoteToList()">Save in app</button>
+        <button class="btn btn-pine btn-sm" onclick="toggleSavedQuotes()">Load saved</button>
+        <button class="btn btn-gold btn-sm" onclick="saveQuoteFile()">&#8659; Save file</button>
         <label class="btn btn-pine btn-sm" style="cursor:pointer;margin:0;">&#8657; Load quote<input type="file" accept=".json" onchange="loadQuoteFile(this)" style="display:none;"></label>
       </span>
     </div>
@@ -277,6 +280,8 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     <div id="proposalOut" style="background:#fff;border-radius:6px;padding:0;overflow:hidden;"></div>
     <div id="courseDrafts" class="card" style="margin-top:.8rem;"></div>
     <div class="copy-bar" style="margin-top:.8rem;">
+      <button class="btn btn-gold btn-sm" onclick="saveQuoteToList()">Save proposal</button>
+      <button class="btn btn-pine btn-sm" onclick="toggleSavedQuotes()">Load saved</button>
       <button class="btn btn-gold btn-sm" onclick="copyProposal()">Copy plain text</button>
       <button class="btn btn-pine btn-sm" onclick="copyWhatsapp()">WhatsApp copy</button>
       <button class="btn btn-pine btn-sm" onclick="copyAllCourseEmails()">Copy course emails</button>
@@ -634,31 +639,48 @@ function saveState(){
     useGolfcard:document.getElementById('useGolfcard').checked,
     dayType:(document.querySelector('input[name=dayType]:checked')||{}).value||'group',
     andyDays:parseInt(document.getElementById('andyDays').value)||1,
+    proposalNotes:(document.getElementById('proposalNotes')||{}).value||'',
+    propFormat:(document.getElementById('propFormat')||{}).value||'clean',
+    propIncludeFee:(document.getElementById('propIncludeFee')||{}).value||'yes',
+    propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
   };
   localStorage.setItem('mmg_quote_state',JSON.stringify(s));
   updateSyncNum();
 }
+function setValue(id,val){
+  const el=document.getElementById(id);
+  if(el) el.value=val||'';
+}
+function applyQuoteData(data){
+  setValue('clientName',data.clientName);
+  setValue('clientEmail',data.clientEmail);
+  setValue('clientPhone',data.clientPhone);
+  setValue('clientNationality',data.clientNationality);
+  setValue('tripNotes',data.tripNotes);
+  setValue('numPlayers',data.numPlayers||2);
+  document.getElementById('andyPlaying').checked=!!data.andyPlaying;
+  document.getElementById('useGolfcard').checked=!!data.useGolfcard;
+  if(data.dayType){const r=document.querySelector('input[name=dayType][value="'+data.dayType+'"]');if(r)r.checked=true;}
+  setValue('andyDays',data.andyDays||1);
+  setValue('proposalNotes',data.proposalNotes);
+  if(data.propFormat) setValue('propFormat',data.propFormat);
+  if(data.propIncludeFee) setValue('propIncludeFee',data.propIncludeFee);
+  if(data.propShowPhotos) setValue('propShowPhotos',data.propShowPhotos);
+  rounds=(data.rounds||[]).map(r=>{
+    if(r.buggy!==undefined&&r.buggyQty===undefined){r.buggyRate=r.buggy||getBuggyRate(r.cid);r.buggyQty=r.buggy>0?Math.ceil((r.players||2)/2):0;delete r.buggy;}
+    if(r.clubs!==undefined&&r.clubsQty===undefined){r.clubsRate=r.clubs||getClubsRate(r.cid);r.clubsQty=r.clubs>0?(r.players||1):0;delete r.clubs;}
+    if(!r.gf&&r.cid) r.gf=getRackGF(r.cid,r.date)||0;
+    if(!r.buggyRate&&r.cid) r.buggyRate=getBuggyRate(r.cid);
+    if(!r.clubsRate&&r.cid) r.clubsRate=getClubsRate(r.cid);
+    return r;
+  });
+  nextId=data.nextId||rounds.length+1;
+  toggleGCRow(); updateSyncNum(); saveState(); renderTable(); renderMargin(); renderProposal();
+}
 function loadState(){
   try{
     const s=JSON.parse(localStorage.getItem('mmg_quote_state')||'{}');
-    rounds=(s.rounds||[]).map(r=>{
-      if(r.buggy!==undefined&&r.buggyQty===undefined){r.buggyRate=r.buggy||getBuggyRate(r.cid);r.buggyQty=r.buggy>0?Math.ceil((r.players||2)/2):0;delete r.buggy;}
-      if(r.clubs!==undefined&&r.clubsQty===undefined){r.clubsRate=r.clubs||getClubsRate(r.cid);r.clubsQty=r.clubs>0?(r.players||1):0;delete r.clubs;}
-      if(!r.gf&&r.cid) r.gf=getRackGF(r.cid,r.date)||0;
-      if(!r.buggyRate&&r.cid) r.buggyRate=getBuggyRate(r.cid);
-      if(!r.clubsRate&&r.cid) r.clubsRate=getClubsRate(r.cid);
-      return r;
-    }); nextId=s.nextId||1;
-    if(s.clientName) document.getElementById('clientName').value=s.clientName;
-    if(s.clientEmail) document.getElementById('clientEmail').value=s.clientEmail;
-    if(s.clientPhone) document.getElementById('clientPhone').value=s.clientPhone;
-    if(s.clientNationality) document.getElementById('clientNationality').value=s.clientNationality;
-    if(s.tripNotes) document.getElementById('tripNotes').value=s.tripNotes;
-    if(s.numPlayers) document.getElementById('numPlayers').value=s.numPlayers;
-    document.getElementById('andyPlaying').checked=!!s.andyPlaying;
-    document.getElementById('useGolfcard').checked=!!s.useGolfcard;
-    if(s.dayType){const r=document.querySelector('input[name=dayType][value="'+s.dayType+'"]');if(r)r.checked=true;}
-    if(s.andyDays) document.getElementById('andyDays').value=s.andyDays;
+    if(Object.keys(s).length) applyQuoteData(s);
   }catch(e){}
 }
 
@@ -1245,14 +1267,11 @@ function printProposal(){
 }
 
 // ---- SAVE / LOAD QUOTE FILE ----
-function saveQuoteFile(){
-  const clientName=document.getElementById('clientName').value||'quote';
-  const slug=clientName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-  const dateStr=new Date().toISOString().slice(0,10);
-  const filename='mmg-'+slug+'-'+dateStr+'.json';
-  const data={
-    version:1,
+function getCurrentQuoteData(name){
+  return {
+    version:2,
     savedAt:new Date().toISOString(),
+    name:name||'',
     clientName:document.getElementById('clientName').value,
     clientEmail:document.getElementById('clientEmail').value,
     clientPhone:document.getElementById('clientPhone').value,
@@ -1263,9 +1282,20 @@ function saveQuoteFile(){
     useGolfcard:document.getElementById('useGolfcard').checked,
     dayType:(document.querySelector('input[name=dayType]:checked')||{}).value||'group',
     andyDays:parseInt(document.getElementById('andyDays').value)||1,
+    proposalNotes:(document.getElementById('proposalNotes')||{}).value||'',
+    propFormat:(document.getElementById('propFormat')||{}).value||'clean',
+    propIncludeFee:(document.getElementById('propIncludeFee')||{}).value||'yes',
+    propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
     rounds:rounds,
     nextId:nextId,
   };
+}
+function saveQuoteFile(){
+  const clientName=document.getElementById('clientName').value||'quote';
+  const slug=clientName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const dateStr=new Date().toISOString().slice(0,10);
+  const filename='mmg-'+slug+'-'+dateStr+'.json';
+  const data=getCurrentQuoteData(clientName);
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -1279,26 +1309,7 @@ function loadQuoteFile(input){
   reader.onload=e=>{
     try{
       const data=JSON.parse(e.target.result);
-      if(data.clientName) document.getElementById('clientName').value=data.clientName;
-      if(data.clientEmail) document.getElementById('clientEmail').value=data.clientEmail;
-      if(data.clientPhone) document.getElementById('clientPhone').value=data.clientPhone;
-      if(data.clientNationality) document.getElementById('clientNationality').value=data.clientNationality;
-      if(data.tripNotes) document.getElementById('tripNotes').value=data.tripNotes;
-      if(data.numPlayers) document.getElementById('numPlayers').value=data.numPlayers;
-      document.getElementById('andyPlaying').checked=!!data.andyPlaying;
-      document.getElementById('useGolfcard').checked=!!data.useGolfcard;
-      if(data.dayType){const r=document.querySelector('input[name=dayType][value="'+data.dayType+'"]');if(r)r.checked=true;}
-      if(data.andyDays) document.getElementById('andyDays').value=data.andyDays;
-      rounds=(data.rounds||[]).map(r=>{
-        if(r.buggy!==undefined&&r.buggyQty===undefined){r.buggyRate=r.buggy||getBuggyRate(r.cid);r.buggyQty=r.buggy>0?Math.ceil((r.players||2)/2):0;delete r.buggy;}
-        if(r.clubs!==undefined&&r.clubsQty===undefined){r.clubsRate=r.clubs||getClubsRate(r.cid);r.clubsQty=r.clubs>0?(r.players||1):0;delete r.clubs;}
-        if(!r.gf&&r.cid) r.gf=getRackGF(r.cid,r.date)||0;
-        if(!r.buggyRate&&r.cid) r.buggyRate=getBuggyRate(r.cid);
-        if(!r.clubsRate&&r.cid) r.clubsRate=getClubsRate(r.cid);
-        return r;
-      });
-      nextId=data.nextId||rounds.length+1;
-      toggleGCRow(); updateSyncNum(); saveState(); renderTable(); renderMargin(); renderProposal();
+      applyQuoteData(data);
       alert('Quote loaded: '+(data.clientName||file.name));
     }catch(err){alert('Could not load file: '+err.message);}
   };
@@ -1314,22 +1325,7 @@ function saveQuoteToList(){
   const clientName=document.getElementById('clientName').value||'Unnamed';
   const name=prompt('Save quote as:',clientName+' — '+new Date().toLocaleDateString('en-GB'));
   if(!name) return;
-  const data={
-    savedAt:new Date().toISOString(),
-    name:name,
-    clientName:document.getElementById('clientName').value,
-    clientEmail:document.getElementById('clientEmail').value,
-    clientPhone:document.getElementById('clientPhone').value,
-    clientNationality:document.getElementById('clientNationality').value,
-    tripNotes:document.getElementById('tripNotes').value,
-    numPlayers:parseInt(document.getElementById('numPlayers').value)||2,
-    andyPlaying:document.getElementById('andyPlaying').checked,
-    useGolfcard:document.getElementById('useGolfcard').checked,
-    dayType:(document.querySelector('input[name=dayType]:checked')||{}).value||'group',
-    andyDays:parseInt(document.getElementById('andyDays').value)||1,
-    rounds:rounds,
-    nextId:nextId,
-  };
+  const data=getCurrentQuoteData(name);
   const list=getSavedQuotes();
   list.unshift(data);
   if(list.length>50) list.length=50;
@@ -1360,27 +1356,8 @@ function loadSavedQuote(idx){
   var list=getSavedQuotes();
   var data=list[idx]; if(!data) return;
   if(!confirm('Load "'+data.name+'"? Current quote will be replaced.')) return;
-  if(data.clientName) document.getElementById('clientName').value=data.clientName;
-  if(data.clientEmail) document.getElementById('clientEmail').value=data.clientEmail;
-  if(data.clientPhone) document.getElementById('clientPhone').value=data.clientPhone;
-  if(data.clientNationality) document.getElementById('clientNationality').value=data.clientNationality;
-  if(data.tripNotes) document.getElementById('tripNotes').value=data.tripNotes;
-  if(data.numPlayers) document.getElementById('numPlayers').value=data.numPlayers;
-  document.getElementById('andyPlaying').checked=!!data.andyPlaying;
-  document.getElementById('useGolfcard').checked=!!data.useGolfcard;
-  if(data.dayType){var r2=document.querySelector('input[name=dayType][value="'+data.dayType+'"]');if(r2)r2.checked=true;}
-  if(data.andyDays) document.getElementById('andyDays').value=data.andyDays;
-  rounds=(data.rounds||[]).map(function(r){
-    if(r.buggy!==undefined&&r.buggyQty===undefined){r.buggyRate=r.buggy||getBuggyRate(r.cid);r.buggyQty=r.buggy>0?Math.ceil((r.players||2)/2):0;delete r.buggy;}
-    if(r.clubs!==undefined&&r.clubsQty===undefined){r.clubsRate=r.clubs||getClubsRate(r.cid);r.clubsQty=r.clubs>0?(r.players||1):0;delete r.clubs;}
-    if(!r.gf&&r.cid) r.gf=getRackGF(r.cid,r.date)||0;
-    if(!r.buggyRate&&r.cid) r.buggyRate=getBuggyRate(r.cid);
-    if(!r.clubsRate&&r.cid) r.clubsRate=getClubsRate(r.cid);
-    return r;
-  });
-  nextId=data.nextId||rounds.length+1;
+  applyQuoteData(data);
   document.getElementById('savedQuotesPanel').style.display='none';
-  toggleGCRow(); updateSyncNum(); saveState(); renderTable(); renderMargin(); renderProposal();
 }
 function deleteSavedQuote(idx){
   var list=getSavedQuotes();
