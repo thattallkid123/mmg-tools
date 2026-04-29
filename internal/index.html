@@ -159,6 +159,28 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <input id="tripNotes" placeholder="e.g. 5-day trip, staying Palma Old Town" oninput="saveState()">
       </div>
     </div>
+    <div class="grid3" style="margin-bottom:.8rem;">
+      <div>
+        <label>Proposal status</label>
+        <select id="quoteStatus" onchange="saveState();renderProposal();renderCourseDrafts();renderMissingInfo()">
+          <option>Draft</option>
+          <option>Sent</option>
+          <option>Accepted</option>
+          <option>Booked</option>
+          <option>Lost</option>
+          <option>Archived</option>
+        </select>
+      </div>
+      <div>
+        <label>Next action</label>
+        <input id="nextAction" placeholder="e.g. Call Son Gual / chase client Friday" oninput="saveState()">
+      </div>
+      <div>
+        <label>Quote valid for (days)</label>
+        <input type="number" id="quoteExpiryDays" value="7" min="0" max="60" oninput="saveState();renderProposal()">
+      </div>
+    </div>
+    <div id="missingInfo" class="card" style="display:none;margin-bottom:.8rem;"></div>
     <div style="margin-bottom:.4rem;">
       <label><input type="checkbox" id="andyPlaying" onchange="saveState();toggleGCRow()"> Andy is playing (enables Golf Card)</label>
     </div>
@@ -273,6 +295,24 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         </select>
       </div>
     </div>
+    <div class="grid2" style="margin-bottom:.8rem;">
+      <div>
+        <label>Proposal status</label>
+        <select id="proposalStatusMirror" onchange="document.getElementById('quoteStatus').value=this.value;saveState();renderProposal();renderCourseDrafts();renderMissingInfo()">
+          <option>Draft</option>
+          <option>Sent</option>
+          <option>Accepted</option>
+          <option>Booked</option>
+          <option>Lost</option>
+          <option>Archived</option>
+        </select>
+      </div>
+      <div>
+        <label>Next action</label>
+        <input id="nextActionMirror" placeholder="e.g. Send deposit link" oninput="document.getElementById('nextAction').value=this.value;saveState();renderMissingInfo()">
+      </div>
+    </div>
+    <div id="proposalMissingInfo" class="card" style="display:none;margin-bottom:.8rem;"></div>
     <div style="margin-bottom:.8rem;">
       <label>Additional notes / personal message (shown in proposal)</label>
       <textarea id="proposalNotes" rows="3" placeholder="e.g. Looking forward to hosting your group in Mallorca. All tee times will be confirmed 48 hours in advance..." oninput="renderProposal()" style="min-height:70px;"></textarea>
@@ -516,6 +556,8 @@ function init(){
   renderProposal();
   toggleGCRow();
   updateSyncNum();
+  syncWorkflowMirrors();
+  renderMissingInfo();
   // set nav logo src from lock logo
   const lockImg = document.querySelector('#lock img');
   if(lockImg) document.getElementById('navLogo').src = lockImg.src;
@@ -538,6 +580,7 @@ function tab(name,btn){
   btn.classList.add('active');
   if(name==='margin') renderMargin();
   if(name==='proposal') renderProposal();
+  renderMissingInfo();
 }
 
 // ---- SETTINGS ----
@@ -643,9 +686,12 @@ function saveState(){
     propFormat:(document.getElementById('propFormat')||{}).value||'clean',
     propIncludeFee:(document.getElementById('propIncludeFee')||{}).value||'yes',
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
+    quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
+    nextAction:(document.getElementById('nextAction')||{}).value||'',
+    quoteExpiryDays:parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0,
   };
   localStorage.setItem('mmg_quote_state',JSON.stringify(s));
-  updateSyncNum();
+  updateSyncNum(); syncWorkflowMirrors(); renderMissingInfo();
 }
 function setValue(id,val){
   const el=document.getElementById(id);
@@ -666,6 +712,9 @@ function applyQuoteData(data){
   if(data.propFormat) setValue('propFormat',data.propFormat);
   if(data.propIncludeFee) setValue('propIncludeFee',data.propIncludeFee);
   if(data.propShowPhotos) setValue('propShowPhotos',data.propShowPhotos);
+  setValue('quoteStatus',data.quoteStatus||data.status||'Draft');
+  setValue('nextAction',data.nextAction||data.next_action||'');
+  setValue('quoteExpiryDays',data.quoteExpiryDays!=null?data.quoteExpiryDays:7);
   rounds=(data.rounds||[]).map(r=>{
     if(r.buggy!==undefined&&r.buggyQty===undefined){r.buggyRate=r.buggy||getBuggyRate(r.cid);r.buggyQty=r.buggy>0?Math.ceil((r.players||2)/2):0;delete r.buggy;}
     if(r.clubs!==undefined&&r.clubsQty===undefined){r.clubsRate=r.clubs||getClubsRate(r.cid);r.clubsQty=r.clubs>0?(r.players||1):0;delete r.clubs;}
@@ -675,13 +724,57 @@ function applyQuoteData(data){
     return r;
   });
   nextId=data.nextId||rounds.length+1;
-  toggleGCRow(); updateSyncNum(); saveState(); renderTable(); renderMargin(); renderProposal();
+  toggleGCRow(); updateSyncNum(); syncWorkflowMirrors(); saveState(); renderTable(); renderMargin(); renderProposal(); renderMissingInfo();
 }
 function loadState(){
   try{
     const s=JSON.parse(localStorage.getItem('mmg_quote_state')||'{}');
     if(Object.keys(s).length) applyQuoteData(s);
   }catch(e){}
+}
+function syncWorkflowMirrors(){
+  const status=document.getElementById('quoteStatus');
+  const statusMirror=document.getElementById('proposalStatusMirror');
+  const next=document.getElementById('nextAction');
+  const nextMirror=document.getElementById('nextActionMirror');
+  if(status&&statusMirror) statusMirror.value=status.value||'Draft';
+  if(next&&nextMirror) nextMirror.value=next.value||'';
+}
+function getMissingInfo(){
+  const items=[];
+  if(!document.getElementById('clientName').value.trim()) items.push('Client name');
+  if(!document.getElementById('clientEmail').value.trim()) items.push('Client email');
+  if(!document.getElementById('clientPhone').value.trim()) items.push('Client phone');
+  if(!rounds.length) items.push('At least one round');
+  rounds.forEach((r,i)=>{
+    const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:'Round '+(i+1)};
+    if(!r.date) items.push(c.name+': date');
+    if(!r.time) items.push(c.name+': preferred time');
+    if(!r.gf) items.push(c.name+': charge/pp');
+    const contact=getSavedCourse(r.cid);
+    if(!contact.email&&!contact.phone) items.push(c.name+': course contact');
+  });
+  if(!document.getElementById('proposalNotes').value.trim()) items.push('Proposal note/message');
+  if(!document.getElementById('nextAction').value.trim()) items.push('Next action');
+  return items;
+}
+function renderMissingInfo(){
+  syncWorkflowMirrors();
+  const items=getMissingInfo();
+  const boxes=[document.getElementById('missingInfo'),document.getElementById('proposalMissingInfo')].filter(Boolean);
+  boxes.forEach(box=>{
+    if(!items.length){
+      box.style.display='';
+      box.innerHTML='<h3 style="margin-top:0;">Ready check</h3><div class="tag-ok">No obvious missing info.</div>';
+      return;
+    }
+    box.style.display='';
+    box.innerHTML='<h3 style="margin-top:0;">Missing info</h3>'
+      +'<div class="help" style="margin-bottom:.45rem;">Quick checks before sending or booking.</div>'
+      +'<div style="display:flex;gap:.35rem;flex-wrap:wrap;">'
+      +items.map(x=>'<span class="badge-block" style="display:inline-block;padding:.2rem .45rem;border-radius:3px;font-size:.75rem;">'+escapeHtml(x)+'</span>').join('')
+      +'</div>';
+  });
 }
 
 // ---- PARSER ----
@@ -939,6 +1032,8 @@ function renderMargin(){
   const dayType=(document.querySelector('input[name=dayType]:checked')||{}).value||'group';
   const andyDays=parseInt(document.getElementById('andyDays').value)||1;
   const andyFee=dayType==='solo'?soloFee*andyDays:dayType==='group'?groupFee*andyDays:0;
+  const expiryDays=parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0;
+  const quoteStatus=(document.getElementById('quoteStatus')||{}).value||'Draft';
 
   let totalCost=0,totalCharge=0,totalExtras=0;
   const tb=document.getElementById('marginBody');
@@ -1106,22 +1201,27 @@ function renderProposal(){
 
   const notesHtml=notes
     ?`<div style="margin:0 0 10px;padding:10px 16px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:11.5pt;line-height:1.45;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;">${notes.replace(/\n/g,'<br>')}</div>`:'';
+  const inclusionsHtml=`<div style="margin:0 0 9px;padding:10px 14px;border:1px solid #E0D8CB;background:#fff;font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;line-height:1.45;"><strong style="color:#2D4A3E;">Includes:</strong> listed green fees${rounds.some(r=>r.buggyQty>0)?', buggies':''}${rounds.some(r=>r.clubsQty>0)?', club hire':''}, planning support, and PGA guidance where selected.</div>`;
+  const expiryHtml=expiryDays>0
+    ?`<div style="margin:0 0 9px;font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;">This proposal is valid for ${expiryDays} day${expiryDays>1?'s':''}. Tee times remain subject to availability until confirmed by the golf courses.</div>`:'';
+  const acceptedHtml=(quoteStatus==='Accepted'||quoteStatus==='Booked')
+    ?`<div style="margin:0 0 9px;padding:9px 14px;background:#F4EDD8;border-left:4px solid #B8973C;font-size:10.5pt;color:#2D4A3E;font-family:'Jost',sans-serif;font-weight:500;">Status: ${quoteStatus}. Use the course booking drafts below to request/confirm tee times.</div>`:'';
 
   const lockImgEl=document.querySelector('#lock img');
   const logoSrc=lockImgEl?lockImgEl.src:(document.getElementById('navLogo')?document.getElementById('navLogo').src:'');
   const logoHtml=logoSrc&&logoSrc.startsWith('data:')
-    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:54px;filter:brightness(0);">`
+    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:44px;filter:brightness(0);">`
     :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
   const prepDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:900px;margin:0 auto;padding:18px 34px 24px;">
-      <div style="height:6px;background:#B8973C;margin:0 0 8px;"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;height:66px;margin:0;">
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:900px;margin:0 auto;padding:14px 34px 22px;">
+      <div style="height:5px;background:#B8973C;margin:0 0 4px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;height:50px;margin:0;">
         <div style="line-height:0;">${logoHtml}</div>
-        <div style="text-align:right;font-size:11.5pt;color:#2D4A3E;line-height:1.42;font-family:'Jost',sans-serif;font-weight:500;">Andy Griffiths<br><span style="font-size:10pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:10pt;color:#5A5550;">andy@mrmallorcagolf.com &nbsp;·&nbsp; mrmallorcagolf.com</span></div>
+        <div style="text-align:right;font-size:10.5pt;color:#2D4A3E;line-height:1.28;font-family:'Jost',sans-serif;font-weight:500;">Andy Griffiths<br><span style="font-size:9.5pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:9.5pt;color:#5A5550;">andy@mrmallorcagolf.com &nbsp;·&nbsp; mrmallorcagolf.com</span></div>
       </div>
-      <div style="height:2px;background:#2D4A3E;margin:8px 0 0;"></div>
+      <div style="height:2px;background:#2D4A3E;margin:4px 0 0;"></div>
       <div style="padding:14px 0 11px;border-bottom:1px solid #E0D8CB;margin-bottom:12px;">
         <div style="font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:4px;">Golf proposal</div>
         <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34pt;font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
@@ -1130,8 +1230,11 @@ function renderProposal(){
           <div style="font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${[clientEmail,clientPhone].filter(Boolean).join(' · ')}${(clientEmail||clientPhone)?' &nbsp;·&nbsp; ':''}<span style="color:#8A7F74;">Prepared ${prepDate}</span></div>
         </div>
       </div>
+      ${acceptedHtml}
       ${notesHtml}
+      ${expiryHtml}
       ${roundsHtml}
+      ${inclusionsHtml}
       <div style="margin-top:9px;padding:12px 16px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
       <div style="font-size:9pt;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:9px;margin-top:14px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
     </div>`;
@@ -1190,8 +1293,12 @@ function renderCourseDrafts(){
     return;
   }
   const groups=getCourseDraftGroups();
+  const quoteStatus=(document.getElementById('quoteStatus')||{}).value||'Draft';
+  const helper=(quoteStatus==='Accepted'||quoteStatus==='Booked')
+    ?'Ready to book. Copy these drafts or use them as call scripts.'
+    :'Internal only. Saved course contacts come from Settings.';
   box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;margin-bottom:.6rem;">'
-    +'<div><h3 style="margin:0;">Course booking drafts</h3><div class="help">Internal only. Saved course contacts come from Settings.</div></div>'
+    +'<div><h3 style="margin:0;">Course booking drafts</h3><div class="help">'+helper+'</div></div>'
     +'<button class="btn btn-gold btn-sm" onclick="copyAllCourseEmails()">Copy all drafts</button></div>'
     +groups.map((g,i)=>{
       const email=g.contact.email||'';
@@ -1288,6 +1395,9 @@ function getCurrentQuoteData(name){
     propFormat:(document.getElementById('propFormat')||{}).value||'clean',
     propIncludeFee:(document.getElementById('propIncludeFee')||{}).value||'yes',
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
+    quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
+    nextAction:(document.getElementById('nextAction')||{}).value||'',
+    quoteExpiryDays:parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0,
     rounds:rounds,
     nextId:nextId,
   };
@@ -1332,6 +1442,7 @@ function saveQuoteToList(){
   list.unshift(data);
   if(list.length>50) list.length=50;
   localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
+  if(document.getElementById('savedQuotesPanel').style.display!=='none') renderSavedQuotesList();
   alert('Saved: '+name);
 }
 function toggleSavedQuotes(){
@@ -1346,13 +1457,31 @@ function renderSavedQuotesList(){
   el.innerHTML=list.map(function(q,i){
     var date=new Date(q.savedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     var rl=q.rounds?q.rounds.length+' round'+(q.rounds.length!==1?'s':''):'';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.25rem 0;border-bottom:1px solid #e4ddd4;">'
-      +'<div><strong>'+q.name+'</strong><span style="color:#999;margin-left:.5rem;">'+date+' · '+rl+'</span></div>'
-      +'<div style="display:flex;gap:.3rem;">'
+    var status=q.quoteStatus||q.status||'Draft';
+    var next=q.nextAction||q.next_action||'';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:.45rem 0;border-bottom:1px solid #e4ddd4;">'
+      +'<div><strong>'+escapeHtml(q.name)+'</strong><span style="color:#999;margin-left:.5rem;">'+date+' · '+rl+'</span>'
+      +'<div style="margin-top:.18rem;"><span class="badge badge-gc">'+escapeHtml(status)+'</span>'
+      +(next?'<span style="color:#666;margin-left:.45rem;">Next: '+escapeHtml(next)+'</span>':'')
+      +'</div></div>'
+      +'<div style="display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end;">'
       +'<button class="btn btn-pine btn-sm" onclick="loadSavedQuote('+i+')" style="font-size:.75rem;">Load</button>'
+      +'<button class="btn btn-gold btn-sm" onclick="duplicateSavedQuote('+i+')" style="font-size:.75rem;">Duplicate</button>'
       +'<button class="btn btn-red btn-sm" onclick="deleteSavedQuote('+i+')" style="font-size:.75rem;">&#10005;</button>'
       +'</div></div>';
   }).join('');
+}
+function duplicateSavedQuote(idx){
+  var list=getSavedQuotes();
+  var data=list[idx]; if(!data) return;
+  var copy=JSON.parse(JSON.stringify(data));
+  copy.name=(copy.name||'Quote')+' copy';
+  copy.savedAt=new Date().toISOString();
+  copy.quoteStatus='Draft';
+  copy.nextAction='Review copied quote';
+  list.unshift(copy);
+  localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
+  renderSavedQuotesList();
 }
 function loadSavedQuote(idx){
   var list=getSavedQuotes();
