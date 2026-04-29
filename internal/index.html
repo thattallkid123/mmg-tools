@@ -275,9 +275,11 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
       <textarea id="proposalNotes" rows="3" placeholder="e.g. Looking forward to hosting your group in Mallorca. All tee times will be confirmed 48 hours in advance..." oninput="renderProposal()" style="min-height:70px;"></textarea>
     </div>
     <div id="proposalOut" style="background:#fff;border-radius:6px;padding:0;overflow:hidden;"></div>
+    <div id="courseDrafts" class="card" style="margin-top:.8rem;"></div>
     <div class="copy-bar" style="margin-top:.8rem;">
       <button class="btn btn-gold btn-sm" onclick="copyProposal()">Copy plain text</button>
       <button class="btn btn-pine btn-sm" onclick="copyWhatsapp()">WhatsApp copy</button>
+      <button class="btn btn-pine btn-sm" onclick="copyAllCourseEmails()">Copy course emails</button>
       <button class="btn btn-pine btn-sm" onclick="printProposal()">Print / Save PDF</button>
     </div>
     <div class="help">For PDF: use Print &rarr; Save as PDF. Landscape works well for multi-round trips.</div>
@@ -297,11 +299,11 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
       </div>
     </div>
     <hr class="sep">
-    <h3>Per-course negotiated costs</h3>
-    <div class="help" style="margin-bottom:.8rem;">My cost per person (leave blank = rack &times; 0.85). Check Lic if course charges a per-player licence fee.</div>
+    <h3>Per-course negotiated costs & contacts</h3>
+    <div class="help" style="margin-bottom:.8rem;">My cost per person (leave blank = rack &times; 0.85). Add course emails/phones here so the Proposal tab can generate booking request drafts.</div>
     <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>Course</th><th>Rack Peak (&euro;)</th><th>Rack Mid (&euro;)</th><th>Rack Low (&euro;)</th><th>My Cost/pp</th><th>Buggy</th><th>Clubs</th><th>Lic</th></tr></thead>
+        <thead><tr><th>Course</th><th>Rack Peak (&euro;)</th><th>Rack Mid (&euro;)</th><th>Rack Low (&euro;)</th><th>My Cost/pp</th><th>Buggy</th><th>Clubs</th><th>Lic</th><th>Email</th><th>Phone</th><th>Contact notes</th></tr></thead>
         <tbody id="settingsBody"></tbody>
       </table>
     </div>
@@ -535,12 +537,25 @@ function saveSettings(){
     ensureCourse(id);
     settings.courses[id].licence=chk.checked;
   });
+  [
+    ['data-course-email','email'],
+    ['data-course-phone','phone'],
+    ['data-course-notes','contactNotes']
+  ].forEach(([attr,key])=>{
+    document.querySelectorAll('['+attr+']').forEach(inp=>{
+      const id=inp.dataset[attr.replace('data-','').replace(/-([a-z])/g,(_,c)=>c.toUpperCase())];
+      const v=inp.value.trim();
+      ensureCourse(id);
+      if(v) settings.courses[id][key]=v;
+      else delete settings.courses[id][key];
+    });
+  });
   localStorage.setItem('mmg_settings',JSON.stringify(settings));
   document.getElementById('soloFeeLabel').textContent='€'+settings.soloFee+'/day';
   document.getElementById('groupFeeLabel').textContent='€'+settings.groupFee+'/day';
   const s=document.getElementById('settingsSaved');
   s.style.display=''; setTimeout(()=>s.style.display='none',2000);
-  renderTable(); renderMargin();
+  renderTable(); renderMargin(); renderCourseDrafts();
 }
 function renderSettingsTable(){
   const tb=document.getElementById('settingsBody');
@@ -557,6 +572,9 @@ function renderSettingsTable(){
       +'<td><input type="number" data-buggy-rate="'+c.id+'" value="'+(saved.buggyRate||'')+'" placeholder="'+(defBuggy||'N/A')+'" title="Buggy rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-clubs-rate="'+c.id+'" value="'+(saved.clubsRate||'')+'" placeholder="'+(defClubs||'N/A')+'" title="Club hire rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="checkbox" data-course-lic="'+c.id+'" '+(saved.licence?'checked':'')+' onchange="saveSettings()"> Yes</td>'
+      +'<td><input data-course-email="'+c.id+'" value="'+escapeHtml(saved.email||'')+'" placeholder="bookings@..." title="Booking email" style="width:180px;" oninput="saveSettings()"></td>'
+      +'<td><input data-course-phone="'+c.id+'" value="'+escapeHtml(saved.phone||'')+'" placeholder="+34..." title="Booking phone" style="width:130px;" oninput="saveSettings()"></td>'
+      +'<td><input data-course-notes="'+c.id+'" value="'+escapeHtml(saved.contactNotes||'')+'" placeholder="Who to ask / quirks" title="Internal contact notes" style="width:220px;" oninput="saveSettings()"></td>'
       +'</tr>';
   }).join('');
 }
@@ -934,6 +952,13 @@ function renderMargin(){
 }
 
 // ---- PROPOSAL ----
+function getSavedCourse(id){
+  return ((settings.courses||{})[id])||{};
+}
+function formatRoundDate(dateStr, opts){
+  if(!dateStr) return 'Date TBC';
+  return new Date(dateStr+'T12:00:00').toLocaleDateString('en-GB',opts||{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
 function renderProposal(){
   const fmt=document.getElementById('propFormat').value;
   const showPhotos=document.getElementById('propShowPhotos').value==='yes';
@@ -973,38 +998,38 @@ function renderProposal(){
     const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'Date TBC';
 
     const photoHtml=showPhotos&&img
-      ?`<div style="width:240px;min-width:240px;align-self:stretch;overflow:hidden;flex-shrink:0;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:150px;"></div>`
+      ?`<div style="width:268px;min-width:268px;align-self:stretch;overflow:hidden;flex-shrink:0;background:#F7F4EF;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:172px;"></div>`
       :'';
 
     const gcBadge=gcValid.ok
-      ?`<span style="display:inline-block;background:#2D4A3E;color:#B8973C;font-size:7pt;padding:2px 8px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.14em;text-transform:uppercase;margin-left:10px;vertical-align:middle;">Golf Card</span>`:'';
+      ?`<span style="display:inline-block;background:#2D4A3E;color:#F7F4EF;font-size:8.5pt;padding:4px 9px;font-family:'Jost',sans-serif;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-left:10px;vertical-align:middle;border-radius:2px;">Golf Card</span>`:'';
 
     // Itemised: show breakdown per round
     let detailHtml='';
     if(fmt==='itemised'){
       const rows=[];
-      rows.push(`<tr><td style="color:#8A7F74;font-size:9.5pt;padding:2px 0;font-family:'Jost',sans-serif;font-weight:300;">Green fee &times; ${players}</td><td style="text-align:right;font-size:9.5pt;padding:2px 0;font-family:'Jost',sans-serif;">€${gfTotal}</td></tr>`);
-      if(buggy) rows.push(`<tr><td style="color:#8A7F74;font-size:9.5pt;padding:2px 0;font-family:'Jost',sans-serif;font-weight:300;">Buggy hire · ${r.buggyQty||1}</td><td style="text-align:right;font-size:9.5pt;padding:2px 0;font-family:'Jost',sans-serif;">€${buggyTotal}</td></tr>`);
-      if(clubs) rows.push(`<tr><td style="color:#8A7F74;font-size:9.5pt;padding:2px 0;font-family:'Jost',sans-serif;font-weight:300;">Club hire · ${r.clubsQty||1} set${(r.clubsQty||1)>1?"s":""}</td><td style="text-align:right;font-size:9.5pt;padding:2px 0;font-family:'Jost',sans-serif;">€${clubsTotal}</td></tr>`);
-      rows.push(`<tr><td style="font-family:'Jost',sans-serif;font-weight:500;font-size:8.5pt;padding:5px 0;border-top:1px solid #C4BAA9;color:#2D4A3E;letter-spacing:.08em;text-transform:uppercase;">Subtotal</td><td style="text-align:right;font-family:'Jost',sans-serif;font-weight:500;font-size:8.5pt;padding:5px 0;border-top:1px solid #C4BAA9;color:#2D4A3E;">€${sub}</td></tr>`);
+      rows.push(`<tr><td style="color:#5A5550;font-size:11pt;padding:3px 0;font-family:'Jost',sans-serif;font-weight:400;">Green fee &times; ${players}</td><td style="text-align:right;font-size:11pt;padding:3px 0;font-family:'Jost',sans-serif;">€${gfTotal}</td></tr>`);
+      if(buggy) rows.push(`<tr><td style="color:#5A5550;font-size:11pt;padding:3px 0;font-family:'Jost',sans-serif;font-weight:400;">Buggy hire · ${r.buggyQty||1}</td><td style="text-align:right;font-size:11pt;padding:3px 0;font-family:'Jost',sans-serif;">€${buggyTotal}</td></tr>`);
+      if(clubs) rows.push(`<tr><td style="color:#5A5550;font-size:11pt;padding:3px 0;font-family:'Jost',sans-serif;font-weight:400;">Club hire · ${r.clubsQty||1} set${(r.clubsQty||1)>1?"s":""}</td><td style="text-align:right;font-size:11pt;padding:3px 0;font-family:'Jost',sans-serif;">€${clubsTotal}</td></tr>`);
+      rows.push(`<tr><td style="font-family:'Jost',sans-serif;font-weight:600;font-size:10pt;padding:7px 0;border-top:1px solid #C4BAA9;color:#2D4A3E;letter-spacing:.07em;text-transform:uppercase;">Subtotal</td><td style="text-align:right;font-family:'Jost',sans-serif;font-weight:600;font-size:10pt;padding:7px 0;border-top:1px solid #C4BAA9;color:#2D4A3E;">€${sub}</td></tr>`);
       detailHtml=`<table style="width:100%;border-collapse:collapse;margin-top:6px;">${rows.join('')}</table>`;
     } else {
       // Clean: just players count
       const extrasLabel=[];
       if(r.buggyQty>0) extrasLabel.push(r.buggyQty+(r.buggyQty===1?' buggy':' buggies'));
       if(r.clubsQty>0) extrasLabel.push(r.clubsQty+' club hire');
-      detailHtml=`<div style="font-size:8.5pt;color:#8A7F74;margin-top:8px;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.1em;text-transform:uppercase;">${players} player${players>1?'s':''}${extrasLabel.length?' · '+extrasLabel.join(' · '):''}</div>`;
+      detailHtml=`<div style="font-size:10.5pt;color:#5A5550;margin-top:10px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.07em;text-transform:uppercase;">${players} player${players>1?'s':''}${extrasLabel.length?' · '+extrasLabel.join(' · '):''}</div>`;
     }
 
     roundsHtml+=`
-      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:3px;border-bottom:1px solid #E0D8CB;page-break-inside:avoid;">
+      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:12px;border:1px solid #E0D8CB;border-left:4px solid #B8973C;page-break-inside:avoid;background:#fff;">
         ${photoHtml}
-        <div style="flex:1;min-width:0;padding:20px 24px;display:flex;flex-direction:column;justify-content:center;">
-          <div style="font-family:'Jost',sans-serif;font-size:7pt;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:#B8973C;margin-bottom:7px;">Round ${i+1}</div>
+        <div style="flex:1;min-width:0;padding:22px 26px;display:flex;flex-direction:column;justify-content:center;">
+          <div style="font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:7px;">Round ${i+1}</div>
           <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20pt;font-weight:500;color:#1A1916;line-height:1.1;">${c.name}</span>${gcBadge}
+            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26pt;font-weight:600;color:#2D4A3E;line-height:1.05;">${c.name}</span>${gcBadge}
           </div>
-          <div style="font-size:10pt;color:#8A7F74;font-family:'Jost',sans-serif;font-weight:300;margin-bottom:6px;">${dateStr}${r.time?' · '+r.time:''}</div>
+          <div style="font-size:12pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;margin-bottom:6px;">${dateStr}${r.time?' · '+r.time:''}</div>
           ${detailHtml}
         </div>
       </div>`;
@@ -1013,50 +1038,149 @@ function renderProposal(){
   // Totals block
   let totalsHtml='';
   if(fmt==='itemised'){
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;font-weight:300;"><span>Green fees &amp; extras</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Green fees &amp; extras</span><span>€${grandTotal}</span></div>`;
     if(includeFee&&andyFee>0){
-      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;font-weight:300;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
       grandTotal+=andyFee;
     }
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:16px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:22pt;font-weight:500;color:#2D4A3E;border-top:1px solid #B8973C;margin-top:10px;"><span>Total</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>Total</span><span>€${grandTotal}</span></div>`;
   } else {
     // Clean version: single total line at end
     if(includeFee&&andyFee>0){
-      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;font-weight:300;"><span>Golf fees &amp; extras (${rounds.length} round${rounds.length>1?'s':''})</span><span>€${grandTotal}</span></div>`;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Golf fees &amp; extras (${rounds.length} round${rounds.length>1?'s':''})</span><span>€${grandTotal}</span></div>`;
       grandTotal+=andyFee;
-      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;font-weight:300;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
     }
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:16px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:22pt;font-weight:500;color:#2D4A3E;border-top:1px solid #B8973C;margin-top:10px;"><span>Total</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>Total</span><span>€${grandTotal}</span></div>`;
   }
 
   const notesHtml=notes
-    ?`<div style="margin:0 0 20px;padding:14px 18px;background:#F4EDD8;border-left:2px solid #B8973C;font-size:10pt;line-height:1.75;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:300;font-style:italic;">${notes.replace(/\n/g,'<br>')}</div>`:'';
+    ?`<div style="margin:0 0 22px;padding:16px 20px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:12pt;line-height:1.65;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;">${notes.replace(/\n/g,'<br>')}</div>`:'';
 
   const lockImgEl=document.querySelector('#lock img');
   const logoSrc=lockImgEl?lockImgEl.src:(document.getElementById('navLogo')?document.getElementById('navLogo').src:'');
   const logoHtml=logoSrc&&logoSrc.startsWith('data:')
-    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:76px;filter:brightness(0);">`
-    :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
+    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:68px;filter:brightness(0);">`
+    :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
   const prepDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:760px;margin:0 auto;padding:20px 28px 28px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:1px solid #C4BAA9;margin-bottom:0;">
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:900px;margin:0 auto;padding:26px 34px 32px;border-top:7px solid #B8973C;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #2D4A3E;margin-bottom:0;">
         <div style="line-height:0;">${logoHtml}</div>
-        <div style="text-align:right;font-size:10.5pt;color:#5a5550;line-height:1.7;font-family:'Jost',sans-serif;font-weight:300;margin-top:4px;">Andy Griffiths<br><span style="font-size:9pt;color:#8A7F74;">PGA Advanced Professional</span><br><span style="font-size:9pt;">andy@mrmallorcagolf.com &nbsp;·&nbsp; mrmallorcagolf.com</span></div>
+        <div style="text-align:right;font-size:12pt;color:#2D4A3E;line-height:1.55;font-family:'Jost',sans-serif;font-weight:500;margin-top:2px;">Andy Griffiths<br><span style="font-size:10.5pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:10.5pt;color:#5A5550;">andy@mrmallorcagolf.com &nbsp;·&nbsp; mrmallorcagolf.com</span></div>
       </div>
-      <div style="padding:12px 0 14px;border-bottom:1px solid #E0D8CB;margin-bottom:16px;">
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:500;color:#2D4A3E;line-height:1.1;">${clientName?clientName+' — ':''}Golf Itinerary</div>
-        <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
-          <div style="width:36px;height:1px;background:#B8973C;flex-shrink:0;"></div>
-          <div style="font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;font-weight:300;letter-spacing:.02em;">${[clientEmail,clientPhone].filter(Boolean).join(' · ')}${(clientEmail||clientPhone)?' &nbsp;·&nbsp; ':''}<span style="color:#C4BAA9;">Prepared ${prepDate}</span></div>
+      <div style="padding:20px 0 18px;border-bottom:1px solid #E0D8CB;margin-bottom:20px;">
+        <div style="font-family:'Jost',sans-serif;font-size:10pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:6px;">Golf proposal</div>
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:40pt;font-weight:600;color:#2D4A3E;line-height:1.02;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:12px;">
+          <div style="width:48px;height:2px;background:#B8973C;flex-shrink:0;"></div>
+          <div style="font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${[clientEmail,clientPhone].filter(Boolean).join(' · ')}${(clientEmail||clientPhone)?' &nbsp;·&nbsp; ':''}<span style="color:#8A7F74;">Prepared ${prepDate}</span></div>
         </div>
       </div>
       ${notesHtml}
       ${roundsHtml}
-      <div style="margin-top:6px;">${totalsHtml}</div>
-      <div style="font-size:7.5pt;color:#C4BAA9;border-top:1px solid #E0D8CB;padding-top:12px;margin-top:24px;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.1em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
+      <div style="margin-top:14px;padding:18px 20px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
+      <div style="font-size:9pt;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:13px;margin-top:24px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
     </div>`;
+  renderCourseDrafts();
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function getCourseDraftGroups(){
+  const groups=[];
+  rounds.forEach(r=>{
+    const c=COURSE_LIST.find(x=>x.id===r.cid)||{id:r.cid,name:r.cid};
+    let g=groups.find(x=>x.course.id===c.id);
+    if(!g){g={course:c,contact:getSavedCourse(c.id),rounds:[]};groups.push(g);}
+    g.rounds.push(r);
+  });
+  return groups;
+}
+function composeCourseEmailGroup(group){
+  const clientName=document.getElementById('clientName').value||'my client';
+  const clientPhone=document.getElementById('clientPhone').value||'';
+  const clientEmail=document.getElementById('clientEmail').value||'';
+  const lines=[];
+  lines.push('Hi,');
+  lines.push('');
+  lines.push('Could you please confirm availability for the following tee time request?');
+  lines.push('');
+  group.rounds.forEach((r,i)=>{
+    const players=parseInt(r.players)||1;
+    const buggyQty=parseInt(r.buggyQty)||0;
+    const clubsQty=parseInt(r.clubsQty)||0;
+    lines.push((group.rounds.length>1?(i+1)+'. ':'')+group.course.name);
+    lines.push('Date: '+formatRoundDate(r.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
+    lines.push('Preferred time: '+(r.time||'TBC'));
+    lines.push('Players: '+players);
+    if(buggyQty) lines.push('Buggies: '+buggyQty);
+    if(clubsQty) lines.push('Club hire sets: '+clubsQty);
+    if(r.licence) lines.push('Licence fee: please include if required');
+    lines.push('');
+  });
+  lines.push('Client: '+clientName);
+  if(clientEmail) lines.push('Client email: '+clientEmail);
+  if(clientPhone) lines.push('Client phone: '+clientPhone);
+  lines.push('');
+  lines.push('Many thanks,');
+  lines.push('Andy Griffiths');
+  lines.push('PGA Advanced Professional');
+  return lines.join('\n');
+}
+function renderCourseDrafts(){
+  const box=document.getElementById('courseDrafts');
+  if(!box) return;
+  if(!rounds.length){
+    box.innerHTML='<h3 style="margin-top:0;">Course booking drafts</h3><div class="help">Add rounds first, then this will create ready-to-copy course request emails.</div>';
+    return;
+  }
+  const groups=getCourseDraftGroups();
+  box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;margin-bottom:.6rem;">'
+    +'<div><h3 style="margin:0;">Course booking drafts</h3><div class="help">Internal only. Saved course contacts come from Settings.</div></div>'
+    +'<button class="btn btn-gold btn-sm" onclick="copyAllCourseEmails()">Copy all drafts</button></div>'
+    +groups.map((g,i)=>{
+      const email=g.contact.email||'';
+      const phone=g.contact.phone||'';
+      const notes=g.contact.contactNotes||'';
+      return '<div style="display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:.7rem;align-items:center;border-top:1px solid #242424;padding:.65rem 0;">'
+        +'<div><strong>'+escapeHtml(g.course.name)+'</strong>'
+        +'<div class="help" style="margin-top:.2rem;">'
+        +(email?'Email: '+escapeHtml(email):'No email saved')
+        +(phone?' &nbsp;·&nbsp; Phone: '+escapeHtml(phone):'')
+        +(notes?'<br>Notes: '+escapeHtml(notes):'')
+        +'</div></div>'
+        +'<div style="display:flex;gap:.45rem;flex-wrap:wrap;justify-content:flex-end;">'
+        +(email?'<button class="btn btn-pine btn-sm" onclick="copyCourseAddress('+i+')">Copy email</button>':'')
+        +'<button class="btn btn-gold btn-sm" onclick="copyCourseEmail('+i+')">Copy draft</button>'
+        +'</div></div>';
+    }).join('');
+}
+function copyCourseAddress(idx){
+  const groups=getCourseDraftGroups();
+  const g=groups[idx];
+  if(!g||!g.contact.email) return;
+  navigator.clipboard.writeText(g.contact.email);
+  alert('Email address copied.');
+}
+function copyCourseEmail(idx){
+  const groups=getCourseDraftGroups();
+  const g=groups[idx];
+  if(!g) return;
+  navigator.clipboard.writeText(composeCourseEmailGroup(g));
+  alert('Course request draft copied.');
+}
+function copyAllCourseEmails(){
+  const groups=getCourseDraftGroups();
+  if(!groups.length){alert('No rounds to draft yet.');return;}
+  const out=groups.map(g=>{
+    const to=g.contact.email?'To: '+g.contact.email+'\n':'';
+    return to+'Subject: Tee time request - '+g.course.name+'\n\n'+composeCourseEmailGroup(g);
+  }).join('\n\n---\n\n');
+  navigator.clipboard.writeText(out);
+  alert('All course request drafts copied.');
 }
 
 function copyProposal(){
@@ -1085,7 +1209,7 @@ function printProposal(){
     <style>
       *{box-sizing:border-box;margin:0;padding:0;}
       body{background:#fff;font-family:'Jost',Arial,sans-serif;color:#1a1916;}
-      @media print{@page{margin:15mm;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+      @media print{@page{margin:9mm;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
     </style>
   </head><body>${inner.outerHTML}</body></html>`);
   w.document.close();
