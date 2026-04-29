@@ -1115,11 +1115,13 @@ function renderProposal(){
 
   const prepDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:900px;margin:0 auto;padding:0 34px 28px;border-top:7px solid #B8973C;">
-      <div style="display:flex;justify-content:space-between;align-items:center;min-height:118px;padding:14px 0;border-bottom:2px solid #2D4A3E;margin-bottom:0;">
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:900px;margin:0 auto;padding:26px 34px 28px;">
+      <div style="height:7px;background:#B8973C;margin:0 0 18px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;height:92px;margin:0;">
         <div style="line-height:0;">${logoHtml}</div>
         <div style="text-align:right;font-size:12pt;color:#2D4A3E;line-height:1.5;font-family:'Jost',sans-serif;font-weight:500;">Andy Griffiths<br><span style="font-size:10.5pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:10.5pt;color:#5A5550;">andy@mrmallorcagolf.com &nbsp;·&nbsp; mrmallorcagolf.com</span></div>
       </div>
+      <div style="height:2px;background:#2D4A3E;margin:18px 0 0;"></div>
       <div style="padding:18px 0 15px;border-bottom:1px solid #E0D8CB;margin-bottom:16px;">
         <div style="font-family:'Jost',sans-serif;font-size:10pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:5px;">Golf proposal</div>
         <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:38pt;font-weight:600;color:#2D4A3E;line-height:1.02;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
