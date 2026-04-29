@@ -346,6 +346,33 @@ const COURSE_LIST = [
   {id:'vall_dor',        name:"Vall d'Or",               low:99,  mid:105, peak:132, buggyMin:35, buggyMax:50, clubsMin:34, clubsMax:34, gcType:'pkg',     golfcard:true,  licence:false},
 ];
 
+const COURSE_CONTACTS = {
+  son_gual:      {email:'info@son-gual.com', phone:'+34 971 785 888', contactNotes:'Vivien / Maja'},
+  alcanada:      {email:'info@golf-alcanada.com', phone:'+34 971 549 560', contactNotes:'Jenny. Pro rate €12 green fee + €3 golf insurance (€15 total). Book via Jenny. Supplement of 50% of official green fee per unused slot to guarantee exclusivity.'},
+  santa_ponsa:   {email:'golf1@golf-santaponsa.com', phone:'', contactNotes:'Currently member here'},
+  santa_ponsa2:  {email:'golf1@golf-santaponsa.com', phone:'', contactNotes:'Currently member here'},
+  santa_ponsa3:  {email:'golf1@golf-santaponsa.com', phone:'', contactNotes:'Currently member here'},
+  bendinat:      {email:'info@realgolfbendinat.com', phone:'+34 971 405 200', contactNotes:'Elena Ramos. 1 free courtesy round per month. Email Elena with preferred date/time.'},
+  son_termes:    {email:'reservas@golfsontermes.com', phone:'', contactNotes:'Carlos Sastre. Free tee times to PGA accredited players.'},
+  pollenca:      {email:'rec@golfpollensa.com', phone:'', contactNotes:'Free courtesy round - email to reserve, bring PGA card on the day.'},
+  vall_dor:      {email:'valldorgolf@valldorgolf.com', phone:'', contactNotes:'Free twice per year.'},
+  maioris:       {email:'recepcion@golfmaioris.es', phone:'+34 971 748 315', contactNotes:'€49.50 (half price) for a green fee.'},
+  son_servera:   {email:'reservas@golfsonservera.com', phone:'', contactNotes:'Francisco Martínez. 50% rate in high season - green fee €72.50.'},
+  capdepera:     {email:'info@golfcapdepera.com', phone:'', contactNotes:'Free anytime. Also free when bringing paying clients (unlimited). Best policy on island.'},
+  canyamel:      {email:'casaclub@canyamelgolf.com', phone:'', contactNotes:'Tomasi. 1 free round per year. No tee times 9am-1pm during peak season.'},
+  andratx:       {email:'info@golfdeandratx.com', phone:'', contactNotes:'Frank Schossig. Free round upon availability - email Frank with requested date.'},
+  son_muntaner:  {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 783 030', contactNotes:'Inés Sanchez. Up to 6 free rounds/year across Arabella group. Advance/walk-in = 50% rate. Must book within 24hrs. Check with Arabella group.'},
+  son_vida:      {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 791 210', contactNotes:'Inés Sanchez. Up to 6 free rounds/year across Arabella group. Advance/walk-in = 50% rate. Must book within 24hrs. Check with Arabella group.'},
+  son_quint:     {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 606 175', contactNotes:'Inés Sanchez. Up to 6 free rounds/year across Arabella group. Advance/walk-in = 50% rate. Must book within 24hrs. Check with Arabella group.'},
+  palma_pp:      {email:'golf.mallorca@arabellagolf.com', phone:'', contactNotes:'Inés Sanchez. Check with Arabella group.'},
+  t_golf_palma:  {email:'palma@t-golf.club', phone:'', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
+  t_golf_calvia: {email:'calvia@t-golf.club', phone:'', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
+  pula:          {email:'reservas@pulagolf.com', phone:'', contactNotes:'Followed up 9/4/26'},
+  son_antem_e:   {email:'mallorca.golfclub@vacationclub.com', phone:'', contactNotes:'Sophie Duroisin. 4x free then 50% off.'},
+  son_antem_w:   {email:'mallorca.golfclub@vacationclub.com', phone:'', contactNotes:'Sophie Duroisin. 4x free then 50% off.'},
+  rotana:        {email:'', phone:'', contactNotes:''},
+};
+
 // Season bands (global — same for all courses)
 // Peak:  15 Mar–14 Jun, 15 Sep–14 Nov
 // Low:   Jan–Feb, 15 Jun–Aug, 21 Nov–Dec
@@ -561,6 +588,7 @@ function renderSettingsTable(){
   const tb=document.getElementById('settingsBody');
   tb.innerHTML=COURSE_LIST.map(c=>{
     const saved=(settings.courses||{})[c.id]||{};
+    const contact=Object.assign({}, COURSE_CONTACTS[c.id]||{}, saved);
     const defBuggy=c.buggyMax>0?Math.round((c.buggyMin+c.buggyMax)/2):0;
     const defClubs=c.clubsMax>0?Math.round((c.clubsMin+c.clubsMax)/2):0;
     return '<tr>'
@@ -572,9 +600,9 @@ function renderSettingsTable(){
       +'<td><input type="number" data-buggy-rate="'+c.id+'" value="'+(saved.buggyRate||'')+'" placeholder="'+(defBuggy||'N/A')+'" title="Buggy rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-clubs-rate="'+c.id+'" value="'+(saved.clubsRate||'')+'" placeholder="'+(defClubs||'N/A')+'" title="Club hire rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="checkbox" data-course-lic="'+c.id+'" '+(saved.licence?'checked':'')+' onchange="saveSettings()"> Yes</td>'
-      +'<td><input data-course-email="'+c.id+'" value="'+escapeHtml(saved.email||'')+'" placeholder="bookings@..." title="Booking email" style="width:180px;" oninput="saveSettings()"></td>'
-      +'<td><input data-course-phone="'+c.id+'" value="'+escapeHtml(saved.phone||'')+'" placeholder="+34..." title="Booking phone" style="width:130px;" oninput="saveSettings()"></td>'
-      +'<td><input data-course-notes="'+c.id+'" value="'+escapeHtml(saved.contactNotes||'')+'" placeholder="Who to ask / quirks" title="Internal contact notes" style="width:220px;" oninput="saveSettings()"></td>'
+      +'<td><input data-course-email="'+c.id+'" value="'+escapeHtml(contact.email||'')+'" placeholder="bookings@..." title="Booking email" style="width:180px;" oninput="saveSettings()"></td>'
+      +'<td><input data-course-phone="'+c.id+'" value="'+escapeHtml(contact.phone||'')+'" placeholder="+34..." title="Booking phone" style="width:130px;" oninput="saveSettings()"></td>'
+      +'<td><input data-course-notes="'+c.id+'" value="'+escapeHtml(contact.contactNotes||'')+'" placeholder="Who to ask / quirks" title="Internal contact notes" style="width:220px;" oninput="saveSettings()"></td>'
       +'</tr>';
   }).join('');
 }
@@ -953,7 +981,7 @@ function renderMargin(){
 
 // ---- PROPOSAL ----
 function getSavedCourse(id){
-  return ((settings.courses||{})[id])||{};
+  return Object.assign({}, COURSE_CONTACTS[id]||{}, ((settings.courses||{})[id])||{});
 }
 function formatRoundDate(dateStr, opts){
   if(!dateStr) return 'Date TBC';
@@ -998,7 +1026,7 @@ function renderProposal(){
     const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'Date TBC';
 
     const photoHtml=showPhotos&&img
-      ?`<div style="width:268px;min-width:268px;align-self:stretch;overflow:hidden;flex-shrink:0;background:#F7F4EF;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:172px;"></div>`
+      ?`<div style="width:258px;min-width:258px;align-self:stretch;overflow:hidden;flex-shrink:0;background:#F7F4EF;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:158px;"></div>`
       :'';
 
     const gcBadge=gcValid.ok
@@ -1022,14 +1050,14 @@ function renderProposal(){
     }
 
     roundsHtml+=`
-      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:12px;border:1px solid #E0D8CB;border-left:4px solid #B8973C;page-break-inside:avoid;background:#fff;">
+      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:9px;border:1px solid #E0D8CB;border-left:4px solid #B8973C;page-break-inside:avoid;background:#fff;">
         ${photoHtml}
-        <div style="flex:1;min-width:0;padding:22px 26px;display:flex;flex-direction:column;justify-content:center;">
-          <div style="font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:7px;">Round ${i+1}</div>
-          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26pt;font-weight:600;color:#2D4A3E;line-height:1.05;">${c.name}</span>${gcBadge}
+        <div style="flex:1;min-width:0;padding:18px 24px;display:flex;flex-direction:column;justify-content:center;">
+          <div style="font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:5px;">Round ${i+1}</div>
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:25pt;font-weight:600;color:#2D4A3E;line-height:1.05;">${c.name}</span>${gcBadge}
           </div>
-          <div style="font-size:12pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;margin-bottom:6px;">${dateStr}${r.time?' · '+r.time:''}</div>
+          <div style="font-size:11.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;margin-bottom:4px;">${dateStr}${r.time?' · '+r.time:''}</div>
           ${detailHtml}
         </div>
       </div>`;
@@ -1055,33 +1083,33 @@ function renderProposal(){
   }
 
   const notesHtml=notes
-    ?`<div style="margin:0 0 22px;padding:16px 20px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:12pt;line-height:1.65;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;">${notes.replace(/\n/g,'<br>')}</div>`:'';
+    ?`<div style="margin:0 0 16px;padding:13px 18px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:12pt;line-height:1.55;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;">${notes.replace(/\n/g,'<br>')}</div>`:'';
 
   const lockImgEl=document.querySelector('#lock img');
   const logoSrc=lockImgEl?lockImgEl.src:(document.getElementById('navLogo')?document.getElementById('navLogo').src:'');
   const logoHtml=logoSrc&&logoSrc.startsWith('data:')
-    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:68px;filter:brightness(0);">`
+    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:62px;filter:brightness(0);">`
     :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
   const prepDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:900px;margin:0 auto;padding:26px 34px 32px;border-top:7px solid #B8973C;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #2D4A3E;margin-bottom:0;">
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:900px;margin:0 auto;padding:0 34px 28px;border-top:7px solid #B8973C;">
+      <div style="display:flex;justify-content:space-between;align-items:center;min-height:118px;padding:14px 0;border-bottom:2px solid #2D4A3E;margin-bottom:0;">
         <div style="line-height:0;">${logoHtml}</div>
-        <div style="text-align:right;font-size:12pt;color:#2D4A3E;line-height:1.55;font-family:'Jost',sans-serif;font-weight:500;margin-top:2px;">Andy Griffiths<br><span style="font-size:10.5pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:10.5pt;color:#5A5550;">andy@mrmallorcagolf.com &nbsp;·&nbsp; mrmallorcagolf.com</span></div>
+        <div style="text-align:right;font-size:12pt;color:#2D4A3E;line-height:1.5;font-family:'Jost',sans-serif;font-weight:500;">Andy Griffiths<br><span style="font-size:10.5pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:10.5pt;color:#5A5550;">andy@mrmallorcagolf.com &nbsp;·&nbsp; mrmallorcagolf.com</span></div>
       </div>
-      <div style="padding:20px 0 18px;border-bottom:1px solid #E0D8CB;margin-bottom:20px;">
-        <div style="font-family:'Jost',sans-serif;font-size:10pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:6px;">Golf proposal</div>
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:40pt;font-weight:600;color:#2D4A3E;line-height:1.02;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
-        <div style="display:flex;align-items:center;gap:14px;margin-top:12px;">
+      <div style="padding:18px 0 15px;border-bottom:1px solid #E0D8CB;margin-bottom:16px;">
+        <div style="font-family:'Jost',sans-serif;font-size:10pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:5px;">Golf proposal</div>
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:38pt;font-weight:600;color:#2D4A3E;line-height:1.02;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:10px;">
           <div style="width:48px;height:2px;background:#B8973C;flex-shrink:0;"></div>
           <div style="font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${[clientEmail,clientPhone].filter(Boolean).join(' · ')}${(clientEmail||clientPhone)?' &nbsp;·&nbsp; ':''}<span style="color:#8A7F74;">Prepared ${prepDate}</span></div>
         </div>
       </div>
       ${notesHtml}
       ${roundsHtml}
-      <div style="margin-top:14px;padding:18px 20px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
-      <div style="font-size:9pt;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:13px;margin-top:24px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
+      <div style="margin-top:12px;padding:16px 18px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
+      <div style="font-size:9pt;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:11px;margin-top:18px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
     </div>`;
   renderCourseDrafts();
 }
