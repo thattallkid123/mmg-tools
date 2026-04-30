@@ -53,6 +53,11 @@ input[type=checkbox],input[type=radio]{width:auto;}
 .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem;}
 @media(max-width:700px){.grid2,.grid3,.grid4{grid-template-columns:1fr;}}
 @media(max-width:700px){
+  body{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  header{padding:0 .35rem;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  header img{height:30px;margin-right:.35rem;flex:0 0 auto;}
+  nav{flex:0 0 auto;min-width:max-content;}
+  nav button{flex:0 0 auto;padding:.65rem .7rem;font-size:.78rem;white-space:nowrap;}
   .panel{padding:.9rem;}
   table{font-size:.8rem;}
   th,td{padding:.4rem .45rem;}
@@ -86,6 +91,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
 #proposalOut{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:1.2rem;white-space:pre-wrap;font-size:.88rem;line-height:1.6;min-height:100px;font-family:'Jost',monospace;}
 #pProposal{max-width:1100px;}
 #pProposal #proposalOut{max-width:900px;margin:0 auto;}
+#pProposal #printProposal{transform-origin:top left;white-space:normal;}
+@media(max-width:700px){
+  #pProposal #proposalOut{max-width:none;width:100%;padding:0;}
+}
 .copy-bar{display:flex;gap:.6rem;margin-top:.6rem;flex-wrap:wrap;}
 
 .profit-pos{color:var(--green);}
@@ -106,6 +115,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
   header,nav,.copy-bar,.btn{display:none!important;}
   .panel{display:block!important;padding:0;}
   #proposalOut{background:#fff;border:none;color:#000;font-family:Georgia,serif;font-size:11pt;line-height:1.7;}
+  #pProposal #printProposal{transform:none!important;}
   .print-logo{display:block!important;}
 }
 .print-logo{display:none;}
@@ -684,6 +694,25 @@ function openDatePicker(el){
     try{el.showPicker();}catch(e){}
   }
 }
+function fitProposalPreview(){
+  const out=document.getElementById('proposalOut');
+  const paper=document.getElementById('printProposal');
+  if(!out||!paper) return;
+  paper.style.transform='';
+  paper.style.margin='0 auto';
+  out.style.height='';
+  const available=out.clientWidth;
+  const base=paper.offsetWidth||900;
+  if(available&&available<base){
+    const scale=available/base;
+    paper.style.transform='scale('+scale+')';
+    paper.style.margin='0';
+    out.style.height=Math.ceil(paper.offsetHeight*scale)+'px';
+  }
+}
+window.addEventListener('resize',fitProposalPreview);
+window.addEventListener('orientationchange',function(){setTimeout(fitProposalPreview,150);});
+if(document.fonts) document.fonts.ready.then(fitProposalPreview);
 
 // ---- TABS ----
 function tab(name,btn){
@@ -1422,7 +1451,7 @@ function renderProposal(){
 
   const prepDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;max-width:900px;margin:0 auto;padding:14px 34px 22px;">
+    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;width:900px;max-width:900px;margin:0 auto;padding:14px 34px 22px;box-sizing:border-box;">
       <div style="height:5px;background:#B8973C;margin:0 0 4px;"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;height:50px;margin:0;">
         <div style="line-height:0;">${logoHtml}</div>
@@ -1445,6 +1474,7 @@ function renderProposal(){
       <div style="margin-top:9px;padding:12px 16px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
       <div style="font-size:9pt;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:9px;margin-top:14px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
     </div>`;
+  fitProposalPreview();
   renderCourseDrafts();
 }
 
