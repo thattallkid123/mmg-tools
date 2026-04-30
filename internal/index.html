@@ -356,7 +356,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
       </div>
       <div>
         <label>Management fee in proposal</label>
-        <select id="propIncludeFee" onchange="saveState();renderProposal()">
+        <select id="propIncludeFee" onchange="saveState();renderMargin();renderProposal()">
           <option value="no">Course pricing only</option>
           <option value="separate">Show course + management</option>
           <option value="total">Include management in total only</option>
@@ -364,7 +364,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
       </div>
       <div>
         <label>Management fee</label>
-        <input id="managementFee" value="0" placeholder="e.g. 5% or 250" oninput="saveState();renderProposal()">
+        <input id="managementFee" value="0" placeholder="e.g. 5% or 250" oninput="saveState();renderMargin();renderProposal()">
       </div>
       <div>
         <label>Show course photos</label>
@@ -712,12 +712,13 @@ function fitProposalPreview(){
   out.style.height='';
   const available=out.clientWidth;
   const base=paper.offsetWidth||900;
+  let scale=1;
   if(available&&available<base){
-    const scale=available/base;
+    scale=available/base;
     paper.style.transform='scale('+scale+')';
     paper.style.margin='0';
-    out.style.height=Math.ceil(paper.offsetHeight*scale)+'px';
   }
+  out.style.height=Math.ceil(paper.offsetHeight*scale)+'px';
 }
 window.addEventListener('resize',fitProposalPreview);
 window.addEventListener('orientationchange',function(){setTimeout(fitProposalPreview,150);});
@@ -1327,7 +1328,11 @@ function renderMargin(){
   }).join('');
 
   const totalGFProfit=totalCharge-totalCost;
-  const grandProfit=totalGFProfit+andyFee;
+  const courseClientTotal=totalCharge+totalExtras;
+  const proposalFeeMode=normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value);
+  const proposalManagementFee=proposalFeeMode==='no'?0:getProposalManagementFee(courseClientTotal);
+  const managementRaw=String((document.getElementById('managementFee')||{}).value||'0').trim()||'0';
+  const grandProfit=totalGFProfit+proposalManagementFee+andyFee;
   document.getElementById('marginFoot').innerHTML='<tr class="total-row">'
     +'<td colspan="3">TOTALS</td>'
     +'<td>€'+totalCost.toFixed(0)+'</td>'
@@ -1345,7 +1350,8 @@ function renderMargin(){
   document.getElementById('tripSummary').innerHTML=
     '<div style="font-size:.85rem;line-height:1.9;">'
     +'Rounds: <strong>'+rounds.length+'</strong><br>'
-    +"Management fee: <strong>€"+andyFee.toFixed(0)+'</strong> ('+andyDays+' day'+(andyDays===1?'':'s')+', '+dayType+')<br>'
+    +'Proposal management fee: <strong>€'+proposalManagementFee.toFixed(0)+'</strong> ('+(proposalFeeMode==='no'?'hidden/off':managementRaw+', '+(proposalFeeMode==='separate'?'shown separately':'in total only'))+')<br>'
+    +'Andy day fee: <strong>€'+andyFee.toFixed(0)+'</strong> ('+andyDays+' day'+(andyDays===1?'':'s')+', '+dayType+')<br>'
     +'GF margin: <strong>€'+totalGFProfit.toFixed(0)+'</strong><br>'
     +'<hr style="border-color:#222;margin:.4rem 0;">'
     +'<strong>Est. total: €'+grandProfit.toFixed(0)+'</strong>'
