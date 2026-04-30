@@ -1660,14 +1660,15 @@ function renderDashboard(){
         +'<div>'+(q.nextAction?escapeHtml(q.nextAction):'<span style="color:#777;">No action set</span>')+'</div>'
         +'<div style="display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end;">'
         +'<button class="btn btn-pine btn-sm" onclick="loadSavedQuote('+i+')">Load</button>'
-        +'<button class="btn btn-gold btn-sm" onclick="quickStatus('+i+',\'Sent\')">Sent</button>'
-        +'<button class="btn btn-gold btn-sm" onclick="quickStatus('+i+',\'Accepted\')">Accepted</button>'
-        +'<button class="btn btn-pine btn-sm" onclick="quickStatus('+i+',\'Booked\')">Booked</button>'
+        +'<select onchange="setSavedStatus('+i+',this.value)" style="width:108px;padding:.3rem .45rem;font-size:.75rem;">'
+        +['Draft','Sent','Accepted','Booked','Lost','Archived'].map(st=>'<option value="'+st+'"'+(st===status?' selected':'')+'>'+st+'</option>').join('')
+        +'</select>'
         +'<button class="btn btn-pine btn-sm" onclick="duplicateSavedQuote('+i+')">Duplicate</button>'
+        +'<button class="btn btn-red btn-sm" onclick="deleteSavedQuote('+i+')">Delete</button>'
         +'</div></div>';
     }).join('');
 }
-async function quickStatus(idx,status){
+async function setSavedStatus(idx,status){
   const list=getSavedQuotes();
   if(!list[idx]) return;
   list[idx].quoteStatus=status;
@@ -1692,6 +1693,7 @@ async function quickStatus(idx,status){
   }
   renderDashboard(); renderSavedQuotesList();
 }
+async function quickStatus(idx,status){ return setSavedStatus(idx,status); }
 function exportSavedQuotes(){
   const data={version:1,exportedAt:new Date().toISOString(),quotes:getSavedQuotes(),settings};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
