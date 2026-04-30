@@ -402,7 +402,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     <div class="help" style="margin-bottom:.8rem;">My cost per person (leave blank = rack &times; 0.85). Add course emails/phones here so the Proposal tab can generate booking request drafts.</div>
     <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>Course</th><th>Rack Peak (&euro;)</th><th>Rack Mid (&euro;)</th><th>Rack Low (&euro;)</th><th>My Cost/pp</th><th>Buggy</th><th>Clubs</th><th>Lic</th><th>Email</th><th>Phone</th><th>Contact notes</th></tr></thead>
+        <thead><tr><th>Course</th><th>Rack Peak (&euro;)</th><th>Rack Mid (&euro;)</th><th>Rack Low (&euro;)</th><th>My Cost/pp</th><th>Cost mode</th><th>Buggy</th><th>Clubs</th><th>Lic</th><th>Email</th><th>Phone</th><th>Pricing notes</th><th>Contact notes</th></tr></thead>
         <tbody id="settingsBody"></tbody>
       </table>
     </div>
@@ -432,7 +432,7 @@ const COURSE_LIST = [
   {id:'santa_ponsa',     name:'Golf Santa Ponsa',        low:77,  mid:100, peak:126, buggyMin:33, buggyMax:43, clubsMin:30, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
   {id:'santa_ponsa2',    name:'Golf Santa Ponsa II',     low:70,  mid:85,  peak:100, buggyMin:30, buggyMax:35, clubsMin:30, clubsMax:35, gcType:'none',    golfcard:false, licence:false},
   {id:'santa_ponsa3',    name:'Golf Santa Ponsa III',    low:60,  mid:75,  peak:90,  buggyMin:28, buggyMax:35, clubsMin:28, clubsMax:35, gcType:'none',    golfcard:false, licence:false},
-  {id:'son_servera',     name:'Golf Son Servera',        low:78,  mid:98,  peak:130, buggyMin:38, buggyMax:49, clubsMin:29, clubsMax:39, gcType:'2for1',   golfcard:true,  licence:false},
+  {id:'son_servera',     name:'Golf Son Servera',        low:80,  mid:105, peak:145, buggyMin:49, buggyMax:49, clubsMin:39, clubsMax:39, gcType:'2for1',   golfcard:true,  licence:false},
   {id:'palma_pp',        name:'Palma Pitch & Putt',      low:12,  mid:15,  peak:18,  buggyMin:0,  buggyMax:0,  clubsMin:8,  clubsMax:10, gcType:'none',    golfcard:false, licence:false},
   {id:'rotana',          name:'Rotana Golf',             low:85,  mid:110, peak:130, buggyMin:30, buggyMax:40, clubsMin:30, clubsMax:35, gcType:'none',    golfcard:false, licence:false},
   {id:'son_antem_e',     name:'Son Antem East',          low:105, mid:115, peak:140, buggyMin:35, buggyMax:45, clubsMin:35, clubsMax:40, gcType:'2for1',   golfcard:true,  licence:false},
@@ -458,21 +458,50 @@ const COURSE_CONTACTS = {
   pollenca:      {email:'rec@golfpollensa.com', phone:'', contactNotes:'Free courtesy round - email to reserve, bring PGA card on the day.'},
   vall_dor:      {email:'valldorgolf@valldorgolf.com', phone:'', contactNotes:'Free twice per year.'},
   maioris:       {email:'recepcion@golfmaioris.es', phone:'+34 971 748 315', contactNotes:'€49.50 (half price) for a green fee.'},
-  son_servera:   {email:'reservas@golfsonservera.com', phone:'', contactNotes:'Francisco Martínez. 50% rate in high season - green fee €72.50.'},
-  capdepera:     {email:'info@golfcapdepera.com', phone:'', contactNotes:'Free anytime. Also free when bringing paying clients (unlimited). Best policy on island.'},
+  son_servera:   {email:'reservas@golfsonservera.com', phone:'+34 971 840 096', costMode:'partner18', pricingNotes:'2026 partner voucher 18H net rates: Low €65, Mid €80, High €105. Group discount on net: 11-20 players 5%, 21+ 10%. Buggy €49, club rental €39.', contactNotes:'Felipe Nicholson / reservations. Contract valid 01 Jan-31 Dec 2026. Pro: low season invited; mid/high 50% rack; free with 9+ players.'},
+  capdepera:     {email:'info@golfcapdepera.com', phone:'', costMode:'rack', pricingNotes:'No TO/pro discount confirmed; use public/dynamic rack rates unless agreed otherwise. No buggy or club packages.', contactNotes:'Mattias. No TO prices for Pros. Can discuss client rates if coming regularly.'},
   canyamel:      {email:'casaclub@canyamelgolf.com', phone:'', contactNotes:'Tomasi. 1 free round per year. No tee times 9am-1pm during peak season.'},
   andratx:       {email:'info@golfdeandratx.com', phone:'', contactNotes:'Frank Schossig. Free round upon availability - email Frank with requested date.'},
   son_muntaner:  {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 783 030', contactNotes:'Inés Sanchez. Up to 6 free rounds/year across Arabella group. Advance/walk-in = 50% rate. Must book within 24hrs. Check with Arabella group.'},
   son_vida:      {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 791 210', contactNotes:'Inés Sanchez. Up to 6 free rounds/year across Arabella group. Advance/walk-in = 50% rate. Must book within 24hrs. Check with Arabella group.'},
   son_quint:     {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 606 175', contactNotes:'Inés Sanchez. Up to 6 free rounds/year across Arabella group. Advance/walk-in = 50% rate. Must book within 24hrs. Check with Arabella group.'},
   palma_pp:      {email:'golf.mallorca@arabellagolf.com', phone:'', contactNotes:'Inés Sanchez. Check with Arabella group.'},
-  t_golf_palma:  {email:'palma@t-golf.club', phone:'', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
-  t_golf_calvia: {email:'calvia@t-golf.club', phone:'', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
+  t_golf_palma:  {email:'palma@t-golf.club', phone:'', costMode:'rack', pricingNotes:'No fixed TO amateur rates; green fees and rentals are dynamic. Pro free with 7 amateurs; otherwise pro industry rate is usually €110. Driving range teaching requires same-day green fee; tokens €100 = 10.', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
+  t_golf_calvia: {email:'calvia@t-golf.club', phone:'', costMode:'rack', pricingNotes:'No fixed TO amateur rates; green fees and rentals are dynamic. Pro free with 7 amateurs; otherwise pro industry rate is usually €110. Driving range teaching requires same-day green fee; tokens €100 = 10.', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
   pula:          {email:'reservas@pulagolf.com', phone:'', contactNotes:'Followed up 9/4/26'},
   son_antem_e:   {email:'mallorca.golfclub@vacationclub.com', phone:'', contactNotes:'Sophie Duroisin. 4x free then 50% off.'},
   son_antem_w:   {email:'mallorca.golfclub@vacationclub.com', phone:'', contactNotes:'Sophie Duroisin. 4x free then 50% off.'},
   rotana:        {email:'', phone:'', contactNotes:''},
 };
+
+const COURSE_COST_MODES = [
+  {id:'auto', label:'Auto rack x 0.85'},
+  {id:'rack', label:'No discount / rack'},
+  {id:'partner18', label:'Partner voucher 18H'}
+];
+
+const COURSE_RATE_BANDS = {
+  son_servera: [
+    {from:'01-01', to:'01-06', label:'Mid', rack18:105, rack9:60, partner18:80},
+    {from:'01-07', to:'02-08', label:'Low', rack18:80, rack9:60, partner18:65},
+    {from:'02-09', to:'03-01', label:'Mid', rack18:105, rack9:60, partner18:80},
+    {from:'03-02', to:'06-07', label:'High', rack18:145, rack9:80, partner18:105},
+    {from:'06-08', to:'06-28', label:'Mid', rack18:105, rack9:60, partner18:80},
+    {from:'06-29', to:'08-30', label:'Low', rack18:80, rack9:60, partner18:65},
+    {from:'08-31', to:'09-13', label:'Mid', rack18:105, rack9:60, partner18:80},
+    {from:'09-14', to:'11-15', label:'High', rack18:145, rack9:80, partner18:105},
+    {from:'11-16', to:'11-29', label:'Mid', rack18:105, rack9:60, partner18:80},
+    {from:'11-30', to:'12-20', label:'Low', rack18:80, rack9:60, partner18:65},
+    {from:'12-21', to:'12-31', label:'Mid', rack18:105, rack9:60, partner18:80}
+  ]
+};
+
+function getCourseRateBand(courseId, dateStr){
+  const bands=COURSE_RATE_BANDS[courseId];
+  if(!bands||!dateStr) return null;
+  const md=dateStr.slice(5,10);
+  return bands.find(b=>md>=b.from&&md<=b.to)||null;
+}
 
 // Season bands (global — same for all courses)
 // Peak:  15 Mar–14 Jun, 15 Sep–14 Nov
@@ -511,6 +540,8 @@ function getRackGF(courseId, dateStr){
     if(season==='low'&&saved.rackLow) return saved.rackLow;
     if(season==='mid'&&saved.rackMid) return saved.rackMid;
   }
+  const band=getCourseRateBand(courseId,dateStr);
+  if(band&&band.rack18) return band.rack18;
   const c=COURSE_LIST.find(x=>x.id===courseId);
   if(!c) return 0;
   if(season==='peak') return c.peak;
@@ -650,10 +681,34 @@ function openTab(name){
 // ---- SETTINGS ----
 function loadSettings(){
   try{ settings=JSON.parse(localStorage.getItem('mmg_settings')||'{}'); }catch(e){ settings={}; }
+  migrateSettings();
   document.getElementById('setSoloFee').value=settings.soloFee||495;
   document.getElementById('setGroupFee').value=settings.groupFee||950;
   document.getElementById('soloFeeLabel').textContent='€'+(settings.soloFee||495)+'/day';
   document.getElementById('groupFeeLabel').textContent='€'+(settings.groupFee||950)+'/day';
+}
+function migrateSettings(){
+  if(!settings.courses) return;
+  const replacements={
+    son_servera: {
+      old:'Francisco Martínez. 50% rate in high season - green fee €72.50.',
+      contactNotes: COURSE_CONTACTS.son_servera.contactNotes
+    },
+    capdepera: {
+      old:'Free anytime. Also free when bringing paying clients (unlimited). Best policy on island.',
+      contactNotes: COURSE_CONTACTS.capdepera.contactNotes
+    }
+  };
+  let changed=false;
+  Object.keys(replacements).forEach(id=>{
+    const course=settings.courses[id];
+    const repl=replacements[id];
+    if(course&&course.contactNotes===repl.old){
+      course.contactNotes=repl.contactNotes;
+      changed=true;
+    }
+  });
+  if(changed) localStorage.setItem('mmg_settings',JSON.stringify(settings));
 }
 function saveSettings(){
   settings.soloFee=parseFloat(document.getElementById('setSoloFee').value)||495;
@@ -676,9 +731,16 @@ function saveSettings(){
     ensureCourse(id);
     settings.courses[id].licence=chk.checked;
   });
+  document.querySelectorAll('[data-cost-mode]').forEach(sel=>{
+    const id=sel.dataset.costMode;
+    ensureCourse(id);
+    if(sel.value) settings.courses[id].costMode=sel.value;
+    else delete settings.courses[id].costMode;
+  });
   [
     ['data-course-email','email'],
     ['data-course-phone','phone'],
+    ['data-pricing-notes','pricingNotes'],
     ['data-course-notes','contactNotes']
   ].forEach(([attr,key])=>{
     document.querySelectorAll('['+attr+']').forEach(inp=>{
@@ -701,6 +763,7 @@ function renderSettingsTable(){
   tb.innerHTML=COURSE_LIST.map(c=>{
     const saved=(settings.courses||{})[c.id]||{};
     const contact=Object.assign({}, COURSE_CONTACTS[c.id]||{}, saved);
+    const mode=contact.costMode||'auto';
     const defBuggy=c.buggyMax>0?Math.round((c.buggyMin+c.buggyMax)/2):0;
     const defClubs=c.clubsMax>0?Math.round((c.clubsMin+c.clubsMax)/2):0;
     return '<tr>'
@@ -709,20 +772,37 @@ function renderSettingsTable(){
       +'<td><input type="number" data-rack-mid="'+c.id+'"  value="'+(saved.rackMid||'')+'"  placeholder="'+(c.mid||Math.round((c.peak+c.low)/2))+'" title="Mid rack GF" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-rack-low="'+c.id+'"  value="'+(saved.rackLow||'')+'"  placeholder="'+c.low+'" title="Low rack GF" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-course-cost="'+c.id+'" value="'+(saved.myCost||'')+'" placeholder="auto" title="My cost/pp (overrides auto)" style="width:68px;" oninput="saveSettings()"></td>'
+      +'<td><select data-cost-mode="'+c.id+'" title="How auto cost should be calculated" style="width:145px;" onchange="saveSettings()">'+COURSE_COST_MODES.map(opt=>'<option value="'+opt.id+'"'+(opt.id===mode?' selected':'')+'>'+opt.label+'</option>').join('')+'</select></td>'
       +'<td><input type="number" data-buggy-rate="'+c.id+'" value="'+(saved.buggyRate||'')+'" placeholder="'+(defBuggy||'N/A')+'" title="Buggy rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-clubs-rate="'+c.id+'" value="'+(saved.clubsRate||'')+'" placeholder="'+(defClubs||'N/A')+'" title="Club hire rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="checkbox" data-course-lic="'+c.id+'" '+(saved.licence?'checked':'')+' onchange="saveSettings()"> Yes</td>'
       +'<td><input data-course-email="'+c.id+'" value="'+escapeHtml(contact.email||'')+'" placeholder="bookings@..." title="Booking email" style="width:180px;" oninput="saveSettings()"></td>'
       +'<td><input data-course-phone="'+c.id+'" value="'+escapeHtml(contact.phone||'')+'" placeholder="+34..." title="Booking phone" style="width:130px;" oninput="saveSettings()"></td>'
+      +'<td><input data-pricing-notes="'+c.id+'" value="'+escapeHtml(contact.pricingNotes||'')+'" placeholder="Rates / time bands / terms" title="Internal pricing notes" style="width:260px;" oninput="saveSettings()"></td>'
       +'<td><input data-course-notes="'+c.id+'" value="'+escapeHtml(contact.contactNotes||'')+'" placeholder="Who to ask / quirks" title="Internal contact notes" style="width:220px;" oninput="saveSettings()"></td>'
       +'</tr>';
   }).join('');
 }
-function getMyCost(id, dateStr){
-  const saved=(settings.courses||{})[id];
-  if(saved&&saved.myCost) return saved.myCost;
-  // Fall back to rack × 0.85
+function applyCourseCostRules(id, baseCost, players){
+  const p=parseInt(players)||1;
+  if(id==='son_servera'){
+    if(p>=21) return Math.round(baseCost*0.90);
+    if(p>=11) return Math.round(baseCost*0.95);
+  }
+  return baseCost;
+}
+function getMyCost(id, dateStr, players){
+  const saved=(settings.courses||{})[id]||{};
+  if(saved&&saved.myCost) return applyCourseCostRules(id,saved.myCost,players);
+  const defaults=COURSE_CONTACTS[id]||{};
+  const mode=saved.costMode||defaults.costMode||'auto';
   const rack=getRackGF(id, dateStr||'');
+  if(mode==='rack') return rack;
+  if(mode==='partner18'){
+    const band=getCourseRateBand(id,dateStr);
+    if(band&&band.partner18) return applyCourseCostRules(id,band.partner18,players);
+  }
+  // Fall back to rack x 0.85
   return Math.round(rack*0.85);
 }
 function hasLicence(id){
@@ -1043,6 +1123,7 @@ function renderTable(){
   }
   tb.innerHTML=rounds.map((r,i)=>{
     const c=COURSE_LIST.find(x=>x.id===r.cid)||COURSE_LIST[0];
+    const players=parseInt(r.players)||1;
     const gcValid=useGC&&c.golfcard?isGolfcardValid(r.cid,r.date,r.time):{ok:false,note:''};
     let gcBadge='<span style="color:#555;font-size:.75rem">N/A</span>';
     if(useGC&&c.golfcard){
@@ -1113,7 +1194,8 @@ function renderMargin(){
   }
   tb.innerHTML=rounds.map(r=>{
     const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid,rack:0,gcType:'none',golfcard:false};
-    let myCost=getMyCost(r.cid, r.date);
+    const players=r.players||1;
+    let myCost=getMyCost(r.cid, r.date, players);
     const charge=r.gf||0;
     const buggy=(r.buggyQty||0)*(r.buggyRate||getBuggyRate(r.cid));
     const clubs=(r.clubsQty||0)*(r.clubsRate||getClubsRate(r.cid));
@@ -1121,8 +1203,7 @@ function renderMargin(){
     let gcNote='';
     if(gcValid.ok&&c.gcType==='2for1'){gcNote='GC 2FOR1';myCost=myCost/2;}
     else if(gcValid.ok) gcNote='GC disc';
-    const players=r.players||1;
-    const rGFCost=myCost*players,rCharge=charge*players,rExtras=(buggy+clubs)*players;
+    const rGFCost=myCost*players,rCharge=charge*players,rExtras=buggy+clubs;
     const rGFMargin=rCharge-rGFCost;
     totalCost+=rGFCost;totalCharge+=rCharge;totalExtras+=rExtras;
     return '<tr>'
@@ -1203,8 +1284,8 @@ function renderProposal(){
     const clubs=(r.clubsQty||0)*(r.clubsRate||getClubsRate(r.cid));
     const players=parseInt(r.players)||1;
     const gfTotal=gf*players;
-    const buggyTotal=buggy*players;
-    const clubsTotal=clubs*players;
+    const buggyTotal=buggy;
+    const clubsTotal=clubs;
     const sub=gfTotal+buggyTotal+clubsTotal;
     grandTotal+=sub;
 
@@ -1372,12 +1453,14 @@ function renderCourseDrafts(){
     +groups.map((g,i)=>{
       const email=g.contact.email||'';
       const phone=g.contact.phone||'';
+      const pricing=g.contact.pricingNotes||'';
       const notes=g.contact.contactNotes||'';
       return '<div style="display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:.7rem;align-items:center;border-top:1px solid #242424;padding:.65rem 0;">'
         +'<div><strong>'+escapeHtml(g.course.name)+'</strong>'
         +'<div class="help" style="margin-top:.2rem;">'
         +(email?'Email: '+escapeHtml(email):'No email saved')
         +(phone?' &nbsp;·&nbsp; Phone: '+escapeHtml(phone):'')
+        +(pricing?'<br>Pricing: '+escapeHtml(pricing):'')
         +(notes?'<br>Notes: '+escapeHtml(notes):'')
         +'</div></div>'
         +'<div style="display:flex;gap:.45rem;flex-wrap:wrap;justify-content:flex-end;">'
@@ -1486,8 +1569,8 @@ function calculateQuoteSummary(data){
     const gf=parseFloat(r.gf)||getRackGF(r.cid,r.date)||0;
     const buggy=(r.buggyQty||0)*(r.buggyRate||getBuggyRate(r.cid));
     const clubs=(r.clubsQty||0)*(r.clubsRate||getClubsRate(r.cid));
-    total+=(gf*p)+(buggy*p)+(clubs*p);
-    cost+=getMyCost(r.cid,r.date)*p;
+    total+=(gf*p)+buggy+clubs;
+    cost+=getMyCost(r.cid,r.date,p)*p;
   });
   const firstTee=dates.sort()[0]||'';
   if(includeFee) total+=andyFee;
