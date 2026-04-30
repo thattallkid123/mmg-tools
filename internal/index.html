@@ -162,8 +162,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <option value="date">First tee date</option>
       </select>
       <button class="btn btn-gold btn-sm" onclick="saveQuoteToList()">Save current</button>
+      <button class="btn btn-pine btn-sm" onclick="loadCloudQuotes()">Refresh cloud</button>
       <button class="btn btn-pine btn-sm" onclick="exportSavedQuotes()">Export backup</button>
       <label class="btn btn-pine btn-sm" style="cursor:pointer;margin:0;">Import backup<input type="file" accept=".json" onchange="importSavedQuotes(this)" style="display:none;"></label>
+      <span id="cloudStatus" class="help" style="margin:0;"></span>
     </div>
     <div id="dashboardList"></div>
   </div>
@@ -413,6 +415,8 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
 
 <script>
 const PASSCODE = 'mmg2710';
+const SUPABASE_URL = 'https://ravorybcyptaqoqtxlaw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhdm9yeWJjeXB0YXFvcXR4bGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDIzMTMsImV4cCI6MjA5MzExODMxM30.90mYDMdHijTmegCR8ZjO1GEMy3PuCTCb1ZVG0FNE36g';
 
 const LOGO_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAAA5ZDbSAAArOElEQVR42u1dd5ydZZV+zi0zk8lkJpOZkEJIIAQIIUKEIEUKUkSUBVQQ17os'; // truncated for size - loaded from DOM
 
@@ -584,6 +588,7 @@ const COURSE_IMAGES = {
 let rounds = [];
 let settings = {};
 let nextId = 1;
+let currentSupabaseId = '';
 
 // ---- LOCK ----
 function tryUnlock(){
@@ -607,6 +612,7 @@ function init(){
   renderMargin();
   renderProposal();
   renderDashboard();
+  loadCloudQuotes(true);
   toggleGCRow();
   updateSyncNum();
   syncWorkflowMirrors();
@@ -758,6 +764,7 @@ function setValue(id,val){
   if(el) el.value=val||'';
 }
 function applyQuoteData(data){
+  currentSupabaseId=data.supabaseId||data.id||'';
   setValue('clientName',data.clientName);
   setValue('clientEmail',data.clientEmail);
   setValue('clientPhone',data.clientPhone);
@@ -1508,6 +1515,93 @@ function isDue(dateStr){
   const d=new Date(dateStr+'T12:00:00'); d.setHours(0,0,0,0);
   return d<=today;
 }
+function setCloudStatus(msg,ok){
+  const el=document.getElementById('cloudStatus');
+  if(!el) return;
+  el.textContent=msg||'';
+  el.style.color=ok?'var(--green)':'#888';
+}
+async function supabaseRequest(path,opts){
+  opts=opts||{};
+  const headers=Object.assign({
+      apikey:SUPABASE_ANON_KEY,
+      Authorization:'Bearer '+SUPABASE_ANON_KEY,
+      'Content-Type':'application/json',
+    },opts.headers||{});
+  const res=await fetch(SUPABASE_URL+path,Object.assign({},opts,{headers}));
+  if(!res.ok){
+    const text=await res.text();
+    throw new Error(text||('Supabase error '+res.status));
+  }
+  if(res.status===204) return null;
+  return res.json();
+}
+function proposalRecord(data){
+  const summary=calculateQuoteSummary(data);
+  return {
+    name:data.name||data.clientName||'Unnamed proposal',
+    client_name:data.clientName||'',
+    status:data.quoteStatus||data.status||'Draft',
+    next_action:data.nextAction||'',
+    follow_up_date:data.followUpDate||null,
+    first_tee_date:summary.firstTee||null,
+    total_value:summary.total||0,
+    data:data,
+    updated_at:new Date().toISOString(),
+  };
+}
+async function saveQuoteCloud(data){
+  const record=proposalRecord(data);
+  const headers={Prefer:'return=representation'};
+  if(data.supabaseId){
+    const rows=await supabaseRequest('/rest/v1/proposals?id=eq.'+encodeURIComponent(data.supabaseId),{
+      method:'PATCH',
+      headers,
+      body:JSON.stringify(record),
+    });
+    return rows&&rows[0]?rows[0]:null;
+  }
+  const rows=await supabaseRequest('/rest/v1/proposals',{
+    method:'POST',
+    headers,
+    body:JSON.stringify(record),
+  });
+  return rows&&rows[0]?rows[0]:null;
+}
+function mergeSavedQuotes(incoming){
+  const current=getSavedQuotes();
+  const seen=new Set();
+  const merged=[];
+  incoming.concat(current).forEach(q=>{
+    const key=q.supabaseId?('cloud:'+q.supabaseId):('local:'+(q.name||'')+':' +(q.savedAt||''));
+    if(seen.has(key)) return;
+    seen.add(key);
+    merged.push(q);
+  });
+  localStorage.setItem('mmg_saved_quotes',JSON.stringify(merged.slice(0,100)));
+  renderDashboard();
+  if(document.getElementById('savedQuotesPanel').style.display!=='none') renderSavedQuotesList();
+}
+async function loadCloudQuotes(silent){
+  try{
+    setCloudStatus('Loading cloud...',false);
+    const rows=await supabaseRequest('/rest/v1/proposals?select=*&order=updated_at.desc');
+    const quotes=(rows||[]).map(row=>Object.assign({},row.data||{},{
+      supabaseId:row.id,
+      name:(row.data&&row.data.name)||row.name,
+      quoteStatus:row.status||((row.data||{}).quoteStatus)||'Draft',
+      nextAction:row.next_action||((row.data||{}).nextAction)||'',
+      followUpDate:row.follow_up_date||((row.data||{}).followUpDate)||'',
+      savedAt:row.updated_at||row.created_at||((row.data||{}).savedAt),
+    }));
+    mergeSavedQuotes(quotes);
+    setCloudStatus('Cloud loaded: '+quotes.length,true);
+    if(!silent) alert('Loaded '+quotes.length+' cloud proposal'+(quotes.length!==1?'s':'')+'.');
+  }catch(err){
+    setCloudStatus('Cloud load failed',false);
+    if(!silent) alert('Could not load cloud proposals: '+err.message);
+  }
+}
 
 // ---- DASHBOARD ----
 function renderDashboard(){
@@ -1573,7 +1667,7 @@ function renderDashboard(){
         +'</div></div>';
     }).join('');
 }
-function quickStatus(idx,status){
+async function quickStatus(idx,status){
   const list=getSavedQuotes();
   if(!list[idx]) return;
   list[idx].quoteStatus=status;
@@ -1586,6 +1680,16 @@ function quickStatus(idx,status){
   if(status==='Accepted') list[idx].nextAction='Contact courses to book tee times';
   if(status==='Booked') list[idx].nextAction='Send final confirmation to client';
   localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
+  try{
+    const row=await saveQuoteCloud(list[idx]);
+    if(row&&row.id){
+      list[idx].supabaseId=row.id;
+      localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
+    }
+    setCloudStatus('Cloud updated',true);
+  }catch(err){
+    setCloudStatus('Cloud update failed',false);
+  }
   renderDashboard(); renderSavedQuotesList();
 }
 function exportSavedQuotes(){
@@ -1624,6 +1728,7 @@ function getCurrentQuoteData(name){
     version:2,
     savedAt:new Date().toISOString(),
     name:name||'',
+    supabaseId:currentSupabaseId||'',
     clientName:document.getElementById('clientName').value,
     clientEmail:document.getElementById('clientEmail').value,
     clientPhone:document.getElementById('clientPhone').value,
@@ -1678,15 +1783,25 @@ function loadQuoteFile(input){
 function getSavedQuotes(){
   try{return JSON.parse(localStorage.getItem('mmg_saved_quotes')||'[]');}catch(e){return [];}
 }
-function saveQuoteToList(){
+async function saveQuoteToList(){
   const clientName=document.getElementById('clientName').value||'Unnamed';
   const name=prompt('Save quote as:',clientName+' — '+new Date().toLocaleDateString('en-GB'));
   if(!name) return;
   const data=getCurrentQuoteData(name);
   const list=getSavedQuotes();
-  list.unshift(data);
-  if(list.length>50) list.length=50;
-  localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
+  try{
+    setCloudStatus('Saving cloud...',false);
+    const row=await saveQuoteCloud(data);
+    if(row&&row.id){data.supabaseId=row.id;currentSupabaseId=row.id;}
+    setCloudStatus('Saved to cloud',true);
+  }catch(err){
+    setCloudStatus('Cloud save failed',false);
+    alert('Saved on this device, but cloud save failed: '+err.message);
+  }
+  const deduped=data.supabaseId?list.filter(q=>q.supabaseId!==data.supabaseId):list;
+  deduped.unshift(data);
+  if(deduped.length>50) deduped.length=50;
+  localStorage.setItem('mmg_saved_quotes',JSON.stringify(deduped));
   if(document.getElementById('savedQuotesPanel').style.display!=='none') renderSavedQuotesList();
   renderDashboard();
   alert('Saved: '+name);
@@ -1723,6 +1838,7 @@ function duplicateSavedQuote(idx){
   var copy=JSON.parse(JSON.stringify(data));
   copy.name=(copy.name||'Quote')+' copy';
   copy.savedAt=new Date().toISOString();
+  copy.supabaseId='';
   copy.quoteStatus='Draft';
   copy.nextAction='Review copied quote';
   list.unshift(copy);
@@ -1736,11 +1852,20 @@ function loadSavedQuote(idx){
   applyQuoteData(data);
   document.getElementById('savedQuotesPanel').style.display='none';
 }
-function deleteSavedQuote(idx){
+async function deleteSavedQuote(idx){
   var list=getSavedQuotes();
   if(!confirm('Delete "'+list[idx].name+'"?')) return;
+  const supabaseId=list[idx].supabaseId;
   list.splice(idx,1);
   localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
+  if(supabaseId){
+    try{
+      await supabaseRequest('/rest/v1/proposals?id=eq.'+encodeURIComponent(supabaseId),{method:'DELETE'});
+      setCloudStatus('Deleted from cloud',true);
+    }catch(err){
+      setCloudStatus('Cloud delete failed',false);
+    }
+  }
   renderSavedQuotesList(); renderDashboard();
 }
 
