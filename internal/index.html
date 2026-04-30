@@ -90,10 +90,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
 
 #proposalOut{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:1.2rem;white-space:pre-wrap;font-size:.88rem;line-height:1.6;min-height:100px;font-family:'Jost',monospace;}
 #pProposal{max-width:1100px;}
-#pProposal #proposalOut{max-width:900px;margin:0 auto;}
+#pProposal #proposalOut{max-width:900px;margin:0 auto;overflow:visible!important;}
 #pProposal #printProposal{transform-origin:top left;white-space:normal;}
 @media(max-width:700px){
-  #pProposal #proposalOut{max-width:none;width:100%;padding:0;}
+  #pProposal #proposalOut{max-width:none;width:100%;padding:0;overflow:hidden!important;}
 }
 .copy-bar{display:flex;gap:.6rem;margin-top:.6rem;flex-wrap:wrap;}
 
@@ -266,7 +266,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     <h3>Text Input</h3>
     <div style="margin-bottom:.6rem;">
       <label>Paste enquiry text — courses, dates, times in any format</label>
-      <textarea id="parseInput" oninput="autoGrow(this)" placeholder="e.g.&#10;Son Gual 14th May 10am&#10;Alcanada 15/5 10:30&#10;Pollenca 16 May afternoon 4 players&#10;&#10;Add 'buggies needed' or 'club hire' anywhere in the text to pre-fill those rates for all rounds."></textarea>
+      <textarea id="parseInput" oninput="autoGrow(this);scheduleTextImport()" placeholder="e.g.&#10;Son Gual 14th May 10am&#10;Alcanada 15/5 10:30&#10;Pollenca 16 May afternoon 4 players&#10;&#10;Add 'buggies needed' or 'club hire' anywhere in the text to pre-fill those rates for all rounds."></textarea>
     </div>
     <div style="margin-bottom:.5rem;display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;">
       <label style="display:flex;align-items:center;gap:.3rem;font-size:.85rem;cursor:pointer;">
@@ -671,6 +671,7 @@ function init(){
   syncWorkflowMirrors();
   renderMissingInfo();
   autoGrow(document.getElementById('parseInput'));
+  textImportArmed=!!((document.getElementById('parseInput')||{}).value&&rounds.length);
   // set nav logo src from lock logo
   const lockImg = document.querySelector('#lock img');
   if(lockImg) document.getElementById('navLogo').src = lockImg.src;
@@ -693,6 +694,13 @@ function openDatePicker(el){
   if(el&&typeof el.showPicker==='function'){
     try{el.showPicker();}catch(e){}
   }
+}
+let textImportTimer=null;
+let textImportArmed=false;
+function scheduleTextImport(){
+  if(!textImportArmed) return;
+  clearTimeout(textImportTimer);
+  textImportTimer=setTimeout(function(){parseEnquiry(false,true);},450);
 }
 function fitProposalPreview(){
   const out=document.getElementById('proposalOut');
@@ -1055,7 +1063,12 @@ function parseTime(text){
   if(t.includes('evening')) return '17:00';
   return '';
 }
-function parseEnquiry(append){
+function getMentionedQty(text,words){
+  const pattern='(\\d+)\\s*(?:'+words+')';
+  const m=String(text||'').match(new RegExp(pattern,'i'));
+  return m?parseInt(m[1]):null;
+}
+function parseEnquiry(append,silent){
   const raw=document.getElementById('parseInput').value;
   const lines=raw.split(/[\n;]+/).map(l=>l.trim()).filter(Boolean);
   const numP=parseInt(document.getElementById('numPlayers').value)||2;
@@ -1064,8 +1077,10 @@ function parseEnquiry(append){
   // Buggy/clubs: use checkboxes OR text keywords in the paste
   const buggyChk=document.getElementById('parseBuggies');
   const clubsChk=document.getElementById('parseClubs');
-  const globalBuggy=(buggyChk&&buggyChk.checked)||/buggy|buggie/i.test(raw);
-  const globalClubs=(clubsChk&&clubsChk.checked)||/club hire|hire clubs|clubs needed|club rental/i.test(raw);
+  const globalBuggyQty=getMentionedQty(raw,'buggies|buggy|buggie');
+  const globalClubsQty=getMentionedQty(raw,'club sets|clubs|club hire|hire clubs|sets');
+  const globalBuggy=(buggyChk&&buggyChk.checked)||globalBuggyQty!==null||/buggy|buggie/i.test(raw);
+  const globalClubs=(clubsChk&&clubsChk.checked)||globalClubsQty!==null||/club hire|hire clubs|clubs needed|club rental/i.test(raw);
   for(const line of lines){
     const cid=findCourse(line);
     if(!cid){unmatched.push(line);continue;}
@@ -1075,19 +1090,22 @@ function parseEnquiry(append){
     const pm=line.match(/(\d+)\s*(?:player|pax|person|people)/i);
     const players=pm?parseInt(pm[1]):numP;
     // per-line buggy/clubs override
-    const lineBuggy=globalBuggy||/buggy|buggie/i.test(line);
-    const lineClubs=globalClubs||/club hire|hire clubs|clubs/i.test(line);
+    const lineBuggyQty=getMentionedQty(line,'buggies|buggy|buggie');
+    const lineClubsQty=getMentionedQty(line,'club sets|clubs|club hire|hire clubs|sets');
+    const lineBuggy=lineBuggyQty!==null||globalBuggy||/buggy|buggie/i.test(line);
+    const lineClubs=lineClubsQty!==null||globalClubs||/club hire|hire clubs|clubs/i.test(line);
     const gf=getRackGF(cid,date)||0;
-    const buggyRate=lineBuggy?getBuggyRate(cid):0;
-    const clubsRate=lineClubs?getClubsRate(cid):0;
-    newRounds.push({id:nextId++,cid,date,time,players,gf,buggyQty:lineBuggy?Math.ceil(players/2):0,buggyRate:getBuggyRate(cid),clubsQty:lineClubs?players:0,clubsRate:getClubsRate(cid),licence:hasLicence(cid)});
+    const buggyQty=lineBuggy?(lineBuggyQty!==null?lineBuggyQty:(globalBuggyQty!==null?globalBuggyQty:Math.ceil(players/2))):0;
+    const clubsQty=lineClubs?(lineClubsQty!==null?lineClubsQty:(globalClubsQty!==null?globalClubsQty:players)):0;
+    newRounds.push({id:nextId++,cid,date,time,players,gf,buggyQty,buggyRate:getBuggyRate(cid),clubsQty,clubsRate:getClubsRate(cid),licence:hasLicence(cid)});
   }
   if(!append) rounds=newRounds;
   else rounds=rounds.concat(newRounds);
   let msg=newRounds.length+' round'+(newRounds.length!==1?'s':'')+' '+(append?'added to list':'loaded')+'.';
   if(unmatched.length) msg+=' Couldn\'t match: '+unmatched.join(', ');
   document.getElementById('parseStatus').textContent=msg;
-  saveState(); renderTable();
+  textImportArmed=true;
+  saveState(); renderTable(); renderMargin(); renderProposal(); renderMissingInfo(); renderDashboard();
 }
 function addRow(){
   const numP=parseInt(document.getElementById('numPlayers').value)||2;
@@ -1452,12 +1470,12 @@ function renderProposal(){
   const prepDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   el.innerHTML=`
     <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;width:900px;max-width:900px;margin:0 auto;padding:14px 34px 22px;box-sizing:border-box;">
-      <div style="height:5px;background:#B8973C;margin:0 0 4px;"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;height:50px;margin:0;">
+      <div style="height:5px;background:#B8973C;margin:0 0 5px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;min-height:74px;margin:0;">
         <div style="line-height:0;">${logoHtml}</div>
-        <div style="text-align:right;font-size:11.5pt;color:#2D4A3E;line-height:1.28;font-family:'Jost',sans-serif;font-weight:500;">Andy Griffiths<br><span style="font-size:10.5pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:10.5pt;color:#5A5550;">andy@mrmallorcagolf.com</span><br><span style="font-size:10.5pt;color:#5A5550;">mrmallorcagolf.com</span></div>
+        <div style="text-align:right;font-size:11.5pt;color:#2D4A3E;line-height:1.18;font-family:'Jost',sans-serif;font-weight:500;">Andy Griffiths<br><span style="font-size:10.5pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:10.5pt;color:#5A5550;">andy@mrmallorcagolf.com</span><br><span style="font-size:10.5pt;color:#5A5550;">mrmallorcagolf.com</span></div>
       </div>
-      <div style="height:2px;background:#2D4A3E;margin:4px 0 0;"></div>
+      <div style="height:2px;background:#2D4A3E;margin:5px 0 0;"></div>
       <div style="padding:14px 0 11px;border-bottom:1px solid #E0D8CB;margin-bottom:12px;">
         <div style="font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:4px;">Golf proposal</div>
         <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34pt;font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
@@ -1472,7 +1490,7 @@ function renderProposal(){
       ${roundsHtml}
       ${inclusionsHtml}
       <div style="margin-top:9px;padding:12px 16px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
-      <div style="font-size:9pt;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:9px;margin-top:14px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
+      <div style="font-size:8pt;line-height:1.35;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:8px;margin-top:12px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
     </div>`;
   fitProposalPreview();
   renderCourseDrafts();
