@@ -400,10 +400,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
       <button class="btn btn-gold btn-sm" onclick="copyClientEmail()">Client email draft</button>
       <button class="btn btn-gold btn-sm" onclick="copyProposal()">Copy plain text</button>
       <button class="btn btn-pine btn-sm" onclick="copyWhatsapp()">WhatsApp copy</button>
-      <button class="btn btn-pine btn-sm" onclick="copyAllCourseEmails()">Copy course emails</button>
-      <button class="btn btn-pine btn-sm" onclick="printProposal()">Print / Save PDF</button>
+      <button class="btn btn-pine btn-sm" onclick="copyAllCourseEmails()">Copy course requests</button>
+      <button class="btn btn-pine btn-sm" onclick="printProposal()">Save PDF (A4)</button>
     </div>
-    <div class="help">For PDF: use Print &rarr; Save as PDF. Landscape works well for multi-round trips.</div>
+    <div class="help">For PDF: use Save PDF (A4) &rarr; Save as PDF. The export is formatted for A4 portrait.</div>
   </div>
 
   <!-- SETTINGS -->
@@ -642,6 +642,7 @@ let rounds = [];
 let settings = {};
 let nextId = 1;
 let currentSupabaseId = '';
+let includeTourOperatorNote = false;
 
 // ---- LOCK ----
 function tryUnlock(){
@@ -1511,11 +1512,13 @@ function getCourseDraftGroups(){
 }
 function composeCourseEmailGroup(group){
   const clientName=document.getElementById('clientName').value||'my client';
-  const clientPhone=document.getElementById('clientPhone').value||'';
-  const clientEmail=document.getElementById('clientEmail').value||'';
   const lines=[];
   lines.push('Hi,');
   lines.push('');
+  if(includeTourOperatorNote){
+    lines.push('Quick note: I am working as a tour operator with our cooperation contract signed where applicable.');
+    lines.push('');
+  }
   lines.push('Could you please confirm availability for the following tee time request?');
   lines.push('');
   group.rounds.forEach((r,i)=>{
@@ -1532,8 +1535,6 @@ function composeCourseEmailGroup(group){
     lines.push('');
   });
   lines.push('Client: '+clientName);
-  if(clientEmail) lines.push('Client email: '+clientEmail);
-  if(clientPhone) lines.push('Client phone: '+clientPhone);
   lines.push('');
   lines.push('Many thanks,');
   lines.push('Andy Griffiths');
@@ -1554,7 +1555,8 @@ function renderCourseDrafts(){
     :'Internal only. Saved course contacts come from Settings.';
   box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;margin-bottom:.6rem;">'
     +'<div><h3 style="margin:0;">Course booking drafts</h3><div class="help">'+helper+'</div></div>'
-    +'<button class="btn btn-gold btn-sm" onclick="copyAllCourseEmails()">Copy all drafts</button></div>'
+    +'<button class="btn btn-gold btn-sm" onclick="copyAllCourseEmails()">Copy all requests</button></div>'
+    +'<label style="display:flex;align-items:flex-start;gap:.45rem;margin:.2rem 0 .6rem;font-size:.85rem;color:#bbb;"><input type="checkbox" '+(includeTourOperatorNote?'checked':'')+' onchange="includeTourOperatorNote=this.checked;renderCourseDrafts()"> Add optional tour-operator contract note to copied course requests</label>'
     +groups.map((g,i)=>{
       const email=g.contact.email||'';
       const phone=g.contact.phone||'';
@@ -1569,8 +1571,8 @@ function renderCourseDrafts(){
         +(notes?'<br>Notes: '+escapeHtml(notes):'')
         +'</div></div>'
         +'<div style="display:flex;gap:.45rem;flex-wrap:wrap;justify-content:flex-end;">'
-        +(email?'<button class="btn btn-pine btn-sm" onclick="copyCourseAddress('+i+')">Copy email</button>':'')
-        +'<button class="btn btn-gold btn-sm" onclick="copyCourseEmail('+i+')">Copy draft</button>'
+        +(email?'<button class="btn btn-pine btn-sm" onclick="copyCourseAddress('+i+')">Copy address</button>':'')
+        +'<button class="btn btn-gold btn-sm" onclick="copyCourseEmail('+i+')">Copy request</button>'
         +'</div></div>';
     }).join('');
 }
@@ -1579,14 +1581,14 @@ function copyCourseAddress(idx){
   const g=groups[idx];
   if(!g||!g.contact.email) return;
   navigator.clipboard.writeText(g.contact.email);
-  alert('Email address copied.');
+  alert('Course email address copied.');
 }
 function copyCourseEmail(idx){
   const groups=getCourseDraftGroups();
   const g=groups[idx];
   if(!g) return;
   navigator.clipboard.writeText(composeCourseEmailGroup(g));
-  alert('Course request draft copied.');
+  alert('Course request copied.');
 }
 function copyAllCourseEmails(){
   const groups=getCourseDraftGroups();
@@ -1596,7 +1598,7 @@ function copyAllCourseEmails(){
     return to+'Subject: Tee time request - '+g.course.name+'\n\n'+composeCourseEmailGroup(g);
   }).join('\n\n---\n\n');
   navigator.clipboard.writeText(out);
-  alert('All course request drafts copied.');
+  alert('All course requests copied.');
 }
 
 function copyProposal(){
@@ -1640,15 +1642,23 @@ function copyWhatsapp(){
 function printProposal(){
   const inner=document.getElementById('printProposal');
   if(!inner){alert('No proposal to print.');return;}
+  const printNode=inner.cloneNode(true);
+  printNode.style.transform='';
+  printNode.style.margin='0 auto';
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><title>MMG Golf Itinerary</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Jost:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
       *{box-sizing:border-box;margin:0;padding:0;}
       body{background:#fff;font-family:'Jost',Arial,sans-serif;color:#1a1916;}
-      @media print{@page{margin:9mm;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+      #printProposal{width:190mm!important;max-width:190mm!important;margin:0 auto!important;}
+      @media print{
+        @page{size:A4;margin:8mm;}
+        body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+        #printProposal{width:194mm!important;max-width:194mm!important;margin:0 auto!important;}
+      }
     </style>
-  </head><body>${inner.outerHTML}</body></html>`);
+  </head><body>${printNode.outerHTML}</body></html>`);
   w.document.close();
   setTimeout(()=>w.print(),600);
 }
