@@ -30,7 +30,7 @@ nav button.active,nav button:hover{background:var(--pine2);}
 nav button.active{border-bottom-color:var(--gold);}
 
 /* PANELS */
-.panel{display:none;padding:1.2rem;max-width:1100px;margin:0 auto;}
+.panel{display:none;padding:1.2rem 1.6rem;max-width:1680px;margin:0 auto;}
 .panel.active{display:block;}
 
 h2{font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:1.5rem;margin-bottom:1rem;}
@@ -52,6 +52,11 @@ input[type=checkbox],input[type=radio]{width:auto;}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;}
 .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem;}
 @media(max-width:700px){.grid2,.grid3,.grid4{grid-template-columns:1fr;}}
+@media(max-width:700px){
+  .panel{padding:.9rem;}
+  table{font-size:.8rem;}
+  th,td{padding:.4rem .45rem;}
+}
 
 .card{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:1rem;}
 .toolbar{display:flex;gap:.55rem;align-items:center;flex-wrap:wrap;margin-bottom:.8rem;}
@@ -132,7 +137,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     </nav>
   </header>
 
-  <div id="savedQuotesPanel" style="display:none;max-width:1100px;margin:.9rem auto 0;padding:.7rem .9rem;background:#f5f2ec;color:#1A1916;border-radius:4px;border:1px solid #ddd7cc;">
+  <div id="savedQuotesPanel" style="display:none;max-width:1680px;margin:.9rem auto 0;padding:.7rem .9rem;background:#f5f2ec;color:#1A1916;border-radius:4px;border:1px solid #ddd7cc;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
       <strong style="font-size:.9rem;">Saved quotes & proposals</strong>
       <button class="btn btn-red btn-sm" onclick="toggleSavedQuotes()">&#10005;</button>
@@ -246,10 +251,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     </div>
 
     <hr class="sep">
-    <h3>Smart Parser</h3>
+    <h3>Text Input</h3>
     <div style="margin-bottom:.6rem;">
       <label>Paste enquiry text — courses, dates, times in any format</label>
-      <textarea id="parseInput" placeholder="e.g.&#10;Son Gual 14th May 10am&#10;Alcanada 15/5 10:30&#10;Pollenca 16 May afternoon 4 players&#10;&#10;Add 'buggies needed' or 'club hire' anywhere in the text to pre-fill those rates for all rounds."></textarea>
+      <textarea id="parseInput" oninput="autoGrow(this)" placeholder="e.g.&#10;Son Gual 14th May 10am&#10;Alcanada 15/5 10:30&#10;Pollenca 16 May afternoon 4 players&#10;&#10;Add 'buggies needed' or 'club hire' anywhere in the text to pre-fill those rates for all rounds."></textarea>
     </div>
     <div style="margin-bottom:.5rem;display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;">
       <label style="display:flex;align-items:center;gap:.3rem;font-size:.85rem;cursor:pointer;">
@@ -273,7 +278,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <thead>
           <tr>
             <th>#</th><th>Course</th><th>Date</th><th>Time</th><th>Players</th>
-            <th>GF/pp (charge)</th><th>Buggies</th><th>Club sets</th><th>Licence</th>
+            <th>GF/pp (charge)</th><th>Buggies</th><th>Club sets</th><th>License</th>
             <th>Golf Card</th><th></th>
           </tr>
         </thead>
@@ -313,10 +318,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <h3 style="margin-top:0;">Andy's Day Fee</h3>
         <label><input type="radio" name="dayType" value="solo" onchange="saveState();renderMargin()"> Solo &mdash; <span id="soloFeeLabel"></span></label><br>
         <label><input type="radio" name="dayType" value="group" onchange="saveState();renderMargin()"> Group &mdash; <span id="groupFeeLabel"></span></label><br>
-        <label><input type="radio" name="dayType" value="none" onchange="saveState();renderMargin()"> No day fee</label>
+        <label><input type="radio" name="dayType" value="none" checked onchange="saveState();renderMargin()"> No day fee</label>
         <div style="margin-top:.6rem;">
           <label>Days</label>
-          <input type="number" id="andyDays" value="1" min="1" max="30" style="width:80px;" oninput="saveState();renderMargin()">
+          <input type="number" id="andyDays" value="0" min="0" max="30" style="width:80px;" oninput="saveState();renderMargin()">
         </div>
       </div>
       <div class="card">
@@ -332,21 +337,22 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     <div class="grid3" style="margin-bottom:.8rem;">
       <div>
         <label>Format</label>
-        <select id="propFormat" onchange="renderProposal()">
+        <select id="propFormat" onchange="saveState();renderProposal()">
           <option value="clean">Clean itinerary (client-facing)</option>
           <option value="itemised">Itemised (full breakdown)</option>
         </select>
       </div>
       <div>
-        <label>Include Andy's fee</label>
-        <select id="propIncludeFee" onchange="renderProposal()">
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
+        <label>Management fee in proposal</label>
+        <select id="propIncludeFee" onchange="saveState();renderProposal()">
+          <option value="no">Course pricing only</option>
+          <option value="separate">Show course + management</option>
+          <option value="total">Include management in total only</option>
         </select>
       </div>
       <div>
         <label>Show course photos</label>
-        <select id="propShowPhotos" onchange="renderProposal()">
+        <select id="propShowPhotos" onchange="saveState();renderProposal()">
           <option value="yes">Yes</option>
           <option value="no">No</option>
         </select>
@@ -399,10 +405,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     </div>
     <hr class="sep">
     <h3>Per-course negotiated costs & contacts</h3>
-    <div class="help" style="margin-bottom:.8rem;">My Cost/pp always overrides the automatic cost. Leave it blank to use the selected auto cost: usually 85% of rack, no discount/rack, or a known course contract such as Son Servera 2026 by date.</div>
+    <div class="help" style="margin-bottom:.8rem;">My Cost/pp always overrides the automatic cost. Leave it blank to use the selected auto cost: the TO discount %, no discount/rack, or a known course contract such as Son Servera 2026 by date.</div>
     <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>Course</th><th>Rack Peak (&euro;)</th><th>Rack Mid (&euro;)</th><th>Rack Low (&euro;)</th><th>My Cost/pp</th><th>Auto cost</th><th>Buggy</th><th>Clubs</th><th>Lic</th><th>Email</th><th>Phone</th><th>Pricing notes</th><th>Contact notes</th></tr></thead>
+        <thead><tr><th>Course</th><th>Rack Peak (&euro;)</th><th>Rack Mid (&euro;)</th><th>Rack Low (&euro;)</th><th>My Cost/pp</th><th>TO disc %</th><th>Auto cost</th><th>Buggy</th><th>Clubs</th><th>License</th><th>Email</th><th>Phone</th><th>Pricing notes</th><th>Contact notes</th></tr></thead>
         <tbody id="settingsBody"></tbody>
       </table>
     </div>
@@ -448,7 +454,7 @@ const COURSE_LIST = [
 ];
 
 const COURSE_CONTACTS = {
-  son_gual:      {email:'info@son-gual.com', phone:'+34 971 785 888', contactNotes:'Vivien / Maja'},
+  son_gual:      {email:'info@son-gual.com', phone:'+34 971 785 888', discountPct:10, pricingNotes:'TO rate confirmed: 10% off tee times only.', contactNotes:'Vivien / Maja'},
   alcanada:      {email:'info@golf-alcanada.com', phone:'+34 971 549 560', contactNotes:'Jenny. Pro rate €12 green fee + €3 golf insurance (€15 total). Book via Jenny. Supplement of 50% of official green fee per unused slot to guarantee exclusivity.'},
   santa_ponsa:   {email:'golf1@golf-santaponsa.com', phone:'', contactNotes:'Currently member here'},
   santa_ponsa2:  {email:'golf1@golf-santaponsa.com', phone:'', contactNotes:'Currently member here'},
@@ -475,7 +481,7 @@ const COURSE_CONTACTS = {
 };
 
 const COURSE_COST_MODES = [
-  {id:'auto', label:'85% of rack'},
+  {id:'auto', label:'Use TO discount %'},
   {id:'rack', label:'No discount / rack'},
   {id:'partner18', label:'Son Servera 2026 rates'}
 ];
@@ -648,6 +654,7 @@ function init(){
   updateSyncNum();
   syncWorkflowMirrors();
   renderMissingInfo();
+  autoGrow(document.getElementById('parseInput'));
   // set nav logo src from lock logo
   const lockImg = document.querySelector('#lock img');
   if(lockImg) document.getElementById('navLogo').src = lockImg.src;
@@ -660,6 +667,11 @@ function toggleGCRow(){
 function updateSyncNum(){
   const el=document.getElementById('syncNum');
   if(el) el.textContent=document.getElementById('numPlayers').value||2;
+}
+function autoGrow(el){
+  if(!el) return;
+  el.style.height='auto';
+  el.style.height=Math.max(90,el.scrollHeight)+'px';
 }
 function openDatePicker(el){
   if(el&&typeof el.showPicker==='function'){
@@ -721,7 +733,7 @@ function saveSettings(){
   if(!settings.courses) settings.courses={};
   const ensureCourse=id=>{if(!settings.courses[id])settings.courses[id]={};};
   [['data-rack-peak','rackPeak'],['data-rack-mid','rackMid'],['data-rack-low','rackLow'],
-   ['data-course-cost','myCost'],['data-buggy-rate','buggyRate'],['data-clubs-rate','clubsRate']
+   ['data-course-cost','myCost'],['data-discount-pct','discountPct'],['data-buggy-rate','buggyRate'],['data-clubs-rate','clubsRate']
   ].forEach(([attr,key])=>{
     document.querySelectorAll('['+attr+']').forEach(inp=>{
       const id=inp.dataset[attr.replace('data-','').replace(/-([a-z])/g,(_,c)=>c.toUpperCase())];
@@ -761,7 +773,7 @@ function saveSettings(){
   document.getElementById('groupFeeLabel').textContent='€'+settings.groupFee+'/day';
   const s=document.getElementById('settingsSaved');
   s.style.display=''; setTimeout(()=>s.style.display='none',2000);
-  renderTable(); renderMargin(); renderCourseDrafts();
+  renderTable(); renderMargin(); renderProposal(); renderCourseDrafts();
 }
 function renderSettingsTable(){
   const tb=document.getElementById('settingsBody');
@@ -769,6 +781,7 @@ function renderSettingsTable(){
     const saved=(settings.courses||{})[c.id]||{};
     const contact=Object.assign({}, COURSE_CONTACTS[c.id]||{}, saved);
     const mode=contact.costMode||'auto';
+    const defaultDiscount=contact.discountPct!=null?contact.discountPct:15;
     const defBuggy=c.buggyMax>0?Math.round((c.buggyMin+c.buggyMax)/2):0;
     const defClubs=c.clubsMax>0?Math.round((c.clubsMin+c.clubsMax)/2):0;
     return '<tr>'
@@ -777,6 +790,7 @@ function renderSettingsTable(){
       +'<td><input type="number" data-rack-mid="'+c.id+'"  value="'+(saved.rackMid||'')+'"  placeholder="'+(c.mid||Math.round((c.peak+c.low)/2))+'" title="Mid rack GF" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-rack-low="'+c.id+'"  value="'+(saved.rackLow||'')+'"  placeholder="'+c.low+'" title="Low rack GF" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-course-cost="'+c.id+'" value="'+(saved.myCost||'')+'" placeholder="auto" title="My cost/pp (overrides auto)" style="width:68px;" oninput="saveSettings()"></td>'
+      +'<td><input type="number" data-discount-pct="'+c.id+'" value="'+(saved.discountPct!=null?saved.discountPct:'')+'" placeholder="'+defaultDiscount+'" min="0" max="100" title="TO discount from rack used by automatic cost" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><select data-cost-mode="'+c.id+'" title="How auto cost should be calculated" style="width:145px;" onchange="saveSettings()">'+COURSE_COST_MODES.map(opt=>'<option value="'+opt.id+'"'+(opt.id===mode?' selected':'')+'>'+opt.label+'</option>').join('')+'</select></td>'
       +'<td><input type="number" data-buggy-rate="'+c.id+'" value="'+(saved.buggyRate||'')+'" placeholder="'+(defBuggy||'N/A')+'" title="Buggy rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-clubs-rate="'+c.id+'" value="'+(saved.clubsRate||'')+'" placeholder="'+(defClubs||'N/A')+'" title="Club hire rate" style="width:65px;" oninput="saveSettings()"></td>'
@@ -801,14 +815,14 @@ function getMyCost(id, dateStr, players){
   if(saved&&saved.myCost) return applyCourseCostRules(id,saved.myCost,players);
   const defaults=COURSE_CONTACTS[id]||{};
   const mode=saved.costMode||defaults.costMode||'auto';
+  const discountPct=saved.discountPct!=null?saved.discountPct:(defaults.discountPct!=null?defaults.discountPct:15);
   const rack=getRackGF(id, dateStr||'');
   if(mode==='rack') return rack;
   if(mode==='partner18'){
     const band=getCourseRateBand(id,dateStr);
     if(band&&band.partner18) return applyCourseCostRules(id,band.partner18,players);
   }
-  // Fall back to rack x 0.85
-  return Math.round(rack*0.85);
+  return Math.round(rack*(1-(discountPct/100)));
 }
 function hasLicence(id){
   const saved=(settings.courses||{})[id];
@@ -829,11 +843,11 @@ function saveState(){
     numPlayers:parseInt(document.getElementById('numPlayers').value)||2,
     andyPlaying:document.getElementById('andyPlaying').checked,
     useGolfcard:document.getElementById('useGolfcard').checked,
-    dayType:(document.querySelector('input[name=dayType]:checked')||{}).value||'group',
-    andyDays:parseInt(document.getElementById('andyDays').value)||1,
+    dayType:(document.querySelector('input[name=dayType]:checked')||{}).value||'none',
+    andyDays:Math.max(0,parseInt(document.getElementById('andyDays').value)||0),
     proposalNotes:(document.getElementById('proposalNotes')||{}).value||'',
     propFormat:(document.getElementById('propFormat')||{}).value||'clean',
-    propIncludeFee:(document.getElementById('propIncludeFee')||{}).value||'yes',
+    propIncludeFee:normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value),
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
     nextAction:(document.getElementById('nextAction')||{}).value||'',
@@ -848,6 +862,20 @@ function setValue(id,val){
   const el=document.getElementById(id);
   if(el) el.value=val||'';
 }
+function normaliseFeeMode(mode){
+  if(mode==='yes') return 'separate';
+  if(mode==='no'||mode==='separate'||mode==='total') return mode;
+  return 'no';
+}
+function getFeeDetails(source){
+  const q=source||{};
+  const soloFee=parseFloat((settings&&settings.soloFee)||document.getElementById('setSoloFee').value)||495;
+  const groupFee=parseFloat((settings&&settings.groupFee)||document.getElementById('setGroupFee').value)||950;
+  const dayType=q.dayType||(document.querySelector('input[name=dayType]:checked')||{}).value||'none';
+  const days=dayType==='none'?0:Math.max(0,parseInt(q.andyDays!=null?q.andyDays:document.getElementById('andyDays').value)||0);
+  const rate=dayType==='solo'?soloFee:dayType==='group'?groupFee:0;
+  return {dayType,days,fee:rate*days};
+}
 function applyQuoteData(data){
   currentSupabaseId=data.supabaseId||data.id||'';
   setValue('clientName',data.clientName);
@@ -859,10 +887,10 @@ function applyQuoteData(data){
   document.getElementById('andyPlaying').checked=!!data.andyPlaying;
   document.getElementById('useGolfcard').checked=!!data.useGolfcard;
   if(data.dayType){const r=document.querySelector('input[name=dayType][value="'+data.dayType+'"]');if(r)r.checked=true;}
-  setValue('andyDays',data.andyDays||1);
+  setValue('andyDays',data.andyDays!=null?data.andyDays:0);
   setValue('proposalNotes',data.proposalNotes);
   if(data.propFormat) setValue('propFormat',data.propFormat);
-  if(data.propIncludeFee) setValue('propIncludeFee',data.propIncludeFee);
+  setValue('propIncludeFee',normaliseFeeMode(data.propIncludeFee));
   if(data.propShowPhotos) setValue('propShowPhotos',data.propShowPhotos);
   setValue('quoteStatus',data.quoteStatus||data.status||'Draft');
   setValue('nextAction',data.nextAction||data.next_action||'');
@@ -940,9 +968,14 @@ function findCourse(text){
 function parseDate(text){
   const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
   let m;
-  m=text.match(/(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/);
+  m=text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
   if(m){
     let y=m[3]?parseInt(m[3]):2026; if(y<100) y+=2000;
+    return y+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
+  }
+  m=text.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+  if(m){
+    let y=parseInt(m[3]); if(y<100) y+=2000;
     return y+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
   }
   m=text.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([a-zA-Z]+)/);
@@ -953,9 +986,9 @@ function parseDate(text){
   return '';
 }
 function parseTime(text){
-  const t=text.toLowerCase();
+  const t=text.toLowerCase().replace(/\d{1,2}\.\d{1,2}\.\d{2,4}/g,' ');
   let m;
-  m=t.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/);
+  m=t.match(/(?:^|[^\d])(\d{1,2})[:.](\d{2})\s*(am|pm)?(?:[^\d]|$)/);
   if(m){
     let h=parseInt(m[1]),mn=parseInt(m[2]);
     if(m[3]==='pm'&&h<12) h+=12; if(m[3]==='am'&&h===12) h=0;
@@ -1182,9 +1215,10 @@ function renderMargin(){
   const groupFee=parseFloat(document.getElementById('setGroupFee').value)||950;
   document.getElementById('soloFeeLabel').textContent='€'+soloFee+'/day';
   document.getElementById('groupFeeLabel').textContent='€'+groupFee+'/day';
-  const dayType=(document.querySelector('input[name=dayType]:checked')||{}).value||'group';
-  const andyDays=parseInt(document.getElementById('andyDays').value)||1;
-  const andyFee=dayType==='solo'?soloFee*andyDays:dayType==='group'?groupFee*andyDays:0;
+  const feeDetails=getFeeDetails();
+  const dayType=feeDetails.dayType;
+  const andyDays=feeDetails.days;
+  const andyFee=feeDetails.fee;
   const expiryDays=parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0;
   const quoteStatus=(document.getElementById('quoteStatus')||{}).value||'Draft';
 
@@ -1242,7 +1276,7 @@ function renderMargin(){
   document.getElementById('tripSummary').innerHTML=
     '<div style="font-size:.85rem;line-height:1.9;">'
     +'Rounds: <strong>'+rounds.length+'</strong><br>'
-    +"Andy's fee: <strong>€"+andyFee.toFixed(0)+'</strong> ('+andyDays+' day'+(andyDays>1?'s':'')+', '+dayType+')<br>'
+    +"Management fee: <strong>€"+andyFee.toFixed(0)+'</strong> ('+andyDays+' day'+(andyDays===1?'':'s')+', '+dayType+')<br>'
     +'GF margin: <strong>€'+totalGFProfit.toFixed(0)+'</strong><br>'
     +'<hr style="border-color:#222;margin:.4rem 0;">'
     +'<strong>Est. total: €'+grandProfit.toFixed(0)+'</strong>'
@@ -1266,12 +1300,11 @@ function renderProposal(){
   const clientPhone=document.getElementById('clientPhone').value||'';
   const clientNationality=''; // excluded from client proposal
   const useGC=document.getElementById('useGolfcard').checked&&document.getElementById('andyPlaying').checked;
-  const includeFee=document.getElementById('propIncludeFee').value==='yes';
-  const soloFee=parseFloat(document.getElementById('setSoloFee').value)||495;
-  const groupFee=parseFloat(document.getElementById('setGroupFee').value)||950;
-  const dayType=(document.querySelector('input[name=dayType]:checked')||{}).value||'group';
-  const andyDays=parseInt(document.getElementById('andyDays').value)||1;
-  const andyFee=dayType==='solo'?soloFee*andyDays:dayType==='group'?groupFee*andyDays:0;
+  const feeMode=normaliseFeeMode(document.getElementById('propIncludeFee').value);
+  const feeDetails=getFeeDetails();
+  const andyDays=feeDetails.days;
+  const andyFee=feeDetails.fee;
+  const includeFee=feeMode!=='no'&&andyFee>0;
   const expiryDays=parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0;
   const quoteStatus=(document.getElementById('quoteStatus')||{}).value||'Draft';
 
@@ -1339,18 +1372,18 @@ function renderProposal(){
   let totalsHtml='';
   if(fmt==='itemised'){
     totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Green fees &amp; extras</span><span>€${grandTotal}</span></div>`;
-    if(includeFee&&andyFee>0){
+    if(includeFee&&feeMode==='separate'){
       totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
-      grandTotal+=andyFee;
     }
+    if(includeFee) grandTotal+=andyFee;
     totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>Total</span><span>€${grandTotal}</span></div>`;
   } else {
     // Clean version: single total line at end
-    if(includeFee&&andyFee>0){
+    if(includeFee&&feeMode==='separate'){
       totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Golf fees &amp; extras (${rounds.length} round${rounds.length>1?'s':''})</span><span>€${grandTotal}</span></div>`;
-      grandTotal+=andyFee;
       totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
     }
+    if(includeFee) grandTotal+=andyFee;
     totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>Total</span><span>€${grandTotal}</span></div>`;
   }
 
@@ -1428,7 +1461,7 @@ function composeCourseEmailGroup(group){
     lines.push('Players: '+players);
     if(buggyQty) lines.push('Buggies: '+buggyQty);
     if(clubsQty) lines.push('Club hire sets: '+clubsQty);
-    if(r.licence) lines.push('Licence fee: please include if required');
+    if(r.licence) lines.push('License fee: please include if required');
     lines.push('');
   });
   lines.push('Client: '+clientName);
@@ -1556,12 +1589,9 @@ function printProposal(){
 function calculateQuoteSummary(data){
   const q=data||getCurrentQuoteData('');
   const qRounds=q.rounds||[];
-  const includeFee=(q.propIncludeFee||'yes')==='yes';
-  const soloFee=parseFloat((settings&&settings.soloFee)||document.getElementById('setSoloFee').value)||495;
-  const groupFee=parseFloat((settings&&settings.groupFee)||document.getElementById('setGroupFee').value)||950;
-  const dayType=q.dayType||'group';
-  const andyDays=parseInt(q.andyDays)||1;
-  const andyFee=dayType==='solo'?soloFee*andyDays:dayType==='group'?groupFee*andyDays:0;
+  const includeFee=normaliseFeeMode(q.propIncludeFee)!=='no';
+  const feeDetails=getFeeDetails(q);
+  const andyFee=feeDetails.fee;
   let total=0, cost=0, players=0;
   const dates=[];
   const courses=[];
@@ -1827,11 +1857,11 @@ function getCurrentQuoteData(name){
     numPlayers:parseInt(document.getElementById('numPlayers').value)||2,
     andyPlaying:document.getElementById('andyPlaying').checked,
     useGolfcard:document.getElementById('useGolfcard').checked,
-    dayType:(document.querySelector('input[name=dayType]:checked')||{}).value||'group',
-    andyDays:parseInt(document.getElementById('andyDays').value)||1,
+    dayType:(document.querySelector('input[name=dayType]:checked')||{}).value||'none',
+    andyDays:Math.max(0,parseInt(document.getElementById('andyDays').value)||0),
     proposalNotes:(document.getElementById('proposalNotes')||{}).value||'',
     propFormat:(document.getElementById('propFormat')||{}).value||'clean',
-    propIncludeFee:(document.getElementById('propIncludeFee')||{}).value||'yes',
+    propIncludeFee:normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value),
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
     nextAction:(document.getElementById('nextAction')||{}).value||'',
