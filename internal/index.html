@@ -334,7 +334,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
   <!-- PROPOSAL -->
   <div id="pProposal" class="panel">
     <h2>Proposal Output</h2>
-    <div class="grid3" style="margin-bottom:.8rem;">
+    <div class="grid4" style="margin-bottom:.8rem;">
       <div>
         <label>Format</label>
         <select id="propFormat" onchange="saveState();renderProposal()">
@@ -349,6 +349,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
           <option value="separate">Show course + management</option>
           <option value="total">Include management in total only</option>
         </select>
+      </div>
+      <div>
+        <label>Management fee</label>
+        <input id="managementFee" value="0" placeholder="e.g. 5% or 250" oninput="saveState();renderProposal()">
       </div>
       <div>
         <label>Show course photos</label>
@@ -753,6 +757,7 @@ function saveSettings(){
     ensureCourse(id);
     if(sel.value) settings.courses[id].costMode=sel.value;
     else delete settings.courses[id].costMode;
+    if(sel.value==='rack') settings.courses[id].discountPct=0;
   });
   [
     ['data-course-email','email'],
@@ -781,7 +786,8 @@ function renderSettingsTable(){
     const saved=(settings.courses||{})[c.id]||{};
     const contact=Object.assign({}, COURSE_CONTACTS[c.id]||{}, saved);
     const mode=contact.costMode||'auto';
-    const defaultDiscount=contact.discountPct!=null?contact.discountPct:15;
+    const defaultDiscount=mode==='rack'?0:(contact.discountPct!=null?contact.discountPct:15);
+    const discountValue=saved.discountPct!=null?saved.discountPct:(mode==='rack'?0:'');
     const defBuggy=c.buggyMax>0?Math.round((c.buggyMin+c.buggyMax)/2):0;
     const defClubs=c.clubsMax>0?Math.round((c.clubsMin+c.clubsMax)/2):0;
     return '<tr>'
@@ -790,8 +796,8 @@ function renderSettingsTable(){
       +'<td><input type="number" data-rack-mid="'+c.id+'"  value="'+(saved.rackMid||'')+'"  placeholder="'+(c.mid||Math.round((c.peak+c.low)/2))+'" title="Mid rack GF" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-rack-low="'+c.id+'"  value="'+(saved.rackLow||'')+'"  placeholder="'+c.low+'" title="Low rack GF" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-course-cost="'+c.id+'" value="'+(saved.myCost||'')+'" placeholder="auto" title="My cost/pp (overrides auto)" style="width:68px;" oninput="saveSettings()"></td>'
-      +'<td><input type="number" data-discount-pct="'+c.id+'" value="'+(saved.discountPct!=null?saved.discountPct:'')+'" placeholder="'+defaultDiscount+'" min="0" max="100" title="TO discount from rack used by automatic cost" style="width:68px;" oninput="saveSettings()"></td>'
-      +'<td><select data-cost-mode="'+c.id+'" title="How auto cost should be calculated" style="width:145px;" onchange="saveSettings()">'+COURSE_COST_MODES.map(opt=>'<option value="'+opt.id+'"'+(opt.id===mode?' selected':'')+'>'+opt.label+'</option>').join('')+'</select></td>'
+      +'<td><input type="number" data-discount-pct="'+c.id+'" value="'+discountValue+'" placeholder="'+defaultDiscount+'" min="0" max="100" title="TO discount from rack used by automatic cost" style="width:68px;" oninput="saveSettings()"></td>'
+      +'<td><select data-cost-mode="'+c.id+'" title="How auto cost should be calculated" style="width:145px;" onchange="saveSettings();renderSettingsTable()">'+COURSE_COST_MODES.map(opt=>'<option value="'+opt.id+'"'+(opt.id===mode?' selected':'')+'>'+opt.label+'</option>').join('')+'</select></td>'
       +'<td><input type="number" data-buggy-rate="'+c.id+'" value="'+(saved.buggyRate||'')+'" placeholder="'+(defBuggy||'N/A')+'" title="Buggy rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-clubs-rate="'+c.id+'" value="'+(saved.clubsRate||'')+'" placeholder="'+(defClubs||'N/A')+'" title="Club hire rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="checkbox" data-course-lic="'+c.id+'" '+(saved.licence?'checked':'')+' onchange="saveSettings()"> Yes</td>'
@@ -848,6 +854,7 @@ function saveState(){
     proposalNotes:(document.getElementById('proposalNotes')||{}).value||'',
     propFormat:(document.getElementById('propFormat')||{}).value||'clean',
     propIncludeFee:normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value),
+    managementFee:(document.getElementById('managementFee')||{}).value||'0',
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
     nextAction:(document.getElementById('nextAction')||{}).value||'',
@@ -876,6 +883,17 @@ function getFeeDetails(source){
   const rate=dayType==='solo'?soloFee:dayType==='group'?groupFee:0;
   return {dayType,days,fee:rate*days};
 }
+function getProposalManagementFee(courseTotal, source){
+  const q=source||{};
+  const raw=String(q.managementFee!=null?q.managementFee:((document.getElementById('managementFee')||{}).value||'0')).trim();
+  if(!raw) return 0;
+  if(raw.endsWith('%')){
+    const pct=parseFloat(raw.replace('%',''));
+    return isNaN(pct)?0:Math.round(courseTotal*(pct/100));
+  }
+  const fixed=parseFloat(raw.replace(/[€,]/g,''));
+  return isNaN(fixed)?0:Math.round(fixed);
+}
 function applyQuoteData(data){
   currentSupabaseId=data.supabaseId||data.id||'';
   setValue('clientName',data.clientName);
@@ -891,6 +909,7 @@ function applyQuoteData(data){
   setValue('proposalNotes',data.proposalNotes);
   if(data.propFormat) setValue('propFormat',data.propFormat);
   setValue('propIncludeFee',normaliseFeeMode(data.propIncludeFee));
+  setValue('managementFee',data.managementFee!=null?data.managementFee:'0');
   if(data.propShowPhotos) setValue('propShowPhotos',data.propShowPhotos);
   setValue('quoteStatus',data.quoteStatus||data.status||'Draft');
   setValue('nextAction',data.nextAction||data.next_action||'');
@@ -1301,10 +1320,6 @@ function renderProposal(){
   const clientNationality=''; // excluded from client proposal
   const useGC=document.getElementById('useGolfcard').checked&&document.getElementById('andyPlaying').checked;
   const feeMode=normaliseFeeMode(document.getElementById('propIncludeFee').value);
-  const feeDetails=getFeeDetails();
-  const andyDays=feeDetails.days;
-  const andyFee=feeDetails.fee;
-  const includeFee=feeMode!=='no'&&andyFee>0;
   const expiryDays=parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0;
   const quoteStatus=(document.getElementById('quoteStatus')||{}).value||'Draft';
 
@@ -1369,21 +1384,23 @@ function renderProposal(){
   });
 
   // Totals block
+  const managementFee=getProposalManagementFee(grandTotal);
+  const includeFee=feeMode!=='no'&&managementFee>0;
   let totalsHtml='';
   if(fmt==='itemised'){
     totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Green fees &amp; extras</span><span>€${grandTotal}</span></div>`;
     if(includeFee&&feeMode==='separate'){
-      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Management fee</span><span>€${managementFee}</span></div>`;
     }
-    if(includeFee) grandTotal+=andyFee;
+    if(includeFee) grandTotal+=managementFee;
     totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>Total</span><span>€${grandTotal}</span></div>`;
   } else {
     // Clean version: single total line at end
     if(includeFee&&feeMode==='separate'){
       totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Golf fees &amp; extras (${rounds.length} round${rounds.length>1?'s':''})</span><span>€${grandTotal}</span></div>`;
-      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Andy Griffiths PGA Pro (${andyDays} day${andyDays>1?'s':''})</span><span>€${andyFee}</span></div>`;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Management fee</span><span>€${managementFee}</span></div>`;
     }
-    if(includeFee) grandTotal+=andyFee;
+    if(includeFee) grandTotal+=managementFee;
     totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>Total</span><span>€${grandTotal}</span></div>`;
   }
 
@@ -1590,8 +1607,6 @@ function calculateQuoteSummary(data){
   const q=data||getCurrentQuoteData('');
   const qRounds=q.rounds||[];
   const includeFee=normaliseFeeMode(q.propIncludeFee)!=='no';
-  const feeDetails=getFeeDetails(q);
-  const andyFee=feeDetails.fee;
   let total=0, cost=0, players=0;
   const dates=[];
   const courses=[];
@@ -1608,7 +1623,8 @@ function calculateQuoteSummary(data){
     cost+=getMyCost(r.cid,r.date,p)*p;
   });
   const firstTee=dates.sort()[0]||'';
-  if(includeFee) total+=andyFee;
+  const managementFee=getProposalManagementFee(total,q);
+  if(includeFee) total+=managementFee;
   return {
     total:Math.round(total),
     cost:Math.round(cost),
@@ -1617,7 +1633,7 @@ function calculateQuoteSummary(data){
     players,
     firstTee,
     courses:[...new Set(courses)],
-    andyFee:includeFee?andyFee:0,
+    andyFee:includeFee?managementFee:0,
   };
 }
 function statusClass(status){
@@ -1862,6 +1878,7 @@ function getCurrentQuoteData(name){
     proposalNotes:(document.getElementById('proposalNotes')||{}).value||'',
     propFormat:(document.getElementById('propFormat')||{}).value||'clean',
     propIncludeFee:normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value),
+    managementFee:(document.getElementById('managementFee')||{}).value||'0',
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
     nextAction:(document.getElementById('nextAction')||{}).value||'',
