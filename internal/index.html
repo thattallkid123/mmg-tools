@@ -399,10 +399,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
     </div>
     <hr class="sep">
     <h3>Per-course negotiated costs & contacts</h3>
-    <div class="help" style="margin-bottom:.8rem;">My cost per person (leave blank = rack &times; 0.85). Add course emails/phones here so the Proposal tab can generate booking request drafts.</div>
+    <div class="help" style="margin-bottom:.8rem;">My Cost/pp always overrides the automatic cost. Leave it blank to use the selected auto cost: usually 85% of rack, no discount/rack, or a known course contract such as Son Servera 2026 by date.</div>
     <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>Course</th><th>Rack Peak (&euro;)</th><th>Rack Mid (&euro;)</th><th>Rack Low (&euro;)</th><th>My Cost/pp</th><th>Cost mode</th><th>Buggy</th><th>Clubs</th><th>Lic</th><th>Email</th><th>Phone</th><th>Pricing notes</th><th>Contact notes</th></tr></thead>
+        <thead><tr><th>Course</th><th>Rack Peak (&euro;)</th><th>Rack Mid (&euro;)</th><th>Rack Low (&euro;)</th><th>My Cost/pp</th><th>Auto cost</th><th>Buggy</th><th>Clubs</th><th>Lic</th><th>Email</th><th>Phone</th><th>Pricing notes</th><th>Contact notes</th></tr></thead>
         <tbody id="settingsBody"></tbody>
       </table>
     </div>
@@ -475,9 +475,9 @@ const COURSE_CONTACTS = {
 };
 
 const COURSE_COST_MODES = [
-  {id:'auto', label:'Auto rack x 0.85'},
+  {id:'auto', label:'85% of rack'},
   {id:'rack', label:'No discount / rack'},
-  {id:'partner18', label:'Partner voucher 18H'}
+  {id:'partner18', label:'Son Servera 2026 rates'}
 ];
 
 const COURSE_RATE_BANDS = {
@@ -660,6 +660,11 @@ function toggleGCRow(){
 function updateSyncNum(){
   const el=document.getElementById('syncNum');
   if(el) el.textContent=document.getElementById('numPlayers').value||2;
+}
+function openDatePicker(el){
+  if(el&&typeof el.showPicker==='function'){
+    try{el.showPicker();}catch(e){}
+  }
 }
 
 // ---- TABS ----
@@ -1134,7 +1139,7 @@ function renderTable(){
     return '<tr>'
       +'<td style="color:#666;font-size:.8rem">'+(i+1)+'</td>'
       +'<td><select onchange="updateRound('+r.id+',\'cid\',this.value)">'+COURSE_LIST.map(cl=>'<option value="'+cl.id+'"'+(cl.id===r.cid?' selected':'')+'>'+cl.name+'</option>').join('')+'</select></td>'
-      +'<td><input type="date" value="'+r.date+'" onchange="updateRound('+r.id+',\'date\',this.value)" style="width:130px;">'
+      +'<td><input type="date" value="'+r.date+'" onclick="openDatePicker(this)" onfocus="openDatePicker(this)" onchange="updateRound('+r.id+',\'date\',this.value)" style="width:140px;cursor:pointer;">'
       +(r.date?'<div style="font-size:.7rem;color:var(--pine);margin-top:1px;">'+new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'})+' &middot; '+getSeasonLabel(r.date)+' season</div>':'')
       +'</td>'
       +'<td><input type="time" value="'+r.time+'" onchange="updateRound('+r.id+',\'time\',this.value)" style="width:100px;"></td>'
