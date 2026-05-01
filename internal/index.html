@@ -110,10 +110,9 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
 #proposalOut{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:1.2rem;white-space:pre-wrap;font-size:.88rem;line-height:1.6;min-height:100px;font-family:'Jost',monospace;}
 #pProposal{max-width:1100px;}
 #pProposal #proposalOut{max-width:900px;margin:0 auto;overflow:visible!important;position:relative;z-index:1;}
-#pProposal #printProposal{transform-origin:top left;white-space:normal;box-shadow:0 0 0 1px #ddd,0 12px 32px rgba(0,0,0,.22);}
+#pProposal #printProposal{transform-origin:top left;white-space:normal;}
+#pProposal .proposal-page{box-shadow:0 0 0 1px #ddd,0 12px 32px rgba(0,0,0,.22);}
 #pProposal #courseDrafts{position:relative;z-index:2;clear:both;}
-.proposal-page-marker{position:absolute;height:0;border-top:2px dashed rgba(184,151,60,.9);pointer-events:none;z-index:3;}
-.proposal-page-marker span{position:absolute;right:0;top:-18px;background:#111;color:#d7c38a;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:3px;font-family:'Jost',sans-serif;}
 details.proposal-tools{border:1px solid #2a2a2a;border-radius:6px;background:#10100f;margin-bottom:.8rem;}
 details.proposal-tools summary{cursor:pointer;list-style:none;padding:.75rem 1rem;color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;}
 details.proposal-tools summary::-webkit-details-marker{display:none;}
@@ -808,7 +807,6 @@ function fitProposalPreview(){
   const out=document.getElementById('proposalOut');
   const paper=document.getElementById('printProposal');
   if(!out||!paper) return;
-  out.querySelectorAll('.proposal-page-marker').forEach(x=>x.remove());
   paper.style.transform='';
   paper.style.margin='0 auto';
   out.style.height='';
@@ -826,21 +824,6 @@ function fitProposalPreview(){
   out.style.height=height+'px';
   out.style.minHeight=height+'px';
   out.style.marginBottom='1rem';
-  const orientation=paper.getAttribute('data-orientation')||'portrait';
-  const pageHeight=(orientation==='landscape'?paper.offsetWidth*0.707:paper.offsetWidth*1.414);
-  const totalHeight=paper.offsetHeight||0;
-  const pages=Math.ceil(totalHeight/pageHeight);
-  const left=scale<1?0:paper.offsetLeft;
-  const width=(paper.offsetWidth||base)*scale;
-  for(let i=1;i<pages;i++){
-    const marker=document.createElement('div');
-    marker.className='proposal-page-marker';
-    marker.style.left=left+'px';
-    marker.style.top=Math.round(pageHeight*i*scale)+'px';
-    marker.style.width=width+'px';
-    marker.innerHTML='<span>Page '+(i+1)+'</span>';
-    out.appendChild(marker);
-  }
 }
 window.addEventListener('resize',fitProposalPreview);
 window.addEventListener('orientationchange',function(){setTimeout(fitProposalPreview,150);});
@@ -1584,12 +1567,13 @@ function renderProposal(){
   const quoteStatus=(document.getElementById('quoteStatus')||{}).value||'Draft';
   const orientation=(document.getElementById('propOrientation')||{}).value||'portrait';
   const paperWidth=orientation==='landscape'?1120:900;
+  const paperHeight=orientation==='landscape'?792:1273;
   const wording=getProposalWording();
 
   const el=document.getElementById('proposalOut');
   if(!rounds.length){el.innerHTML='<p style="padding:1rem;color:#999;font-family:sans-serif;">No rounds added yet.</p>';return;}
 
-  let roundsHtml='';
+  const roundCards=[];
   let grandTotal=0;
 
   rounds.forEach((r,i)=>{
@@ -1609,7 +1593,7 @@ function renderProposal(){
     const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'Date TBC';
 
     const photoHtml=showPhotos&&img
-      ?`<div style="width:250px;min-width:250px;align-self:stretch;overflow:hidden;flex-shrink:0;background:#F7F4EF;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:148px;"></div>`
+      ?`<div style="width:${orientation==='landscape'?220:250}px;min-width:${orientation==='landscape'?220:250}px;align-self:stretch;overflow:hidden;flex-shrink:0;background:#F7F4EF;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:${orientation==='landscape'?118:140}px;"></div>`
       :'';
 
     const gcBadge=gcValid.ok
@@ -1632,18 +1616,18 @@ function renderProposal(){
       detailHtml=`<div style="font-size:10.5pt;color:#5A5550;margin-top:10px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.07em;text-transform:uppercase;">${players} player${players>1?'s':''}${extrasLabel.length?' · '+extrasLabel.join(' · '):''}</div>`;
     }
 
-    roundsHtml+=`
-      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:7px;border:1px solid #E0D8CB;border-left:4px solid #B8973C;page-break-inside:avoid;background:#fff;">
+    roundCards.push(`
+      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:7px;border:1px solid #E0D8CB;border-left:4px solid #B8973C;break-inside:avoid;page-break-inside:avoid;background:#fff;">
         ${photoHtml}
-        <div style="flex:1;min-width:0;padding:15px 22px;display:flex;flex-direction:column;justify-content:center;">
+        <div style="flex:1;min-width:0;padding:${orientation==='landscape'?'11px 18px':'14px 22px'};display:flex;flex-direction:column;justify-content:center;">
           <div style="font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:5px;">Round ${i+1}</div>
           <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
-            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:25pt;font-weight:600;color:#2D4A3E;line-height:1.05;">${c.name}</span>${gcBadge}
+            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'22pt':'25pt'};font-weight:600;color:#2D4A3E;line-height:1.05;">${c.name}</span>${gcBadge}
           </div>
           <div style="font-size:11.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;margin-bottom:4px;">${dateStr}${r.time?' · '+r.time:''}</div>
           ${detailHtml}
         </div>
-      </div>`;
+      </div>`);
   });
 
   // Totals block
@@ -1689,7 +1673,7 @@ function renderProposal(){
   const lockImgEl=document.querySelector('#lock img');
   const logoSrc=lockImgEl?lockImgEl.src:(document.getElementById('navLogo')?document.getElementById('navLogo').src:'');
   const logoHtml=logoSrc&&logoSrc.startsWith('data:')
-    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:52px;filter:brightness(0);">`
+    ?`<img src="${logoSrc}" alt="Mr Mallorca Golf" style="height:60px;width:60px;object-fit:contain;filter:brightness(0);opacity:.9;">`
     :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
   const prepDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
@@ -1698,30 +1682,43 @@ function renderProposal(){
   if(wording.showPhone&&clientPhone) clientMeta.push(clientPhone);
   if(wording.showPrepared) clientMeta.push('<span style="color:#8A7F74;">Prepared '+prepDate+'</span>');
   const footerText=escapeHtml(wording.footer).replace(/\n/g,'<br>');
+
+  const pageStyle=`width:${paperWidth}px;height:${paperHeight}px;max-width:${paperWidth}px;margin:0 auto 24px;padding:14px 34px 22px;box-sizing:border-box;background:#fff;overflow:hidden;page-break-after:always;break-after:page;`;
+  const headerHtml=`
+    <div style="height:5px;background:#B8973C;margin:0 0 5px;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;min-height:74px;margin:0;">
+      <div style="line-height:0;">${logoHtml}</div>
+      <div style="text-align:right;font-size:11.5pt;color:#2D4A3E;line-height:1.18;font-family:'Jost',sans-serif;font-weight:500;">Andy Griffiths<br><span style="font-size:10.5pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:10.5pt;color:#5A5550;">andy@mrmallorcagolf.com</span><br><span style="font-size:10.5pt;color:#5A5550;">mrmallorcagolf.com</span></div>
+    </div>
+    <div style="height:2px;background:#2D4A3E;margin:5px 0 0;"></div>`;
+  const titleHtml=`
+    <div style="padding:14px 0 11px;border-bottom:1px solid #E0D8CB;margin-bottom:12px;">
+      <div style="font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:4px;">Golf proposal</div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'31pt':'34pt'};font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:7px;">
+        <div style="width:48px;height:2px;background:#B8973C;flex-shrink:0;"></div>
+        <div style="font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${clientMeta.join(' &nbsp;·&nbsp; ')}</div>
+      </div>
+    </div>`;
+  const summaryHtml=`
+    ${inclusionsHtml}
+    <div style="margin-top:9px;padding:12px 16px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
+    <div style="font-size:8pt;line-height:1.35;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:8px;margin-top:12px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-align:center;">${footerText}</div>`;
+  const pageHtml=(body)=>`<div class="proposal-page" style="${pageStyle}">${headerHtml}${body}</div>`;
+  const firstCapacity=orientation==='landscape'?(notes||wording.intro||conditionItems.length?2:3):(notes||wording.intro||conditionItems.length?3:4);
+  const regularCapacity=orientation==='landscape'?4:4;
+  let cursor=0;
+  const pages=[];
+  pages.push(pageHtml(titleHtml+acceptedHtml+introHtml+notesHtml+conditionsHtml+roundCards.slice(cursor,cursor+firstCapacity).join('')));
+  cursor+=firstCapacity;
+  while(cursor<roundCards.length){
+    pages.push(pageHtml(`<div style="padding:14px 0 8px;font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Golf itinerary continued</div>`+roundCards.slice(cursor,cursor+regularCapacity).join('')));
+    cursor+=regularCapacity;
+  }
+  pages.push(pageHtml(`<div style="padding:14px 0 8px;font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Proposal summary</div>`+summaryHtml));
   el.innerHTML=`
-    <div id="printProposal" data-orientation="${orientation}" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;width:${paperWidth}px;max-width:${paperWidth}px;margin:0 auto;padding:14px 34px 22px;box-sizing:border-box;">
-      <div style="height:5px;background:#B8973C;margin:0 0 5px;"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;min-height:74px;margin:0;">
-        <div style="line-height:0;">${logoHtml}</div>
-        <div style="text-align:right;font-size:11.5pt;color:#2D4A3E;line-height:1.18;font-family:'Jost',sans-serif;font-weight:500;">Andy Griffiths<br><span style="font-size:10.5pt;color:#5A5550;">PGA Advanced Professional</span><br><span style="font-size:10.5pt;color:#5A5550;">andy@mrmallorcagolf.com</span><br><span style="font-size:10.5pt;color:#5A5550;">mrmallorcagolf.com</span></div>
-      </div>
-      <div style="height:2px;background:#2D4A3E;margin:5px 0 0;"></div>
-      <div style="padding:14px 0 11px;border-bottom:1px solid #E0D8CB;margin-bottom:12px;">
-        <div style="font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:4px;">Golf proposal</div>
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34pt;font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
-        <div style="display:flex;align-items:center;gap:12px;margin-top:7px;">
-          <div style="width:48px;height:2px;background:#B8973C;flex-shrink:0;"></div>
-          <div style="font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${clientMeta.join(' &nbsp;·&nbsp; ')}</div>
-        </div>
-      </div>
-      ${acceptedHtml}
-      ${introHtml}
-      ${notesHtml}
-      ${conditionsHtml}
-      ${roundsHtml}
-      ${inclusionsHtml}
-      <div style="margin-top:9px;padding:12px 16px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
-      <div style="font-size:8pt;line-height:1.35;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:8px;margin-top:12px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-align:center;">${footerText}</div>
+    <div id="printProposal" data-orientation="${orientation}" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:transparent;width:${paperWidth}px;max-width:${paperWidth}px;margin:0 auto;box-sizing:border-box;">
+      ${pages.join('')}
     </div>`;
   fitProposalPreview();
   requestAnimationFrame(fitProposalPreview);
@@ -1882,6 +1879,8 @@ function printProposal(){
   const orientation=printNode.getAttribute('data-orientation')||'portrait';
   const screenWidth=orientation==='landscape'?'277mm':'190mm';
   const printWidth=orientation==='landscape'?'281mm':'194mm';
+  const pageWidth=orientation==='landscape'?'281mm':'194mm';
+  const pageHeight=orientation==='landscape'?'194mm':'281mm';
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><title>MMG Golf Itinerary</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Jost:wght@300;400;600&display=swap" rel="stylesheet">
@@ -1889,10 +1888,14 @@ function printProposal(){
       *{box-sizing:border-box;margin:0;padding:0;}
       body{background:#fff;font-family:'Jost',Arial,sans-serif;color:#1a1916;}
       #printProposal{width:${screenWidth}!important;max-width:${screenWidth}!important;margin:0 auto!important;}
+      .proposal-page{width:${pageWidth}!important;height:${pageHeight}!important;max-width:${pageWidth}!important;margin:0 auto 8mm!important;box-shadow:none!important;overflow:hidden!important;page-break-after:always;break-after:page;}
+      .proposal-page:last-child{page-break-after:auto;break-after:auto;margin-bottom:0!important;}
       @media print{
         @page{size:A4 ${orientation};margin:8mm;}
         body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
         #printProposal{width:${printWidth}!important;max-width:${printWidth}!important;margin:0 auto!important;}
+        .proposal-page{width:${pageWidth}!important;height:${pageHeight}!important;margin:0!important;page-break-after:always;break-after:page;}
+        .proposal-page:last-child{page-break-after:auto;break-after:auto;}
       }
     </style>
   </head><body>${printNode.outerHTML}</body></html>`);
@@ -2082,46 +2085,58 @@ function exportPowerPoint(){
   }
   addFooter(slide);
 
-  data.rows.forEach(row=>{
-    const s=pptx.addSlide();
-    s.background={color:C.white};
-    addHeader(s);
-    const bodyY=portrait?2.45:2.25;
-    const imgW=row.image?(portrait?contentW:5.0):0;
-    const imgH=row.image?(portrait?3.3:3.85):0;
+  const addRoundCard=(s,row,x,y,w,h)=>{
+    addPptText(s,'',x,y,w,h,{fill:{color:C.white},line:{color:C.border}});
+    addPptBar(s,x,y,0.035,h,C.gold);
+    const imgW=row.image?Math.min(1.65,w*0.32):0;
     if(row.image){
-      s.addImage({data:row.image,x:margin,y:bodyY,w:imgW,h:imgH});
+      s.addImage({data:row.image,x:x+0.04,y:y+0.04,w:imgW,h:h-0.08});
     }
-    const textX=row.image&&!portrait?margin+imgW+0.35:margin;
-    const textY=row.image&&portrait?bodyY+imgH+0.35:bodyY;
-    const textW=row.image&&!portrait?contentW-imgW-0.35:contentW;
-    addPptText(s,'ROUND '+row.roundNo,textX,textY,textW,0.24,{fontSize:10,color:C.gold,bold:true,charSpace:2.2});
-    addPptText(s,row.course.name,textX,textY+0.35,textW,0.58,{
+    const textX=x+(row.image?imgW+0.16:0.16);
+    const textW=w-(row.image?imgW+0.28:0.32);
+    addPptText(s,'ROUND '+row.roundNo,textX,y+0.12,textW,0.18,{fontSize:8.2,color:C.gold,bold:true,charSpace:1.8});
+    addPptText(s,row.course.name,textX,y+0.34,textW,0.34,{
       fontFace:'Cormorant Garamond',
-      fontSize:portrait?28:27,
+      fontSize:portrait?18:17,
       color:C.pine,
       bold:true,
       fit:'shrink',
     });
-    addPptText(s,row.date+' · '+row.time,textX,textY+1.0,textW,0.24,{fontSize:11,color:C.muted});
+    addPptText(s,row.date+' · '+row.time,textX,y+0.74,textW,0.18,{fontSize:8.6,color:C.muted,fit:'shrink'});
     const extras=[];
     extras.push(row.players+' player'+(row.players>1?'s':''));
     if(row.buggyQty) extras.push(row.buggyQty+(row.buggyQty===1?' buggy':' buggies'));
     if(row.clubsQty) extras.push(row.clubsQty+' club hire');
     if(row.licence) extras.push('license');
     if(row.golfCard) extras.push('Golf Card');
-    addPptText(s,extras.join(' · '),textX,textY+1.38,textW,0.22,{fontSize:9.5,color:C.muted,bold:true,charSpace:1.0});
+    addPptText(s,extras.join(' · '),textX,y+1.02,textW,0.18,{fontSize:7.8,color:C.muted,bold:true,charSpace:0.8,fit:'shrink'});
     if(data.fmt==='itemised'){
-      const lines=[
-        'Green fee x '+row.players+'    EUR '+row.gfTotal,
-      ];
-      if(row.buggyQty) lines.push('Buggy hire x '+row.buggyQty+'    EUR '+row.buggyTotal);
-      if(row.clubsQty) lines.push('Club hire x '+row.clubsQty+'    EUR '+row.clubsTotal);
-      lines.push('Subtotal    EUR '+row.subtotal);
-      addPptText(s,lines.join('\n'),textX,textY+1.8,textW,1.0,{fontSize:10.2,color:C.deep,breakLine:true});
+      const line='Subtotal EUR '+row.subtotal;
+      addPptText(s,line,textX,y+1.21,textW,0.16,{fontSize:7.6,color:C.deep,fit:'shrink'});
     }
+  };
+  const firstPptCount=portrait?3:3;
+  const regularPptCount=portrait?4:4;
+  let rowCursor=0;
+  const makeItinerarySlide=(items,label)=>{
+    const s=pptx.addSlide();
+    s.background={color:C.white};
+    addHeader(s);
+    addPptText(s,label,margin,portrait?2.3:2.1,contentW,0.22,{fontSize:10,color:C.gold,bold:true,charSpace:2.4});
+    const startY=portrait?2.78:2.48;
+    const cardH=portrait?1.35:1.12;
+    const gap=portrait?0.18:0.14;
+    items.forEach((row,i)=>addRoundCard(s,row,margin,startY+i*(cardH+gap),contentW,cardH));
     addFooter(s);
-  });
+  };
+  if(data.rows.length){
+    makeItinerarySlide(data.rows.slice(rowCursor,rowCursor+firstPptCount),'GOLF ITINERARY');
+    rowCursor+=firstPptCount;
+    while(rowCursor<data.rows.length){
+      makeItinerarySlide(data.rows.slice(rowCursor,rowCursor+regularPptCount),'GOLF ITINERARY CONTINUED');
+      rowCursor+=regularPptCount;
+    }
+  }
 
   slide=pptx.addSlide();
   slide.background={color:C.white};
