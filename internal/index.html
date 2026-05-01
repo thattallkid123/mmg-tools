@@ -557,9 +557,13 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     <div class="card" style="margin-top:1rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;margin-bottom:.6rem;">
         <h3 style="margin:0;">Sending email draft</h3>
-        <button class="btn btn-gold btn-sm" onclick="copySendingEmail()">Copy email</button>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+          <button class="btn btn-gold btn-sm" onclick="copySendingEmail()">Copy email</button>
+          <button class="btn btn-pine btn-sm" onclick="resetEmailDraft()" title="Regenerate from current quote data">Reset to auto</button>
+        </div>
       </div>
-      <div id="sendingEmailPreview" style="font-size:.85rem;line-height:1.7;color:#ddd;white-space:pre-wrap;background:#0b0b0b;border:1px solid #222;border-radius:4px;padding:.8rem;"></div>
+      <div style="font-size:.75rem;color:#888;margin-bottom:.4rem;">Edit freely — changes are saved automatically. Hit Reset to regenerate from quote data.</div>
+      <textarea id="sendingEmailPreview" spellcheck="false" style="font-size:.85rem;line-height:1.7;color:#ddd;white-space:pre-wrap;background:#0b0b0b;border:1px solid #222;border-radius:4px;padding:.8rem;width:100%;box-sizing:border-box;min-height:320px;resize:vertical;font-family:inherit;" oninput="saveEmailDraft()"></textarea>
     </div>
   </div>
 
@@ -2025,7 +2029,7 @@ function renderProposal(){
   el.innerHTML=`
     <div id="previewClip" style="position:relative;overflow:hidden;">
     <div id="printProposal" data-orientation="${orientation}" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:transparent;width:${paperWidth}px;max-width:${paperWidth}px;margin:0 auto;box-sizing:border-box;">
-      ${pageStrings.join('')}
+      ${pageStrings.map(function(p,i){return p+(i<pageStrings.length-1?'<div style="height:4px;background:linear-gradient(90deg,#2D4A3E,#B8973C,#2D4A3E);margin:0;"></div><div style="text-align:center;padding:5px 0 4px;font-size:9px;font-weight:700;letter-spacing:.2em;color:#B8973C;background:#f0ece4;border-bottom:1px solid #ddd;user-select:none;">&#9660; PAGE '+(i+2)+'</div>':'')}).join('')}
     </div>
     </div>`;
   fitProposalPreview();
@@ -3049,10 +3053,26 @@ function getSendingEmailText(){
 function renderSendingEmail(){
   const el=document.getElementById('sendingEmailPreview');
   if(!el) return;
-  el.textContent=getSendingEmailText();
+  // Load saved draft if exists, otherwise generate fresh
+  const saved=localStorage.getItem('mmg_email_draft');
+  el.value=saved!==null?saved:getSendingEmailText();
+}
+function saveEmailDraft(){
+  const el=document.getElementById('sendingEmailPreview');
+  if(!el) return;
+  localStorage.setItem('mmg_email_draft',el.value);
+}
+function resetEmailDraft(){
+  if(!confirm('Regenerate email from current quote data? Your edits will be lost.')) return;
+  const el=document.getElementById('sendingEmailPreview');
+  if(!el) return;
+  const fresh=getSendingEmailText();
+  el.value=fresh;
+  localStorage.setItem('mmg_email_draft',fresh);
 }
 function copySendingEmail(){
-  const text=getSendingEmailText();
+  const el=document.getElementById('sendingEmailPreview');
+  const text=el?el.value:getSendingEmailText();
   navigator.clipboard.writeText(text).then(function(){
     const btn=document.querySelector('[onclick="copySendingEmail()"]');
     if(btn){const orig=btn.textContent;btn.textContent='Copied!';setTimeout(function(){btn.textContent=orig;},1800);}
