@@ -109,8 +109,17 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
 
 #proposalOut{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:1.2rem;white-space:pre-wrap;font-size:.88rem;line-height:1.6;min-height:100px;font-family:'Jost',monospace;}
 #pProposal{max-width:1100px;}
-#pProposal #proposalOut{max-width:900px;margin:0 auto;overflow:visible!important;}
-#pProposal #printProposal{transform-origin:top left;white-space:normal;}
+#pProposal #proposalOut{max-width:900px;margin:0 auto;overflow:visible!important;position:relative;z-index:1;}
+#pProposal #printProposal{transform-origin:top left;white-space:normal;box-shadow:0 0 0 1px #ddd,0 12px 32px rgba(0,0,0,.22);}
+#pProposal #courseDrafts{position:relative;z-index:2;clear:both;}
+.proposal-page-marker{position:absolute;height:0;border-top:2px dashed rgba(184,151,60,.9);pointer-events:none;z-index:3;}
+.proposal-page-marker span{position:absolute;right:0;top:-18px;background:#111;color:#d7c38a;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:3px;font-family:'Jost',sans-serif;}
+details.proposal-tools{border:1px solid #2a2a2a;border-radius:6px;background:#10100f;margin-bottom:.8rem;}
+details.proposal-tools summary{cursor:pointer;list-style:none;padding:.75rem 1rem;color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;}
+details.proposal-tools summary::-webkit-details-marker{display:none;}
+details.proposal-tools summary:after{content:'+';float:right;font-family:'Jost',sans-serif;color:#aaa;}
+details.proposal-tools[open] summary:after{content:'-';}
+details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
 @media(max-width:700px){
   #pProposal #proposalOut{max-width:none;width:100%;padding:0;overflow:hidden!important;}
 }
@@ -399,6 +408,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
           <option value="landscape">Landscape A4</option>
         </select>
       </div>
+      <div style="display:flex;align-items:end;gap:.5rem;flex-wrap:wrap;">
+        <button class="btn btn-pine btn-sm" onclick="printProposal()" type="button">Save PDF (A4)</button>
+        <button class="btn btn-gold btn-sm" onclick="exportPowerPoint()" type="button">Export PowerPoint</button>
+      </div>
     </div>
     <div class="grid2" style="margin-bottom:.8rem;display:none;">
       <div>
@@ -417,61 +430,66 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <input id="nextActionMirror" placeholder="e.g. Send deposit link" oninput="document.getElementById('nextAction').value=this.value;saveState();renderMissingInfo()">
       </div>
     </div>
-    <div class="card" style="margin-bottom:.8rem;">
-      <h3 style="margin-top:0;">Includes shown on proposal</h3>
-      <div class="grid3" style="gap:.55rem 1rem;">
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incGreenFees" checked onchange="saveState();renderProposal()"> Green fees</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incBuggies" checked onchange="saveState();renderProposal()"> Buggies when selected</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incClubs" checked onchange="saveState();renderProposal()"> Club hire when selected</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incLicenses" checked onchange="saveState();renderProposal()"> Golf licenses where required</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incPlanning" checked onchange="saveState();renderProposal()"> Planning support</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incPgaGuidance" onchange="saveState();renderProposal()"> PGA guidance where selected</label>
-      </div>
-      <div style="margin-top:.7rem;">
-        <label>Extra include lines</label>
-        <textarea id="incCustom" rows="2" placeholder="One extra include per line" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:56px;"></textarea>
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:.8rem;">
-      <h3 style="margin-top:0;">Proposal wording</h3>
-      <div class="grid3" style="margin-bottom:.7rem;">
-        <div>
-          <label>Total label</label>
-          <input id="wordTotalLabel" value="Total" placeholder="e.g. Golf package total" oninput="saveState();renderProposal()">
+    <details class="proposal-tools">
+      <summary>Edit proposal wording and includes</summary>
+      <div class="proposal-tools-body">
+        <div class="card" style="margin-bottom:.8rem;">
+          <h3 style="margin-top:0;">Includes shown on proposal</h3>
+          <div class="grid3" style="gap:.55rem 1rem;">
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incGreenFees" checked onchange="saveState();renderProposal()"> Green fees</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incBuggies" checked onchange="saveState();renderProposal()"> Buggies when selected</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incClubs" checked onchange="saveState();renderProposal()"> Club hire when selected</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incLicenses" checked onchange="saveState();renderProposal()"> Golf licenses where required</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incPlanning" checked onchange="saveState();renderProposal()"> Planning support</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incPgaGuidance" onchange="saveState();renderProposal()"> PGA guidance where selected</label>
+          </div>
+          <div style="margin-top:.7rem;">
+            <label>Extra include lines</label>
+            <textarea id="incCustom" rows="2" placeholder="One extra include per line" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:56px;"></textarea>
+          </div>
         </div>
-        <div>
-          <label>Golf subtotal label</label>
-          <input id="wordCourseTotalLabel" value="Golf fees & extras" oninput="saveState();renderProposal()">
-        </div>
-        <div>
-          <label>Management label</label>
-          <input id="wordManagementLabel" value="Management fee" oninput="saveState();renderProposal()">
+        <div class="card" style="margin-bottom:0;">
+          <h3 style="margin-top:0;">Proposal wording</h3>
+          <div class="grid3" style="margin-bottom:.7rem;">
+            <div>
+              <label>Total label</label>
+              <input id="wordTotalLabel" value="Total" placeholder="e.g. Golf package total" oninput="saveState();renderProposal()">
+            </div>
+            <div>
+              <label>Golf subtotal label</label>
+              <input id="wordCourseTotalLabel" value="Golf fees & extras" oninput="saveState();renderProposal()">
+            </div>
+            <div>
+              <label>Management label</label>
+              <input id="wordManagementLabel" value="Management fee" oninput="saveState();renderProposal()">
+            </div>
+          </div>
+          <div style="margin-bottom:.7rem;">
+            <label>Intro line under title</label>
+            <textarea id="wordIntro" rows="2" placeholder="Optional short intro line for the proposal" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:56px;"></textarea>
+          </div>
+          <div class="grid3" style="gap:.55rem 1rem;margin-bottom:.7rem;">
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowEmail" checked onchange="saveState();renderProposal()"> Show client email</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowPhone" checked onchange="saveState();renderProposal()"> Show client phone</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowPrepared" checked onchange="saveState();renderProposal()"> Show prepared date</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordValidity" checked onchange="saveState();renderProposal()"> Validity note</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordAvailability" checked onchange="saveState();renderProposal()"> Tee-time availability note</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordBuggyAvailability" onchange="saveState();renderProposal()"> Buggy availability note</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordLicenseNote" onchange="saveState();renderProposal()"> License note</label>
+          </div>
+          <div class="grid2">
+            <div>
+              <label>Extra important notes</label>
+              <textarea id="wordCustomNotes" rows="3" placeholder="One note per line" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:70px;"></textarea>
+            </div>
+            <div>
+              <label>Footer text</label>
+              <textarea id="wordFooter" rows="3" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:70px;">All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com</textarea>
+            </div>
+          </div>
         </div>
       </div>
-      <div style="margin-bottom:.7rem;">
-        <label>Intro line under title</label>
-        <textarea id="wordIntro" rows="2" placeholder="Optional short intro line for the proposal" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:56px;"></textarea>
-      </div>
-      <div class="grid3" style="gap:.55rem 1rem;margin-bottom:.7rem;">
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowEmail" checked onchange="saveState();renderProposal()"> Show client email</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowPhone" checked onchange="saveState();renderProposal()"> Show client phone</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowPrepared" checked onchange="saveState();renderProposal()"> Show prepared date</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordValidity" checked onchange="saveState();renderProposal()"> Validity note</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordAvailability" checked onchange="saveState();renderProposal()"> Tee-time availability note</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordBuggyAvailability" onchange="saveState();renderProposal()"> Buggy availability note</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordLicenseNote" onchange="saveState();renderProposal()"> License note</label>
-      </div>
-      <div class="grid2">
-        <div>
-          <label>Extra important notes</label>
-          <textarea id="wordCustomNotes" rows="3" placeholder="One note per line" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:70px;"></textarea>
-        </div>
-        <div>
-          <label>Footer text</label>
-          <textarea id="wordFooter" rows="3" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:70px;">All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com</textarea>
-        </div>
-      </div>
-    </div>
+    </details>
     <div id="proposalMissingInfo" class="card" style="display:none;margin-bottom:.8rem;"></div>
     <div id="proposalOut" style="background:#fff;border-radius:6px;padding:0;overflow:hidden;"></div>
     <div id="courseDrafts" class="card" style="margin-top:.8rem;"></div>
@@ -790,6 +808,7 @@ function fitProposalPreview(){
   const out=document.getElementById('proposalOut');
   const paper=document.getElementById('printProposal');
   if(!out||!paper) return;
+  out.querySelectorAll('.proposal-page-marker').forEach(x=>x.remove());
   paper.style.transform='';
   paper.style.margin='0 auto';
   out.style.height='';
@@ -802,9 +821,26 @@ function fitProposalPreview(){
     paper.style.transform='scale('+scale+')';
     paper.style.margin='0';
   }
-  const height=Math.ceil(paper.offsetHeight*scale);
+  const rect=paper.getBoundingClientRect();
+  const height=Math.ceil((rect.height||paper.offsetHeight*scale)+24);
   out.style.height=height+'px';
   out.style.minHeight=height+'px';
+  out.style.marginBottom='1rem';
+  const orientation=paper.getAttribute('data-orientation')||'portrait';
+  const pageHeight=(orientation==='landscape'?paper.offsetWidth*0.707:paper.offsetWidth*1.414);
+  const totalHeight=paper.offsetHeight||0;
+  const pages=Math.ceil(totalHeight/pageHeight);
+  const left=scale<1?0:paper.offsetLeft;
+  const width=(paper.offsetWidth||base)*scale;
+  for(let i=1;i<pages;i++){
+    const marker=document.createElement('div');
+    marker.className='proposal-page-marker';
+    marker.style.left=left+'px';
+    marker.style.top=Math.round(pageHeight*i*scale)+'px';
+    marker.style.width=width+'px';
+    marker.innerHTML='<span>Page '+(i+1)+'</span>';
+    out.appendChild(marker);
+  }
 }
 window.addEventListener('resize',fitProposalPreview);
 window.addEventListener('orientationchange',function(){setTimeout(fitProposalPreview,150);});
