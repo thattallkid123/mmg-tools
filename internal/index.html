@@ -119,6 +119,11 @@ details.proposal-tools summary::-webkit-details-marker{display:none;}
 details.proposal-tools summary:after{content:'+';float:right;font-family:'Jost',sans-serif;color:#aaa;}
 details.proposal-tools[open] summary:after{content:'-';}
 details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
+.include-order-list{display:grid;gap:.35rem;margin-top:.65rem;}
+.include-order-item{display:flex;align-items:center;gap:.5rem;border:1px solid #2a2a2a;background:#0b0b0b;border-radius:4px;padding:.45rem .55rem;color:#ddd;font-size:.85rem;cursor:grab;}
+.include-order-item.dragging{opacity:.45;}
+.include-order-item .drag-handle{color:var(--gold);font-weight:700;letter-spacing:.08em;}
+.include-order-item .include-muted{color:#777;font-size:.76rem;margin-left:auto;}
 @media(max-width:700px){
   #pProposal #proposalOut{max-width:none;width:100%;padding:0;overflow:hidden!important;}
 }
@@ -269,7 +274,7 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     </div>
     <div style="margin-bottom:.8rem;">
       <label>Message on proposal (optional)</label>
-      <textarea id="proposalNotes" rows="3" placeholder="e.g. Looking forward to hosting your group in Mallorca. Tee times will be confirmed once accepted." oninput="saveState();renderProposal()" style="min-height:70px;"></textarea>
+      <textarea id="proposalNotes" rows="3" placeholder="e.g. Looking forward to hosting your group in Mallorca. Tee times will be confirmed once accepted." oninput="syncProposalNotesFromBuilder();saveState();renderProposal()" style="min-height:70px;"></textarea>
     </div>
     <div class="grid2" style="margin-bottom:.8rem;">
       <div>
@@ -446,6 +451,11 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
             <label>Extra include lines</label>
             <textarea id="incCustom" rows="2" placeholder="One extra include per line" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:56px;"></textarea>
           </div>
+          <div style="margin-top:.8rem;">
+            <label>Order shown on proposal</label>
+            <div class="help">Drag items to change the order. Unticked items are kept here but hidden from the proposal.</div>
+            <div id="includeOrderList" class="include-order-list"></div>
+          </div>
         </div>
         <div class="card" style="margin-bottom:0;">
           <h3 style="margin-top:0;">Proposal wording</h3>
@@ -489,6 +499,10 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
         </div>
       </div>
     </details>
+    <div style="margin-bottom:.8rem;">
+      <label>Message on proposal (editable here)</label>
+      <textarea id="proposalNotesProposal" rows="4" placeholder="Client-facing note shown on the proposal" oninput="syncProposalNotesFromProposal();autoGrow(this);saveState();renderProposal()" style="min-height:86px;"></textarea>
+    </div>
     <div id="proposalMissingInfo" class="card" style="display:none;margin-bottom:.8rem;"></div>
     <div id="proposalOut" style="background:#fff;border-radius:6px;padding:0;overflow:hidden;"></div>
     <div id="courseDrafts" class="card" style="margin-top:.8rem;"></div>
@@ -742,6 +756,7 @@ let settings = {};
 let nextId = 1;
 let currentSupabaseId = '';
 let includeTourOperatorNote = false;
+let proposalIncludeOrder = [];
 
 // ---- LOCK ----
 function tryUnlock(){
@@ -790,6 +805,16 @@ function autoGrow(el){
   if(!el) return;
   el.style.height='auto';
   el.style.height=Math.max(90,el.scrollHeight)+'px';
+}
+function syncProposalNotesFromProposal(){
+  const src=document.getElementById('proposalNotesProposal');
+  const dest=document.getElementById('proposalNotes');
+  if(src&&dest) dest.value=src.value;
+}
+function syncProposalNotesFromBuilder(){
+  const src=document.getElementById('proposalNotes');
+  const dest=document.getElementById('proposalNotesProposal');
+  if(src&&dest) dest.value=src.value;
 }
 function openDatePicker(el){
   if(el&&typeof el.showPicker==='function'){
@@ -1011,7 +1036,8 @@ function saveState(){
       licenses:isChecked('incLicenses'),
       planning:isChecked('incPlanning'),
       pgaGuidance:isChecked('incPgaGuidance'),
-      custom:(document.getElementById('incCustom')||{}).value||''
+      custom:(document.getElementById('incCustom')||{}).value||'',
+      order:proposalIncludeOrder||[]
     },
     proposalWording:getProposalWording(),
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
@@ -1095,6 +1121,8 @@ function applyQuoteData(data){
   if(data.dayType){const r=document.querySelector('input[name=dayType][value="'+data.dayType+'"]');if(r)r.checked=true;}
   setValue('andyDays',data.andyDays!=null?data.andyDays:0);
   setValue('proposalNotes',data.proposalNotes);
+  setValue('proposalNotesProposal',data.proposalNotes);
+  autoGrow(document.getElementById('proposalNotesProposal'));
   if(data.propFormat) setValue('propFormat',data.propFormat);
   setValue('propIncludeFee',normaliseFeeMode(data.propIncludeFee));
   setValue('managementFee',data.managementFee!=null?data.managementFee:'0');
@@ -1109,6 +1137,7 @@ function applyQuoteData(data){
     setChecked('incPlanning',data.proposalIncludes.planning);
     setChecked('incPgaGuidance',data.proposalIncludes.pgaGuidance);
     setValue('incCustom',data.proposalIncludes.custom||'');
+    proposalIncludeOrder=Array.isArray(data.proposalIncludes.order)?data.proposalIncludes.order:[];
     autoGrow(document.getElementById('incCustom'));
   }
   if(data.proposalWording){
@@ -1542,18 +1571,76 @@ function formatRoundDate(dateStr, opts){
   return new Date(dateStr+'T12:00:00').toLocaleDateString('en-GB',opts||{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
 function getProposalIncludeItems(){
-  const items=[];
-  if(isChecked('incGreenFees')) items.push('Listed green fees');
-  if(isChecked('incBuggies')&&rounds.some(r=>r.buggyQty>0)) items.push('Buggy hire where selected');
-  if(isChecked('incClubs')&&rounds.some(r=>r.clubsQty>0)) items.push('Club hire where selected');
-  if(isChecked('incLicenses')&&rounds.some(r=>r.licence)) items.push('Golf license fees where required');
-  if(isChecked('incPlanning')) items.push('Planning and tee-time support');
-  if(isChecked('incPgaGuidance')) items.push('PGA guidance where selected');
+  const available=getProposalIncludeEntries();
+  reconcileIncludeOrder(available);
+  return proposalIncludeOrder
+    .map(id=>available.find(x=>x.id===id))
+    .filter(x=>x&&x.active)
+    .map(x=>x.label);
+}
+function getProposalIncludeEntries(){
   const custom=((document.getElementById('incCustom')||{}).value||'')
     .split(/\n+/)
     .map(x=>x.trim())
     .filter(Boolean);
-  return items.concat(custom);
+  const entries=[
+    {id:'greenFees', label:'Listed green fees', active:isChecked('incGreenFees'), type:'Built-in'},
+    {id:'buggies', label:'Buggy hire where selected', active:isChecked('incBuggies')&&rounds.some(r=>r.buggyQty>0), type:'Built-in'},
+    {id:'clubs', label:'Club hire where selected', active:isChecked('incClubs')&&rounds.some(r=>r.clubsQty>0), type:'Built-in'},
+    {id:'licenses', label:'Golf license fees where required', active:isChecked('incLicenses')&&rounds.some(r=>r.licence), type:'Built-in'},
+    {id:'planning', label:'Planning and tee-time support', active:isChecked('incPlanning'), type:'Built-in'},
+    {id:'pgaGuidance', label:'PGA guidance where selected', active:isChecked('incPgaGuidance'), type:'Built-in'}
+  ];
+  custom.forEach((label,i)=>entries.push({id:'custom:'+label.toLowerCase().replace(/\s+/g,'-')+':'+i,label,active:true,type:'Custom'}));
+  return entries;
+}
+function reconcileIncludeOrder(entries){
+  const ids=entries.map(x=>x.id);
+  const current=(proposalIncludeOrder||[]).filter(id=>ids.includes(id));
+  ids.forEach(id=>{if(!current.includes(id)) current.push(id);});
+  proposalIncludeOrder=current;
+}
+function renderIncludeOrderEditor(){
+  const box=document.getElementById('includeOrderList');
+  if(!box) return;
+  const entries=getProposalIncludeEntries();
+  reconcileIncludeOrder(entries);
+  box.innerHTML=proposalIncludeOrder.map(id=>{
+    const item=entries.find(x=>x.id===id);
+    if(!item) return '';
+    return '<div class="include-order-item" draggable="true" data-id="'+escapeHtml(item.id)+'">'
+      +'<span class="drag-handle">::</span>'
+      +'<span>'+escapeHtml(item.label)+'</span>'
+      +'<span class="include-muted">'+(item.active?escapeHtml(item.type):'hidden')+'</span>'
+      +'</div>';
+  }).join('');
+  let draggingId='';
+  box.querySelectorAll('.include-order-item').forEach(item=>{
+    item.addEventListener('dragstart',e=>{
+      draggingId=item.dataset.id;
+      item.classList.add('dragging');
+      if(e.dataTransfer) e.dataTransfer.effectAllowed='move';
+    });
+    item.addEventListener('dragend',()=>{
+      item.classList.remove('dragging');
+      draggingId='';
+    });
+    item.addEventListener('dragover',e=>{
+      e.preventDefault();
+    });
+    item.addEventListener('drop',e=>{
+      e.preventDefault();
+      const targetId=item.dataset.id;
+      if(!draggingId||draggingId===targetId) return;
+      const next=proposalIncludeOrder.filter(id=>id!==draggingId);
+      const idx=next.indexOf(targetId);
+      next.splice(idx,0,draggingId);
+      proposalIncludeOrder=next;
+      renderIncludeOrderEditor();
+      saveState();
+      renderProposal();
+    });
+  });
 }
 function renderProposal(){
   const fmt=document.getElementById('propFormat').value;
@@ -1754,6 +1841,7 @@ function renderProposal(){
       ${pageStrings.join('')}
     </div>`;
   fitProposalPreview();
+  renderIncludeOrderEditor();
   requestAnimationFrame(fitProposalPreview);
   el.querySelectorAll('img').forEach(img=>{
     if(!img.complete) img.addEventListener('load',fitProposalPreview,{once:true});
@@ -2503,7 +2591,8 @@ function getCurrentQuoteData(name){
       licenses:isChecked('incLicenses'),
       planning:isChecked('incPlanning'),
       pgaGuidance:isChecked('incPgaGuidance'),
-      custom:(document.getElementById('incCustom')||{}).value||''
+      custom:(document.getElementById('incCustom')||{}).value||'',
+      order:proposalIncludeOrder||[]
     },
     proposalWording:getProposalWording(),
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
