@@ -114,6 +114,8 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
 #pProposal #previewClip{overflow:hidden;position:relative;}
 #pSettings input[type=number],
 #pSettings input[type=text]{background:#1e1e1e;color:#fff;}
+#pSettings input[type=number]::placeholder,
+#pSettings input[type=text]::placeholder{color:#aaa;}
 #pProposal .proposal-page{box-shadow:0 0 0 1px #ddd,0 12px 32px rgba(0,0,0,.22);}
 #pProposal #courseDrafts{position:relative;z-index:2;clear:both;}
 details.proposal-tools{border:1px solid #2a2a2a;border-radius:6px;background:#10100f;margin-bottom:.8rem;}
@@ -1026,14 +1028,14 @@ function renderSettingsTable(){
     const defClubs=c.clubsMax>0?Math.round((c.clubsMin+c.clubsMax)/2):0;
     return '<tr>'
       +'<td style="font-weight:600;">'+c.name+'</td>'
-      +'<td><input type="number" data-rack-peak="'+c.id+'" value="'+(saved.rackPeak||'')+'" placeholder="'+c.peak+'" title="Peak rack GF" style="width:68px;" oninput="saveSettings()"></td>'
-      +'<td><input type="number" data-rack-mid="'+c.id+'"  value="'+(saved.rackMid||'')+'"  placeholder="'+(c.mid||Math.round((c.peak+c.low)/2))+'" title="Mid rack GF" style="width:68px;" oninput="saveSettings()"></td>'
-      +'<td><input type="number" data-rack-low="'+c.id+'"  value="'+(saved.rackLow||'')+'"  placeholder="'+c.low+'" title="Low rack GF" style="width:68px;" oninput="saveSettings()"></td>'
+      +'<td><input type="number" data-rack-peak="'+c.id+'" value="'+(saved.rackPeak!=null&&saved.rackPeak!==''?saved.rackPeak:c.peak)+'" title="Peak rack GF" style="width:68px;" oninput="saveSettings()"></td>'
+      +'<td><input type="number" data-rack-mid="'+c.id+'"  value="'+(saved.rackMid!=null&&saved.rackMid!==''?saved.rackMid:(c.mid||Math.round((c.peak+c.low)/2)))+'"  title="Mid rack GF" style="width:68px;" oninput="saveSettings()"></td>'
+      +'<td><input type="number" data-rack-low="'+c.id+'"  value="'+(saved.rackLow!=null&&saved.rackLow!==''?saved.rackLow:c.low)+'"  title="Low rack GF" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-course-cost="'+c.id+'" value="'+(saved.myCost||'')+'" placeholder="auto" title="My cost/pp (overrides auto)" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-discount-pct="'+c.id+'" value="'+discountValue+'" placeholder="'+defaultDiscount+'" min="0" max="100" title="TO discount from rack used by automatic cost" style="width:68px;" oninput="saveSettings()"></td>'
       +'<td><select data-cost-mode="'+c.id+'" title="How auto cost should be calculated" style="width:145px;" onchange="saveSettings();renderSettingsTable()">'+COURSE_COST_MODES.map(opt=>'<option value="'+opt.id+'"'+(opt.id===mode?' selected':'')+'>'+opt.label+'</option>').join('')+'</select></td>'
-      +'<td><input type="number" data-buggy-rate="'+c.id+'" value="'+(saved.buggyRate||'')+'" placeholder="'+(defBuggy||'N/A')+'" title="Buggy rate" style="width:65px;" oninput="saveSettings()"></td>'
-      +'<td><input type="number" data-clubs-rate="'+c.id+'" value="'+(saved.clubsRate||'')+'" placeholder="'+(defClubs||'N/A')+'" title="Club hire rate" style="width:65px;" oninput="saveSettings()"></td>'
+      +'<td><input type="number" data-buggy-rate="'+c.id+'" value="'+(saved.buggyRate!=null&&saved.buggyRate!==''?saved.buggyRate:(defBuggy||''))+'" placeholder="'+(defBuggy||'N/A')+'" title="Buggy rate" style="width:65px;" oninput="saveSettings()"></td>'
+      +'<td><input type="number" data-clubs-rate="'+c.id+'" value="'+(saved.clubsRate!=null&&saved.clubsRate!==''?saved.clubsRate:(defClubs||''))+'" placeholder="'+(defClubs||'N/A')+'" title="Club hire rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td style="text-align:center;"><input type="checkbox" data-course-lic="'+c.id+'" '+(saved.licence?'checked':'')+' onchange="saveSettings()"></td>'
       +'<td><input data-course-email="'+c.id+'" value="'+escapeHtml(contact.email||'')+'" placeholder="bookings@..." title="Booking email" style="width:180px;" oninput="saveSettings()"></td>'
       +'<td><input data-course-phone="'+c.id+'" value="'+escapeHtml(contact.phone||'')+'" placeholder="+34..." title="Booking phone" style="width:130px;" oninput="saveSettings()"></td>'
