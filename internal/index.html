@@ -1742,8 +1742,8 @@ function renderProposal(){
   const expiryDays=parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0;
   const quoteStatus=(document.getElementById('quoteStatus')||{}).value||'Draft';
   const orientation=(document.getElementById('propOrientation')||{}).value||'portrait';
-  const paperWidth=orientation==='landscape'?1120:900;
-  const paperHeight=orientation==='landscape'?792:1273;
+  const paperWidth=orientation==='landscape'?711:718;
+  const paperHeight=orientation==='landscape'?718:1039;
   const wording=getProposalWording();
 
   const el=document.getElementById('proposalOut');
@@ -1769,7 +1769,7 @@ function renderProposal(){
     const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'Date TBC';
 
     const photoHtml=showPhotos&&img
-      ?`<div style="width:${orientation==='landscape'?220:250}px;min-width:${orientation==='landscape'?220:250}px;align-self:stretch;overflow:hidden;flex-shrink:0;background:#F7F4EF;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:${orientation==='landscape'?118:140}px;"></div>`
+      ?`<div style="width:${orientation==='landscape'?200:220}px;min-width:${orientation==='landscape'?200:220}px;align-self:stretch;overflow:hidden;flex-shrink:0;background:#F7F4EF;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:${orientation==='landscape'?105:118}px;"></div>`
       :'';
 
     const gcBadge=gcValid.ok
@@ -1789,18 +1789,18 @@ function renderProposal(){
       const extrasLabel=[];
       if(r.buggyQty>0) extrasLabel.push(r.buggyQty+(r.buggyQty===1?' buggy':' buggies'));
       if(r.clubsQty>0) extrasLabel.push(r.clubsQty+' club hire');
-      detailHtml=`<div style="font-size:10.5pt;color:#5A5550;margin-top:10px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.07em;text-transform:uppercase;">${players} player${players>1?'s':''}${extrasLabel.length?' · '+extrasLabel.join(' · '):''}</div>`;
+      detailHtml=`<div style="font-size:9.5pt;color:#5A5550;margin-top:6px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.07em;text-transform:uppercase;">${players} player${players>1?'s':''}${extrasLabel.length?' · '+extrasLabel.join(' · '):''}</div>`;
     }
 
     roundCards.push(`
-      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:7px;border:1px solid #E0D8CB;border-left:4px solid #B8973C;break-inside:avoid;page-break-inside:avoid;background:#fff;">
+      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:5px;border:1px solid #E0D8CB;border-left:4px solid #B8973C;break-inside:avoid;page-break-inside:avoid;background:#fff;">
         ${photoHtml}
-        <div style="flex:1;min-width:0;padding:${orientation==='landscape'?'11px 18px':'14px 22px'};display:flex;flex-direction:column;justify-content:center;">
-          <div style="font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:5px;">Round ${i+1}</div>
-          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
-            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'22pt':'25pt'};font-weight:600;color:#2D4A3E;line-height:1.05;">${c.name}</span>${gcBadge}
+        <div style="flex:1;min-width:0;padding:${orientation==='landscape'?'9px 16px':'10px 18px'};display:flex;flex-direction:column;justify-content:center;">
+          <div style="font-family:'Jost',sans-serif;font-size:8.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:4px;">Round ${i+1}</div>
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'20pt':'22pt'};font-weight:600;color:#2D4A3E;line-height:1.05;">${c.name}</span>${gcBadge}
           </div>
-          <div style="font-size:11.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;margin-bottom:4px;">${dateStr}${r.time?' · '+r.time:''}</div>
+          <div style="font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;margin-bottom:3px;">${dateStr}${r.time?' · '+r.time:''}</div>
           ${detailHtml}
         </div>
       </div>`);
@@ -1867,12 +1867,12 @@ function renderProposal(){
     </div>
     <div style="height:2px;background:#2D4A3E;margin:8px 0 0;"></div>`;
   const titleHtml=`
-    <div style="padding:14px 0 11px;border-bottom:1px solid #E0D8CB;margin-bottom:12px;">
-      <div style="font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:4px;">Golf proposal</div>
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'31pt':'34pt'};font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
-      <div style="display:flex;align-items:center;gap:12px;margin-top:7px;">
+    <div style="padding:10px 0 9px;border-bottom:1px solid #E0D8CB;margin-bottom:10px;">
+      <div style="font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:3px;">Golf proposal</div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'28pt':'30pt'};font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
         <div style="width:48px;height:2px;background:#B8973C;flex-shrink:0;"></div>
-        <div style="font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${clientMeta.join(' &nbsp;·&nbsp; ')}</div>
+        <div style="font-size:10pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${clientMeta.join(' &nbsp;·&nbsp; ')}</div>
       </div>
     </div>`;
   const summaryHtml=`
@@ -1884,10 +1884,10 @@ function renderProposal(){
   const summaryHeading=`<div style="padding:18px 0 10px;font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Proposal summary</div>`;
   const maxContentHeight=paperHeight-92;
   const headerHeight=118;
-  const headingHeight=52;
-  const roundHeight=(orientation==='landscape'?142:170)+(fmt==='itemised'?38:0);
+  const headingHeight=48;
+  const roundHeight=(orientation==='landscape'?125:145)+(fmt==='itemised'?35:0);
   const lineEstimate=(text,charsPerLine)=>Math.max(1,Math.ceil(String(text||'').length/charsPerLine));
-  const firstIntroHeight=titleHtml?142:0;
+  const firstIntroHeight=titleHtml?115:0;
   const acceptedHeight=acceptedHtml?46:0;
   const introHeight=wording.intro?Math.max(34,lineEstimate(wording.intro,orientation==='landscape'?130:90)*22):0;
   const noteHeight=notes?Math.max(50,lineEstimate(notes,orientation==='landscape'?115:80)*24+24):0;
@@ -2085,10 +2085,10 @@ function printProposal(){
   printNode.style.transform='';
   printNode.style.margin='0 auto';
   const orientation=printNode.getAttribute('data-orientation')||'portrait';
-  const screenWidth=orientation==='landscape'?'277mm':'190mm';
-  const printWidth=orientation==='landscape'?'281mm':'194mm';
-  const pageWidth=orientation==='landscape'?'281mm':'194mm';
-  const pageHeight=orientation==='landscape'?'194mm':'281mm';
+  const screenWidth=orientation==='landscape'?'271mm':'186mm';
+  const printWidth=orientation==='landscape'?'275mm':'190mm';
+  const pageWidth=orientation==='landscape'?'275mm':'190mm';
+  const pageHeight=orientation==='landscape'?'188mm':'275mm';
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><title>MMG Golf Itinerary</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Jost:wght@300;400;600&display=swap" rel="stylesheet">
@@ -2099,7 +2099,7 @@ function printProposal(){
       .proposal-page{width:${pageWidth}!important;height:${pageHeight}!important;max-width:${pageWidth}!important;margin:0 auto 8mm!important;box-shadow:none!important;overflow:hidden!important;page-break-after:always;break-after:page;}
       .proposal-page:last-child{page-break-after:auto;break-after:auto;margin-bottom:0!important;}
       @media print{
-        @page{size:A4 ${orientation};margin:8mm;}
+        @page{size:A4 ${orientation};margin:11mm;}
         body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
         #printProposal{width:${printWidth}!important;max-width:${printWidth}!important;margin:0 auto!important;}
         .proposal-page{width:${pageWidth}!important;height:${pageHeight}!important;margin:0!important;page-break-after:always;break-after:page;}
