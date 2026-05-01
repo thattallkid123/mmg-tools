@@ -352,7 +352,8 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
       <button class="btn btn-pine btn-sm" onclick="addRow()">+ Blank round</button>
       <button class="btn btn-pine btn-sm" onclick="syncPlayers()" title="Apply the player count above to every round in the list">Set all rounds to <strong id="syncNum">2</strong> players</button>
       <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;color:#aaa;white-space:nowrap;">Arrival date <input type="date" id="arrivalDate" style="max-width:150px;padding:.3rem .5rem;font-size:.82rem;" onchange="fillConsecutiveDates()"></label>
-      <button class="btn btn-red btn-sm" onclick="clearRounds()">Clear all</button>
+      <button class="btn btn-red btn-sm" onclick="clearRounds()">Clear rounds</button>
+      <button class="btn btn-red btn-sm" onclick="clearAll()">Clear all</button>
       <span style="margin-left:auto;display:flex;gap:.5rem;">
         <button class="btn btn-gold btn-sm" onclick="openTab('proposal')">Preview proposal</button>
         <button class="btn btn-gold btn-sm" onclick="saveQuoteToList()">Save in app</button>
@@ -1463,6 +1464,25 @@ function addRow(){
   saveState(); renderTable();
 }
 function clearRounds(){if(confirm('Clear all rounds?')){rounds=[];saveState();renderTable();}}
+function clearAll(){
+  if(!confirm('Clear everything — client details, rounds, and notes?')) return;
+  // Client fields
+  ['clientName','clientEmail','clientPhone','nextAction','followUpDate','leadSource','proposalNotes','proposalNotesProposal','wordIntro'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  // Reset selects
+  var qs=document.getElementById('quoteStatus'); if(qs) qs.value='Draft';
+  var qe=document.getElementById('quoteExpiryDays'); if(qe) qe.value='7';
+  var np=document.getElementById('numPlayers'); if(np) np.value='2';
+  // Clear rounds
+  rounds=[];
+  // Clear email draft
+  localStorage.removeItem('mmg_email_draft');
+  saveState(); renderTable(); renderProposal(); renderSendingEmail(); renderMissingInfo(); renderDashboard();
+  // Update char counts
+  var c1=document.getElementById('proposalNotesCount'); if(c1) c1.textContent='1000 chars left';
+  var c2=document.getElementById('proposalNotesProposalCount'); if(c2) c2.textContent='1000 chars left';
+}
 function syncPlayers(){
   const n=parseInt(document.getElementById('numPlayers').value)||2;
   rounds.forEach(r=>r.players=n);
