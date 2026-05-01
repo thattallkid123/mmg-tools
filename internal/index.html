@@ -673,7 +673,7 @@ function getCourseRateBand(courseId, dateStr){
   return bands.find(b=>md>=b.from&&md<=b.to)||null;
 }
 
-// Season bands (global — same for all courses)
+// Season bands (global - same for all courses)
 // Peak:  15 Mar–14 Jun, 15 Sep–14 Nov
 // Low:   Jan–Feb, 15 Jun–Aug, 21 Nov–Dec
 // Mid:   1–14 Mar, 15–20 Nov
@@ -1352,7 +1352,7 @@ function renderMissingInfo(){
 // ---- PARSER ----
 function findCourse(text){
   const t=text.toLowerCase();
-  // Check son antem ambiguity — if 'west' present use west, else east
+  // Check son antem ambiguity - if 'west' present use west, else east
   if(t.includes('son antem')&&!t.includes('east')&&!t.includes(' e ')&&t.includes('west')) return 'son_antem_w';
   if(t.includes('son antem')) return 'son_antem_e';
   for(const [id,aliases] of Object.entries(COURSE_ALIASES)){
@@ -1915,7 +1915,7 @@ function renderProposal(){
   const titleHtml=`
     <div style="padding:10px 0 9px;border-bottom:1px solid #E0D8CB;margin-bottom:10px;">
       <div style="font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:3px;">Golf proposal</div>
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'28pt':'30pt'};font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'28pt':'30pt'};font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' - ':''}Mallorca Golf Itinerary</div>
       <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
         <div style="width:48px;height:2px;background:#B8973C;flex-shrink:0;"></div>
         <div style="font-size:10pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${clientMeta.join(' &nbsp;·&nbsp; ')}</div>
@@ -1978,7 +1978,7 @@ function renderProposal(){
       current.used+=roundHeight;
     });
   }
-  // Summary always starts on page 2+ — never on page 1 alone
+  // Summary always starts on page 2+ - never on page 1 alone
   const isOnPage1=pages.length===1&&current===pages[0];
   if(!isOnPage1&&current.used+summaryHeight<=maxContentHeight){
     current.chunks.push(summaryHeading+summaryHtml);
@@ -2789,7 +2789,7 @@ function getSavedQuotes(){
 }
 async function saveQuoteToList(){
   const clientName=document.getElementById('clientName').value||'Unnamed';
-  const name=prompt('Save quote as:',clientName+' — '+new Date().toLocaleDateString('en-GB'));
+  const name=prompt('Save quote as:',clientName+' - '+new Date().toLocaleDateString('en-GB'));
   if(!name) return;
   const data=getCurrentQuoteData(name);
   const list=getSavedQuotes();
@@ -2843,7 +2843,7 @@ function duplicateSavedQuote(idx){
   var newClient=prompt('New client name for this copy:',copy.clientName||'');
   if(newClient===null) return;
   copy.clientName=newClient||copy.clientName;
-  copy.name=(newClient||copy.clientName||'Quote')+' — '+new Date().toLocaleDateString('en-GB');
+  copy.name=(newClient||copy.clientName||'Quote')+' - '+new Date().toLocaleDateString('en-GB');
   copy.savedAt=new Date().toISOString();
   copy.supabaseId='';
   copy.quoteStatus='Draft';
@@ -2884,11 +2884,11 @@ async function deleteSavedQuote(idx){
 
 // ---- NOTE TEMPLATES ----
 const NOTE_TEMPLATES={
-  welcome:'Looking forward to welcoming you to Mallorca. I have put together a selection of courses that I think you will enjoy — please feel free to get in touch if you would like to adjust anything.',
+  welcome:'Looking forward to welcoming you to Mallorca. I have put together a selection of courses that I think you will enjoy - please feel free to get in touch if you would like to adjust anything.',
   group:'It is a pleasure to be arranging this trip for your group. Each round has been chosen with your schedule in mind. I will handle all the tee-time bookings once you are happy to go ahead.',
-  corporate:'Thank you for choosing Mr Mallorca Golf for your company day. I will ensure everything runs smoothly from the first tee to the 19th hole — please let me know if you have any specific requirements.',
-  honeymoon:'Congratulations on your upcoming wedding. I would love to make your time in Mallorca extra special — if there are any surprises or personal touches you would like added to the day, just say the word.',
-  return:'It is great to be working with you again. I have put together a fresh selection for this trip — I hope you enjoy some new courses alongside a few favourites.',
+  corporate:'Thank you for choosing Mr Mallorca Golf for your company day. I will ensure everything runs smoothly from the first tee to the 19th hole - please let me know if you have any specific requirements.',
+  honeymoon:'Congratulations on your upcoming wedding. I would love to make your time in Mallorca extra special - if there are any surprises or personal touches you would like added to the day, just say the word.',
+  return:'It is great to be working with you again. I have put together a fresh selection for this trip - I hope you enjoy some new courses alongside a few favourites.',
 };
 function applyNoteTemplate(key){
   if(!key) return;
