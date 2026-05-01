@@ -109,7 +109,7 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
 
 #proposalOut{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:1.2rem;white-space:pre-wrap;font-size:.88rem;line-height:1.6;min-height:100px;font-family:'Jost',monospace;}
 #pProposal{max-width:1100px;}
-#pProposal #proposalOut{max-width:900px;margin:0 auto;overflow:visible!important;position:relative;z-index:1;}
+#pProposal #proposalOut{max-width:900px;margin:0 auto;overflow:hidden;position:relative;z-index:1;}
 #pProposal #printProposal{transform-origin:top left;white-space:normal;}
 #pProposal .proposal-page{box-shadow:0 0 0 1px #ddd,0 12px 32px rgba(0,0,0,.22);}
 #pProposal #courseDrafts{position:relative;z-index:2;clear:both;}
@@ -849,19 +849,20 @@ function fitProposalPreview(){
   const paper=document.getElementById('printProposal');
   if(!out||!paper) return;
   paper.style.transform='';
+  paper.style.transformOrigin='top left';
   paper.style.margin='0 auto';
   out.style.height='';
   out.style.minHeight='';
-  const available=out.clientWidth;
-  const base=paper.offsetWidth||900;
+  const available=out.clientWidth-38; // account for padding:1.2rem each side
+  const base=paper.scrollWidth||paper.offsetWidth||711;
   let scale=1;
-  if(available&&available<base){
+  if(available>0&&available<base){
     scale=available/base;
     paper.style.transform='scale('+scale+')';
     paper.style.margin='0';
   }
-  const rect=paper.getBoundingClientRect();
-  const height=Math.ceil((rect.height||paper.offsetHeight*scale)+24);
+  const scaledH=Math.ceil(paper.scrollHeight*scale);
+  const height=scaledH+38; // padding
   out.style.height=height+'px';
   out.style.minHeight=height+'px';
   out.style.marginBottom='1rem';
@@ -2843,10 +2844,4 @@ async function deleteSavedQuote(idx){
 
 // ---- BOOT ----
 if(sessionStorage.getItem('mmg_unlocked')==='1'){
-  document.getElementById('lock').style.display='none';
-  document.getElementById('app').style.display='block';
-  init();
-}
-</script>
-</body>
-</html>
+  documen
