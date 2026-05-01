@@ -378,7 +378,7 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     <div style="overflow-x:auto;">
       <table>
         <thead>
-          <tr><th>Course</th><th>Date</th><th>Players</th><th>My Cost/pp</th><th>Charge/pp</th><th>GF Margin</th><th>Extras</th><th>Round Profit</th></tr>
+          <tr><th>Course</th><th>Date</th><th>Players</th><th>My Cost/pp</th><th style="color:#B8973C;">GF Charge/pp</th><th>GF Margin</th><th>Extras</th><th style="color:#B8973C;">Client Total</th><th>Round Profit</th></tr>
         </thead>
         <tbody id="marginBody"></tbody>
         <tfoot id="marginFoot"></tfoot>
@@ -1626,7 +1626,7 @@ function renderMargin(){
   let totalCost=0,totalCharge=0,totalExtras=0;
   const tb=document.getElementById('marginBody');
   if(!rounds.length){
-    tb.innerHTML='<tr><td colspan="8" style="color:#666;text-align:center;padding:1rem;">No rounds.</td></tr>';
+    tb.innerHTML='<tr><td colspan="9" style="color:#666;text-align:center;padding:1rem;">No rounds.</td></tr>';
     document.getElementById('marginFoot').innerHTML='';
     document.getElementById('marginStats').innerHTML='';
     document.getElementById('tripSummary').innerHTML='';
@@ -1637,24 +1637,34 @@ function renderMargin(){
     const players=r.players||1;
     let myCost=getMyCost(r.cid, r.date, players);
     const charge=r.gf||0;
-    const buggy=(r.buggyQty||0)*(r.buggyRate||getBuggyRate(r.cid));
-    const clubs=(r.clubsQty||0)*(r.clubsRate||getClubsRate(r.cid));
+    const buggyQty=r.buggyQty||0;
+    const clubsQty=r.clubsQty||0;
+    const buggy=buggyQty*(r.buggyRate||getBuggyRate(r.cid));
+    const clubs=clubsQty*(r.clubsRate||getClubsRate(r.cid));
     const gcValid=useGC&&c.golfcard?isGolfcardValid(r.cid,r.date,r.time):{ok:false};
     let gcNote='';
     if(gcValid.ok&&c.gcType==='2for1'){gcNote='GC 2FOR1';myCost=myCost/2;}
     else if(gcValid.ok) gcNote='GC disc';
     const rGFCost=myCost*players,rCharge=charge*players,rExtras=buggy+clubs;
+    const rClientTotal=rCharge+rExtras;
     const rGFMargin=rCharge-rGFCost;
+    const rProfit=rGFMargin; // extras pass-through at cost
     totalCost+=rGFCost;totalCharge+=rCharge;totalExtras+=rExtras;
+    // Build extras label
+    const extraParts=[];
+    if(buggyQty>0) extraParts.push(buggyQty+' buggy'+(buggyQty>1?'s':''));
+    if(clubsQty>0) extraParts.push(clubsQty+' club set'+(clubsQty>1?'s':''));
+    const extrasLabel=extraParts.length?extraParts.join(' + '):'none';
     return '<tr>'
       +'<td>'+c.name+(gcNote?'<br><span class="tag-ok" style="font-size:.7rem">'+gcNote+'</span>':'')+'</td>'
-      +'<td>'+(r.date||'—')+'</td>'
+      +'<td>'+(r.date||'-')+'</td>'
       +'<td>'+players+'</td>'
-      +'<td>€'+myCost.toFixed(0)+'</td>'
-      +'<td>€'+charge+'</td>'
+      +'<td>€'+myCost.toFixed(0)+'/pp<br><span style="color:#888;font-size:.75rem;">€'+rGFCost.toFixed(0)+' total</span></td>'
+      +'<td style="color:#B8973C;">€'+charge+'/pp<br><span style="font-size:.75rem;">€'+rCharge.toFixed(0)+' total</span></td>'
       +'<td class="'+(rGFMargin>=0?'profit-pos':'profit-neg')+'">€'+rGFMargin.toFixed(0)+'</td>'
-      +'<td>€'+rExtras.toFixed(0)+'</td>'
-      +'<td class="'+(rGFMargin>=0?'profit-pos':'profit-neg')+'"><strong>€'+rGFMargin.toFixed(0)+'</strong></td>'
+      +'<td><span style="color:#B8973C;">€'+rExtras.toFixed(0)+'</span><br><span style="color:#888;font-size:.75rem;">'+extrasLabel+'</span></td>'
+      +'<td style="color:#B8973C;"><strong>€'+rClientTotal.toFixed(0)+'</strong></td>'
+      +'<td class="'+(rProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+rProfit.toFixed(0)+'</strong></td>'
       +'</tr>';
   }).join('');
 
@@ -1664,28 +1674,33 @@ function renderMargin(){
   const proposalManagementFee=proposalFeeMode==='no'?0:getProposalManagementFee(courseClientTotal);
   const managementRaw=String((document.getElementById('managementFee')||{}).value||'0').trim()||'0';
   const grandProfit=totalGFProfit+proposalManagementFee+andyFee;
+  const clientGrandTotal=courseClientTotal+proposalManagementFee;
   document.getElementById('marginFoot').innerHTML='<tr class="total-row">'
     +'<td colspan="3">TOTALS</td>'
     +'<td>€'+totalCost.toFixed(0)+'</td>'
-    +'<td>€'+totalCharge.toFixed(0)+'</td>'
+    +'<td style="color:#B8973C;">€'+totalCharge.toFixed(0)+'</td>'
     +'<td class="'+(totalGFProfit>=0?'profit-pos':'profit-neg')+'">€'+totalGFProfit.toFixed(0)+'</td>'
-    +'<td>€'+totalExtras.toFixed(0)+'</td>'
+    +'<td style="color:#B8973C;">€'+totalExtras.toFixed(0)+'</td>'
+    +'<td style="color:#B8973C;"><strong>€'+clientGrandTotal.toFixed(0)+'</strong></td>'
     +'<td class="'+(grandProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+grandProfit.toFixed(0)+'</strong></td>'
     +'</tr>';
 
   document.getElementById('marginStats').innerHTML=
-    '<div class="stat-box"><div class="val">€'+totalCharge.toFixed(0)+'</div><div class="lbl">Total GF charged</div></div>'
-    +'<div class="stat-box"><div class="val profit-pos">€'+totalGFProfit.toFixed(0)+'</div><div class="lbl">GF margin (excl. extras)</div></div>'
+    '<div class="stat-box"><div class="val" style="color:#B8973C;">€'+clientGrandTotal.toFixed(0)+'</div><div class="lbl">Client total (quoted)</div></div>'
+    +'<div class="stat-box"><div class="val">€'+totalCost.toFixed(0)+'</div><div class="lbl">My total cost</div></div>'
     +'<div class="stat-box"><div class="val '+(grandProfit>=0?'profit-pos':'profit-neg')+'">€'+grandProfit.toFixed(0)+'</div><div class="lbl">Est. trip profit</div></div>';
 
   document.getElementById('tripSummary').innerHTML=
     '<div style="font-size:.85rem;line-height:1.9;">'
     +'Rounds: <strong>'+rounds.length+'</strong><br>'
-    +'Proposal management fee: <strong>€'+proposalManagementFee.toFixed(0)+'</strong> ('+(proposalFeeMode==='no'?'hidden/off':managementRaw+', '+(proposalFeeMode==='separate'?'shown separately':'in total only'))+')<br>'
+    +'GF charged to client: <strong style="color:#B8973C;">€'+totalCharge.toFixed(0)+'</strong><br>'
+    +'Extras charged to client: <strong style="color:#B8973C;">€'+totalExtras.toFixed(0)+'</strong><br>'
+    +'Management fee: <strong>€'+proposalManagementFee.toFixed(0)+'</strong> ('+(proposalFeeMode==='no'?'hidden/off':managementRaw+', '+(proposalFeeMode==='separate'?'shown separately':'in total only'))+')<br>'
     +'Andy day fee: <strong>€'+andyFee.toFixed(0)+'</strong> ('+andyDays+' day'+(andyDays===1?'':'s')+', '+dayType+')<br>'
-    +'GF margin: <strong>€'+totalGFProfit.toFixed(0)+'</strong><br>'
+    +'My GF cost: <strong>€'+totalCost.toFixed(0)+'</strong><br>'
     +'<hr style="border-color:#222;margin:.4rem 0;">'
-    +'<strong>Est. total: €'+grandProfit.toFixed(0)+'</strong>'
+    +'<strong style="color:#B8973C;">Client total: €'+clientGrandTotal.toFixed(0)+'</strong><br>'
+    +'<strong class="'+(grandProfit>=0?'profit-pos':'profit-neg')+'">My profit: €'+grandProfit.toFixed(0)+'</strong>'
     +'</div>';
 }
 
