@@ -2918,7 +2918,7 @@ async function deleteSavedQuote(idx){
 
 // ---- NOTE TEMPLATES ----
 const NOTE_TEMPLATES={
-  default:'Thanks again for letting us plan your trip. Included are the green fees, buggies and also the license / insurance that golf clubs here require unless you are a member of the Spanish Golf Federation.\n\nAs a special offer as a new client, I would like to offer a few bonuses:\n\n- Reduction of the management fee from 15% to 5%, but still have everything taken care of.\n- Dates permitting, 1 round Play with a Pro given at individual rate (495) vs. group rate (950).\n- Alcanada and Son Servera will have free range balls before the round for you added in.\n\nThanks for the trust and hope to confirm this shortly. Once the deposit is in place I will get the tee times booked and send over the full terms including the cancellation policy from the courses.',
+  default:'Thanks again for letting us plan your trip. Included are the green fees, buggies and also the license / insurance that golf clubs here require unless you are a member of the Spanish Golf Federation.\n\nAs a special offer as a new client, I\'d like to offer a few bonuses:\n\n\u2022 Reduction of the management fee from 15% to 5%, but still have everything taken care of.\n\u2022 Dates permitting, 1 round \"Play with a Pro\" given at individual rate (\u20ac495) vs. group rate (\u20ac950)\n\u2022 Alcanada and Son Servera will have free range balls before the round for you added in.\n\nThanks for the trust and hope to confirm this and then can get to booking your times shortly, confirming a deposit and then sending you the terms that the golf courses have for cancellations etc.',
 };
 function applyNoteTemplate(key){
   if(!key) return;
@@ -3029,7 +3029,7 @@ function getSendingEmailText(){
   const greeting='Good afternoon'+(client?' '+client.split(' ')[0]:'');
   return greeting+',\n\n'
     +'Here is the proposal for you as well as a suggested itinerary and a few additional ideas for food choices near to the courses.\n\n'
-    +'To confirm the booking, a deposit of €'+deposit+' is required. This covers the management fee and is non-refundable. The remaining balance of €'+balance+' is then due by '+(balanceDate||'[30 days before first round]')+'.\n\n'
+    +'To confirm the booking, a deposit of €'+deposit+' is required. This covers the 5% management fee and is non-refundable. The remaining balance of €'+balance+' is then due by '+(balanceDate||'[30 days before first round]')+'.\n\n'
     +'Bank Transfer Information:\n'
     +'- Account holder: ANDREW GRIFFITHS\n'
     +'- Bank: BANCO SANTANDER\n'
