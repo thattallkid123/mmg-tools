@@ -3025,23 +3025,23 @@ function fillConsecutiveDates(){
 // ---- SENDING EMAIL ----
 function getSendingEmailText(){
   const client=document.getElementById('clientName').value||'';
-  const numP=parseInt(document.getElementById('numPlayers').value)||2;
-  // Calculate deposit (30%) and balance date
+  // Deposit = 10% (management fee, non-refundable), balance = 90% due 30 days before first tee
   const summary=calculateQuoteSummary(getCurrentQuoteData(''));
   const total=summary.total||0;
-  const deposit=Math.round(total*0.3/10)*10; // round to nearest 10
-  // First tee date for balance deadline
+  const deposit=Math.round(total*0.1); // 10% - management fee
+  const balance=total-deposit;
+  // Balance due 30 days before first tee date
   const firstTee=summary.firstTee||'';
   let balanceDate='';
   if(firstTee){
     const d=new Date(firstTee+'T12:00:00');
-    d.setDate(d.getDate()-14);
+    d.setDate(d.getDate()-30);
     balanceDate=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   }
   const greeting='Good afternoon'+(client?' '+client.split(' ')[0]:'');
   return greeting+',\n\n'
     +'Here is the proposal for you as well as a suggested itinerary and a few additional ideas for food choices near to the courses.\n\n'
-    +'To confirm the booking, a deposit of €'+deposit+' would be required and then the balance by '+(balanceDate||'[14 days before first round]')+'. Per golf course rules, bookings (outside of management fee) are 100% refundable with 7 days notice to the round, 3-6 days beforehand at 50% refundable and not refundable 0-2 days before the booking.\n\n'
+    +'To confirm the booking, a deposit of €'+deposit+' is required. This covers the management fee and is non-refundable. The remaining balance of €'+balance+' is then due by '+(balanceDate||'[30 days before first round]')+'.\n\n'
     +'Bank Transfer Information:\n'
     +'- Account holder: ANDREW GRIFFITHS\n'
     +'- Bank: BANCO SANTANDER\n'
