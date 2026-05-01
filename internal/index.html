@@ -407,13 +407,6 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
           <option value="landscape">Landscape A4</option>
         </select>
       </div>
-      <div>
-        <label>PowerPoint layout</label>
-        <select id="pptOrientation" onchange="saveState()">
-          <option value="landscape">Landscape slides</option>
-          <option value="portrait">Portrait slides</option>
-        </select>
-      </div>
       <div style="display:flex;align-items:end;gap:.5rem;flex-wrap:wrap;">
         <button class="btn btn-pine btn-sm" onclick="printProposal()" type="button">Save PDF (A4)</button>
         <button class="btn btn-gold btn-sm" onclick="exportPowerPoint()" type="button">Export PowerPoint</button>
@@ -2048,12 +2041,12 @@ function exportPowerPoint(){
   const Pptx=getPptxConstructor();
   if(!Pptx){alert('PowerPoint export library is still loading. Try again in a moment.');return;}
   const data=buildProposalExportData();
-  const orientation=(document.getElementById('pptOrientation')||{}).value||((document.getElementById('propOrientation')||{}).value||'landscape');
-  const portrait=orientation!=='landscape';
+  const orientation='portrait';
+  const portrait=true;
   const pptx=new Pptx();
-  const layoutName=portrait?'MMG_PORTRAIT':'MMG_LANDSCAPE';
-  const slideW=portrait?7.5:13.333;
-  const slideH=portrait?13.333:7.5;
+  const layoutName='MMG_PORTRAIT';
+  const slideW=7.5;
+  const slideH=13.333;
   pptx.defineLayout({name:layoutName,width:slideW,height:slideH});
   pptx.layout=layoutName;
   pptx.author='Mr Mallorca Golf';
@@ -2062,14 +2055,19 @@ function exportPowerPoint(){
   pptx.company='Mr Mallorca Golf';
   pptx.lang='en-GB';
   const C={pine:'2D4A3E',gold:'B8973C',deep:'1A1916',cream:'F7F4EF',muted:'5A5550',border:'E0D8CB',white:'FFFFFF'};
-  const margin=portrait?0.45:0.62;
+  const margin=0.45;
   const contentW=slideW-(margin*2);
 
   const addHeader=(slide)=>{
     addPptBar(slide,margin,0.22,contentW,0.05,C.gold);
-    if(data.logo) slide.addImage({data:data.logo,x:margin,y:0.48,w:0.54,h:0.54});
+    if(data.logo){
+      addPptText(slide,'',margin,0.46,0.58,0.58,{fill:{color:C.pine},line:{color:C.pine}});
+      slide.addImage({data:data.logo,x:margin+0.04,y:0.5,w:0.5,h:0.5});
+    } else {
+      addPptText(slide,'MMG',margin,0.5,0.72,0.28,{fontFace:'Cormorant Garamond',fontSize:15,color:C.pine,bold:true});
+    }
     addPptText(slide,'Andy Griffiths\nPGA Advanced Professional\nandy@mrmallorcagolf.com\nmrmallorcagolf.com',slideW-margin-2.25,0.48,2.25,0.55,{
-      fontSize:portrait?7.8:6.9,
+      fontSize:7.8,
       color:C.pine,
       bold:false,
       align:'right',
@@ -2091,27 +2089,27 @@ function exportPowerPoint(){
   let slide=pptx.addSlide();
   slide.background={color:C.white};
   addHeader(slide);
-  addPptText(slide,'GOLF PROPOSAL',margin,portrait?1.75:1.55,contentW,0.22,{
+  addPptText(slide,'GOLF PROPOSAL',margin,1.75,contentW,0.22,{
     fontSize:10,
     color:C.gold,
     bold:true,
     charSpace:2.4,
   });
-  addPptText(slide,data.title,margin,portrait?2.12:1.9,contentW,0.72,{
+  addPptText(slide,data.title,margin,2.12,contentW,0.72,{
     fontFace:'Cormorant Garamond',
-    fontSize:portrait?30:28,
+    fontSize:25,
     color:C.pine,
     bold:true,
     fit:'shrink',
   });
-  addPptBar(slide,margin,portrait?3.02:2.74,0.42,0.018,C.gold);
-  addPptText(slide,data.meta.join('  ·  '),margin+0.55,portrait?2.92:2.64,contentW-0.55,0.22,{
+  addPptBar(slide,margin,2.9,0.42,0.018,C.gold);
+  addPptText(slide,data.meta.join('  ·  '),margin+0.55,2.8,contentW-0.55,0.22,{
     fontSize:9,
     color:C.muted,
     fit:'shrink',
   });
-  addPptBar(slide,margin,portrait?3.55:3.12,contentW,0.01,C.border);
-  let coverY=portrait?4.1:3.45;
+  addPptBar(slide,margin,3.32,contentW,0.01,C.border);
+  let coverY=3.7;
   if(data.intro){
     addPptText(slide,data.intro,margin,coverY,contentW,0.5,{fontSize:10.5,color:C.muted,breakLine:true});
     coverY+=0.65;
@@ -2121,14 +2119,14 @@ function exportPowerPoint(){
     coverY+=0.68;
   }
   if(data.conditions.length){
-    addPptText(slide,data.conditions.join('\n'),margin,coverY,contentW,portrait?1.0:0.65,{fontSize:9.2,color:'8A7F74',breakLine:true,margin:0.06});
+    addPptText(slide,data.conditions.join('\n'),margin,coverY,contentW,1.0,{fontSize:9.2,color:'8A7F74',breakLine:true,margin:0.06});
   }
   addFooter(slide);
 
   const addRoundCard=(s,row,x,y,w,h)=>{
     addPptText(s,'',x,y,w,h,{fill:{color:C.white},line:{color:C.border}});
     addPptBar(s,x,y,0.035,h,C.gold);
-    const imgW=row.image?Math.min(portrait?1.75:2.35,w*0.35):0;
+    const imgW=row.image?Math.min(1.85,w*0.35):0;
     if(row.image){
       s.addImage({data:row.image,x:x+0.04,y:y+0.04,w:imgW,h:h-0.08});
     }
@@ -2137,7 +2135,7 @@ function exportPowerPoint(){
     addPptText(s,'ROUND '+row.roundNo,textX,y+0.14,textW,0.2,{fontSize:9.4,color:C.gold,bold:true,charSpace:1.8});
     addPptText(s,row.course.name,textX,y+0.43,textW,0.42,{
       fontFace:'Cormorant Garamond',
-      fontSize:portrait?21:22,
+      fontSize:20,
       color:C.pine,
       bold:true,
       fit:'shrink',
@@ -2155,65 +2153,66 @@ function exportPowerPoint(){
       addPptText(s,line,textX,y+1.55,textW,0.16,{fontSize:8,color:C.deep,fit:'shrink'});
     }
   };
-  const firstPptCount=portrait?5:3;
-  const regularPptCount=portrait?6:3;
+  const addSummaryBlock=(s,y)=>{
+    addPptText(s,'PROPOSAL SUMMARY',margin,y,contentW,0.2,{fontSize:9.3,color:C.gold,bold:true,charSpace:2});
+    addPptText(s,'',margin,y+0.32,contentW,1.08,{fill:{color:C.cream},line:{color:C.border}});
+    addPptBar(s,margin+0.14,y+0.52,contentW-0.28,0.018,C.gold);
+    addPptText(s,data.wording.totalLabel,margin+0.18,y+0.72,contentW/2,0.42,{
+      fontFace:'Cormorant Garamond',
+      fontSize:24,
+      color:C.pine,
+      bold:true,
+    });
+    addPptText(s,'EUR '+Math.round(data.total),slideW-margin-2.0,y+0.72,1.82,0.42,{
+      fontFace:'Cormorant Garamond',
+      fontSize:22,
+      color:C.pine,
+      bold:true,
+      align:'right',
+    });
+    const includes=data.includeItems.slice(0,4).map(x=>'- '+x).join('\n');
+    if(includes) addPptText(s,includes,margin+0.18,y+1.48,contentW,0.68,{fontSize:8.2,color:C.muted,breakLine:true});
+  };
+  const firstPptCount=4;
+  const regularPptCount=4;
   let rowCursor=0;
   const makeItinerarySlide=(items,label)=>{
     const s=pptx.addSlide();
     s.background={color:C.white};
     addHeader(s);
-    addPptText(s,label,margin,portrait?1.55:1.42,contentW,0.22,{fontSize:10,color:C.gold,bold:true,charSpace:2.4});
-    const startY=portrait?1.92:1.82;
-    const cardH=portrait?1.75:1.52;
-    const gap=portrait?0.14:0.18;
+    addPptText(s,label,margin,1.5,contentW,0.22,{fontSize:10,color:C.gold,bold:true,charSpace:2.4});
+    const startY=1.84;
+    const cardH=1.72;
+    const gap=0.14;
     items.forEach((row,i)=>addRoundCard(s,row,margin,startY+i*(cardH+gap),contentW,cardH));
+    if(items.addSummary) addSummaryBlock(s,startY+items.length*(cardH+gap)+0.18);
     addFooter(s);
   };
   if(data.rows.length){
-    makeItinerarySlide(data.rows.slice(rowCursor,rowCursor+firstPptCount),'GOLF ITINERARY');
-    rowCursor+=firstPptCount;
+    const firstChunk=data.rows.slice(rowCursor,rowCursor+firstPptCount);
+    if(data.rows.length<=3) firstChunk.addSummary=true;
+    makeItinerarySlide(firstChunk,'GOLF ITINERARY');
+    rowCursor+=firstChunk.length;
     while(rowCursor<data.rows.length){
-      makeItinerarySlide(data.rows.slice(rowCursor,rowCursor+regularPptCount),'GOLF ITINERARY CONTINUED');
-      rowCursor+=regularPptCount;
+      const remaining=data.rows.length-rowCursor;
+      const chunk=data.rows.slice(rowCursor,rowCursor+regularPptCount);
+      if(remaining<=3) chunk.addSummary=true;
+      makeItinerarySlide(chunk,'GOLF ITINERARY CONTINUED');
+      rowCursor+=chunk.length;
     }
   }
 
-  slide=pptx.addSlide();
-  slide.background={color:C.white};
-  addHeader(slide);
-  addPptText(slide,'PROPOSAL SUMMARY',margin,portrait?1.75:1.55,contentW,0.22,{fontSize:10,color:C.gold,bold:true,charSpace:2.4});
-  addPptText(slide,data.wording.totalLabel,margin,portrait?2.25:2.0,contentW/2,0.52,{
-    fontFace:'Cormorant Garamond',
-    fontSize:30,
-    color:C.pine,
-    bold:true,
-  });
-  addPptText(slide,'EUR '+Math.round(data.total),slideW-margin-2.1,portrait?2.25:2.0,2.1,0.52,{
-    fontFace:'Cormorant Garamond',
-    fontSize:30,
-    color:C.pine,
-    bold:true,
-    align:'right',
-  });
-  let y=portrait?3.12:2.8;
-  if(data.fmt==='itemised'||data.feeMode==='separate'){
-    addPptText(slide,data.wording.courseTotalLabel+': EUR '+Math.round(data.courseTotal),margin,y,contentW,0.24,{fontSize:10.2,color:C.muted});
-    y+=0.32;
-    if(data.includeFee&&data.feeMode==='separate'){
-      addPptText(slide,data.wording.managementLabel+': EUR '+Math.round(data.managementFee),margin,y,contentW,0.24,{fontSize:10.2,color:C.muted});
-      y+=0.32;
+  if(!data.rows.length||data.rows.length%regularPptCount===0){
+    slide=pptx.addSlide();
+    slide.background={color:C.white};
+    addHeader(slide);
+    addSummaryBlock(slide,1.75);
+    if(data.conditions.length){
+      addPptText(slide,'Important notes',margin,4.25,contentW,0.25,{fontSize:11,color:C.pine,bold:true});
+      addPptText(slide,data.conditions.map(x=>'- '+x).join('\n'),margin,4.65,contentW,1.2,{fontSize:9.2,color:C.muted,breakLine:true});
     }
+    addFooter(slide);
   }
-  if(data.includeItems.length){
-    addPptText(slide,'Includes',margin,y+0.15,contentW,0.25,{fontSize:12,color:C.pine,bold:true});
-    addPptText(slide,data.includeItems.map(x=>'- '+x).join('\n'),margin,y+0.52,contentW,portrait?1.3:0.85,{fontSize:10.2,color:C.muted,breakLine:true});
-    y+=portrait?1.95:1.35;
-  }
-  if(data.conditions.length){
-    addPptText(slide,'Important notes',margin,y,contentW,0.25,{fontSize:12,color:C.pine,bold:true});
-    addPptText(slide,data.conditions.map(x=>'- '+x).join('\n'),margin,y+0.35,contentW,portrait?1.4:0.9,{fontSize:9.6,color:C.muted,breakLine:true});
-  }
-  addFooter(slide);
 
   pptx.writeFile({fileName:safeFilenamePart(data.clientName||'mmg')+'-proposal.pptx'});
 }
