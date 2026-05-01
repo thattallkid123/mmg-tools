@@ -1742,8 +1742,8 @@ function renderProposal(){
   const expiryDays=parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0;
   const quoteStatus=(document.getElementById('quoteStatus')||{}).value||'Draft';
   const orientation=(document.getElementById('propOrientation')||{}).value||'portrait';
-  const paperWidth=orientation==='landscape'?711:718;
-  const paperHeight=orientation==='landscape'?718:1039;
+  const paperWidth=orientation==='landscape'?711:711;
+  const paperHeight=orientation==='landscape'?711:1039;
   const wording=getProposalWording();
 
   const el=document.getElementById('proposalOut');
@@ -2085,9 +2085,9 @@ function printProposal(){
   printNode.style.transform='';
   printNode.style.margin='0 auto';
   const orientation=printNode.getAttribute('data-orientation')||'portrait';
-  const screenWidth=orientation==='landscape'?'271mm':'186mm';
-  const printWidth=orientation==='landscape'?'275mm':'190mm';
-  const pageWidth=orientation==='landscape'?'275mm':'190mm';
+  const screenWidth=orientation==='landscape'?'275mm':'188mm';
+  const printWidth=orientation==='landscape'?'275mm':'188mm';
+  const pageWidth=orientation==='landscape'?'275mm':'188mm';
   const pageHeight=orientation==='landscape'?'188mm':'275mm';
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><title>MMG Golf Itinerary</title>
