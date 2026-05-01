@@ -110,7 +110,8 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
 #proposalOut{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:1.2rem;white-space:pre-wrap;font-size:.88rem;line-height:1.6;min-height:100px;font-family:'Jost',monospace;}
 #pProposal{max-width:1100px;}
 #pProposal #proposalOut{max-width:900px;margin:0 auto;overflow:hidden;position:relative;z-index:1;}
-#pProposal #printProposal{transform-origin:top left;white-space:normal;}
+#pProposal #printProposal{transform-origin:top left;white-space:normal;display:block;}
+#pProposal #previewClip{overflow:hidden;position:relative;}
 #pProposal .proposal-page{box-shadow:0 0 0 1px #ddd,0 12px 32px rgba(0,0,0,.22);}
 #pProposal #courseDrafts{position:relative;z-index:2;clear:both;}
 details.proposal-tools{border:1px solid #2a2a2a;border-radius:6px;background:#10100f;margin-bottom:.8rem;}
@@ -552,6 +553,14 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
       <button class="btn btn-pine btn-sm" onclick="exportPowerPoint()">Export PowerPoint</button>
     </div>
     <div class="help">For PDF: use Save PDF (A4) &rarr; Save as PDF. PowerPoint export creates editable text boxes, image blocks, and shapes using the selected portrait/landscape layout.</div>
+
+    <div class="card" style="margin-top:1rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;margin-bottom:.6rem;">
+        <h3 style="margin:0;">Sending email draft</h3>
+        <button class="btn btn-gold btn-sm" onclick="copySendingEmail()">Copy email</button>
+      </div>
+      <div id="sendingEmailPreview" style="font-size:.85rem;line-height:1.7;color:#ddd;white-space:pre-wrap;background:#0b0b0b;border:1px solid #222;border-radius:4px;padding:.8rem;"></div>
+    </div>
   </div>
 
   <!-- SETTINGS -->
@@ -673,10 +682,10 @@ function getCourseRateBand(courseId, dateStr){
   return bands.find(b=>md>=b.from&&md<=b.to)||null;
 }
 
-// Season bands (global — same for all courses)
-// Peak:  15 Mar–14 Jun, 15 Sep–14 Nov
-// Low:   Jan–Feb, 15 Jun–Aug, 21 Nov–Dec
-// Mid:   1–14 Mar, 15–20 Nov
+// Season bands (global  -  same for all courses)
+// Peak:  15 Mar-14 Jun, 15 Sep-14 Nov
+// Low:   Jan-Feb, 15 Jun-Aug, 21 Nov-Dec
+// Mid:   1-14 Mar, 15-20 Nov
 function getSeasonForDate(dateStr){
   if(!dateStr) return null;
   const d=new Date(dateStr+'T12:00:00');
@@ -878,34 +887,36 @@ function scheduleTextImport(){
 function fitProposalPreview(){
   const out=document.getElementById('proposalOut');
   const paper=document.getElementById('printProposal');
+  const clip=document.getElementById('previewClip');
   if(!out||!paper) return;
+  // Reset
   paper.style.transform='';
   paper.style.transformOrigin='top left';
-  paper.style.margin='0 auto';
-  out.style.height='';
-  out.style.minHeight='';
-  const outW=out.clientWidth||800;
-  const padding=38; // 1.2rem each side approx
-  const available=outW-padding;
-  const naturalW=paper.scrollWidth||paper.offsetWidth||711;
-  const naturalH=paper.scrollHeight||paper.offsetHeight||1039;
+  paper.style.position='absolute';
+  paper.style.top='0';
+  paper.style.left='0';
+  paper.style.margin='0';
+  // Measure natural size before any scaling
+  const naturalW=paper.offsetWidth||711;
+  const naturalH=paper.offsetHeight||1039;
+  const padding=20;
+  const available=(out.clientWidth||800)-padding*2;
   let scale=1;
   if(available>0&&naturalW>0&&available<naturalW){
     scale=available/naturalW;
-    paper.style.transform='scale('+scale+') translateZ(0)';
-    paper.style.margin='0';
-    paper.style.position='relative';
-  } else {
-    paper.style.position='';
   }
-  // Size the container to exactly the scaled content — no bleed
+  paper.style.transform='scale('+scale+')';
+  // Size clip div to match scaled output - this is what clips the overflow
   const scaledW=Math.ceil(naturalW*scale);
   const scaledH=Math.ceil(naturalH*scale);
-  out.style.width='';
-  out.style.height=(scaledH+padding)+'px';
-  out.style.minHeight=(scaledH+padding)+'px';
+  if(clip){
+    clip.style.width=scaledW+'px';
+    clip.style.height=scaledH+'px';
+    clip.style.margin='0 auto';
+  }
+  out.style.height=(scaledH+padding*2)+'px';
+  out.style.minHeight=(scaledH+padding*2)+'px';
   out.style.marginBottom='1rem';
-  out.style.overflow='hidden';
 }
 window.addEventListener('resize',fitProposalPreview);
 window.addEventListener('orientationchange',function(){setTimeout(fitProposalPreview,150);});
@@ -1361,7 +1372,7 @@ function renderMissingInfo(){
 // ---- PARSER ----
 function findCourse(text){
   const t=text.toLowerCase();
-  // Check son antem ambiguity — if 'west' present use west, else east
+  // Check son antem ambiguity  -  if 'west' present use west, else east
   if(t.includes('son antem')&&!t.includes('east')&&!t.includes(' e ')&&t.includes('west')) return 'son_antem_w';
   if(t.includes('son antem')) return 'son_antem_e';
   for(const [id,aliases] of Object.entries(COURSE_ALIASES)){
@@ -1939,7 +1950,7 @@ function renderProposal(){
   const titleHtml=`
     <div style="padding:10px 0 9px;border-bottom:1px solid #E0D8CB;margin-bottom:10px;">
       <div style="font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:3px;">Golf proposal</div>
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'28pt':'30pt'};font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'28pt':'30pt'};font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+'  -  ':''}Mallorca Golf Itinerary</div>
       <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
         <div style="width:48px;height:2px;background:#B8973C;flex-shrink:0;"></div>
         <div style="font-size:10pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${clientMeta.join(' &nbsp;·&nbsp; ')}</div>
@@ -2002,7 +2013,7 @@ function renderProposal(){
       current.used+=roundHeight;
     });
   }
-  // Summary always starts on page 2+ — never on page 1 alone
+  // Summary always starts on page 2+  -  never on page 1 alone
   const isOnPage1=pages.length===1&&current===pages[0];
   if(!isOnPage1&&current.used+summaryHeight<=maxContentHeight){
     current.chunks.push(summaryHeading+summaryHtml);
@@ -2012,10 +2023,13 @@ function renderProposal(){
   }
   const pageStrings=pages.map(p=>pageHtml(p.chunks.join('')));
   el.innerHTML=`
+    <div id="previewClip" style="position:relative;overflow:hidden;">
     <div id="printProposal" data-orientation="${orientation}" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:transparent;width:${paperWidth}px;max-width:${paperWidth}px;margin:0 auto;box-sizing:border-box;">
       ${pageStrings.join('')}
+    </div>
     </div>`;
   fitProposalPreview();
+  renderSendingEmail();
   renderIncludeOrderEditor();
   renderConditionBlockEditor(wording.conditionBlocks||[]);
   requestAnimationFrame(fitProposalPreview);
@@ -3002,6 +3016,52 @@ function fillConsecutiveDates(){
     r.date=d.toISOString().slice(0,10);
   });
   saveState(); renderTable(); renderMargin(); renderProposal();
+}
+
+// ---- SENDING EMAIL ----
+function getSendingEmailText(){
+  const client=document.getElementById('clientName').value||'';
+  const numP=parseInt(document.getElementById('numPlayers').value)||2;
+  // Calculate deposit (30%) and balance date
+  const summary=calculateQuoteSummary(getCurrentQuoteData(''));
+  const total=summary.total||0;
+  const deposit=Math.round(total*0.3/10)*10; // round to nearest 10
+  // First tee date for balance deadline
+  const firstTee=summary.firstTee||'';
+  let balanceDate='';
+  if(firstTee){
+    const d=new Date(firstTee+'T12:00:00');
+    d.setDate(d.getDate()-14);
+    balanceDate=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  }
+  const greeting='Good afternoon'+(client?' '+client.split(' ')[0]:'');
+  return greeting+',\n\n'
+    +'Here is the proposal for you as well as a suggested itinerary and a few additional ideas for food choices near to the courses.\n\n'
+    +'To confirm the booking, a deposit of €'+deposit+' would be required and then the balance by '+(balanceDate||'[14 days before first round]')+'. Per golf course rules, bookings (outside of management fee) are 100% refundable with 7 days notice to the round, 3-6 days beforehand at 50% refundable and not refundable 0-2 days before the booking.\n\n'
+    +'Bank Transfer Information:\n'
+    +'- Account holder: ANDREW GRIFFITHS\n'
+    +'- Bank: BANCO SANTANDER\n'
+    +'- IBAN: ES39 0049 0383 3424 1032 6331\n'
+    +'- BIC/SWIFT: BSCHESMMXXX\n\n'
+    +'Let me know if you have any queries or would like to make changes to the proposed itinerary. I can also check dates to join you for a coaching session if you would like to add the "Play with a Pro".\n\n'
+    +'Kind regards,\nAndy';
+}
+function renderSendingEmail(){
+  const el=document.getElementById('sendingEmailPreview');
+  if(!el) return;
+  el.textContent=getSendingEmailText();
+}
+function copySendingEmail(){
+  const text=getSendingEmailText();
+  navigator.clipboard.writeText(text).then(function(){
+    const btn=document.querySelector('[onclick="copySendingEmail()"]');
+    if(btn){const orig=btn.textContent;btn.textContent='Copied!';setTimeout(function(){btn.textContent=orig;},1800);}
+  }).catch(function(){
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('Email copied to clipboard');
+  });
 }
 
 // ---- BOOT ----
