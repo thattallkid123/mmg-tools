@@ -22,6 +22,7 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" defer></script>
 <style>
 :root{
   --cream:#F7F4EF;--pine:#2D4A3E;--gold:#B8973C;--deep:#1A1916;
@@ -482,8 +483,9 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
       <button class="btn btn-pine btn-sm" onclick="copyWhatsapp()">WhatsApp copy</button>
       <button class="btn btn-pine btn-sm" onclick="copyAllCourseEmails()">Copy course requests</button>
       <button class="btn btn-pine btn-sm" onclick="printProposal()">Save PDF (A4)</button>
+      <button class="btn btn-pine btn-sm" onclick="exportPowerPoint()">Export PowerPoint</button>
     </div>
-    <div class="help">For PDF: use Save PDF (A4) &rarr; Save as PDF. The export is formatted for A4 portrait.</div>
+    <div class="help">For PDF: use Save PDF (A4) &rarr; Save as PDF. PowerPoint export creates editable text boxes, image blocks, and shapes using the selected portrait/landscape layout.</div>
   </div>
 
   <!-- SETTINGS -->
@@ -1860,6 +1862,269 @@ function printProposal(){
   </head><body>${printNode.outerHTML}</body></html>`);
   w.document.close();
   setTimeout(()=>w.print(),600);
+}
+
+function getPptxConstructor(){
+  return window.pptxgen||window.PptxGenJS||window.pptxgenjs||null;
+}
+function safeFilenamePart(text){
+  return String(text||'mmg-proposal').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'mmg-proposal';
+}
+function buildProposalExportData(){
+  const fmt=document.getElementById('propFormat').value;
+  const showPhotos=document.getElementById('propShowPhotos').value==='yes';
+  const clientName=document.getElementById('clientName').value||'';
+  const clientEmail=document.getElementById('clientEmail').value||'';
+  const clientPhone=document.getElementById('clientPhone').value||'';
+  const useGC=document.getElementById('useGolfcard').checked&&document.getElementById('andyPlaying').checked;
+  const feeMode=normaliseFeeMode(document.getElementById('propIncludeFee').value);
+  const expiryDays=parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0;
+  const wording=getProposalWording();
+  const rows=[];
+  let courseTotal=0;
+  rounds.forEach((r,i)=>{
+    const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid||'Course'};
+    const players=parseInt(r.players)||1;
+    const gf=parseFloat(r.gf)||getRackGF(r.cid,r.date)||0;
+    const buggyQty=parseInt(r.buggyQty)||0;
+    const clubsQty=parseInt(r.clubsQty)||0;
+    const buggyRate=parseFloat(r.buggyRate)||getBuggyRate(r.cid)||0;
+    const clubsRate=parseFloat(r.clubsRate)||getClubsRate(r.cid)||0;
+    const gfTotal=gf*players;
+    const buggyTotal=buggyQty*buggyRate;
+    const clubsTotal=clubsQty*clubsRate;
+    const subtotal=gfTotal+buggyTotal+clubsTotal;
+    const gcValid=useGC&&c.golfcard?isGolfcardValid(r.cid,r.date,r.time):{ok:false};
+    courseTotal+=subtotal;
+    rows.push({
+      roundNo:i+1,
+      course:c,
+      date:formatRoundDate(r.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'}),
+      time:r.time||'TBC',
+      players,
+      gf,
+      gfTotal,
+      buggyQty,
+      buggyTotal,
+      clubsQty,
+      clubsTotal,
+      subtotal,
+      licence:!!r.licence,
+      golfCard:!!gcValid.ok,
+      image:showPhotos?(COURSE_IMAGES[r.cid]||''):'',
+    });
+  });
+  const managementFee=getProposalManagementFee(courseTotal);
+  const includeFee=feeMode!=='no'&&managementFee>0;
+  const total=courseTotal+(includeFee?managementFee:0);
+  const preparedDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const meta=[];
+  if(wording.showEmail&&clientEmail) meta.push(clientEmail);
+  if(wording.showPhone&&clientPhone) meta.push(clientPhone);
+  if(wording.showPrepared) meta.push('Prepared '+preparedDate);
+  const conditions=[];
+  if(wording.validity&&expiryDays>0) conditions.push('This proposal is valid for '+expiryDays+' day'+(expiryDays>1?'s':'')+'.');
+  if(wording.availability) conditions.push('Tee times remain subject to availability until confirmed by the golf courses.');
+  if(wording.buggyAvailability&&rounds.some(r=>r.buggyQty>0)) conditions.push('Buggies remain subject to course availability.');
+  if(wording.licenseNote&&rounds.some(r=>r.licence)) conditions.push('Golf license fees may be required at selected courses.');
+  ((wording.customNotes||'').split(/\n+/).map(x=>x.trim()).filter(Boolean)).forEach(x=>conditions.push(x));
+  const logoEl=document.querySelector('#lock img');
+  const navLogo=document.getElementById('navLogo');
+  return {
+    fmt,
+    clientName,
+    title:(clientName?clientName+' - ':'')+'Mallorca Golf Itinerary',
+    meta,
+    notes:(document.getElementById('proposalNotes')||{}).value||'',
+    intro:wording.intro||'',
+    includeItems:getProposalIncludeItems(),
+    conditions,
+    rows,
+    wording,
+    feeMode,
+    includeFee,
+    courseTotal,
+    managementFee,
+    total,
+    logo:(logoEl&&logoEl.src)||(navLogo&&navLogo.src)||'',
+    footer:wording.footer||'',
+  };
+}
+function addPptText(slide,text,x,y,w,h,opts){
+  slide.addText(String(text||''),Object.assign({
+    x,y,w,h,
+    fontFace:'Jost',
+    fontSize:12,
+    color:'5A5550',
+    margin:0.03,
+    breakLine:false,
+    fit:'shrink',
+  },opts||{}));
+}
+function addPptBar(slide,x,y,w,h,color){
+  addPptText(slide,'',x,y,w,h,{fill:{color},line:{color}});
+}
+function exportPowerPoint(){
+  if(!rounds.length){alert('No proposal to export.');return;}
+  const Pptx=getPptxConstructor();
+  if(!Pptx){alert('PowerPoint export library is still loading. Try again in a moment.');return;}
+  const data=buildProposalExportData();
+  const orientation=(document.getElementById('propOrientation')||{}).value||'portrait';
+  const portrait=orientation!=='landscape';
+  const pptx=new Pptx();
+  const layoutName=portrait?'MMG_A4_PORTRAIT':'MMG_A4_LANDSCAPE';
+  const slideW=portrait?8.27:11.69;
+  const slideH=portrait?11.69:8.27;
+  pptx.defineLayout({name:layoutName,width:slideW,height:slideH});
+  pptx.layout=layoutName;
+  pptx.author='Mr Mallorca Golf';
+  pptx.subject='Editable golf proposal';
+  pptx.title=data.title;
+  pptx.company='Mr Mallorca Golf';
+  pptx.lang='en-GB';
+  const C={pine:'2D4A3E',gold:'B8973C',deep:'1A1916',cream:'F7F4EF',muted:'5A5550',border:'E0D8CB',white:'FFFFFF'};
+  const margin=portrait?0.58:0.68;
+  const contentW=slideW-(margin*2);
+
+  const addHeader=(slide)=>{
+    addPptBar(slide,margin,0.38,contentW,0.05,C.gold);
+    if(data.logo) slide.addImage({data:data.logo,x:margin,y:0.86,w:0.62,h:0.62});
+    addPptText(slide,'Andy Griffiths\nPGA Advanced Professional\nandy@mrmallorcagolf.com\nmrmallorcagolf.com',slideW-margin-2.2,0.82,2.2,0.75,{
+      fontSize:portrait?9.5:8.5,
+      color:C.pine,
+      bold:false,
+      align:'right',
+      valign:'mid',
+      breakLine:true,
+    });
+    addPptBar(slide,margin,1.78,contentW,0.025,C.pine);
+  };
+  const addFooter=(slide)=>{
+    addPptBar(slide,margin,slideH-0.54,contentW,0.01,C.border);
+    addPptText(slide,data.footer,margin,slideH-0.42,contentW,0.16,{
+      fontSize:6.4,
+      color:'8A7F74',
+      align:'center',
+      fit:'shrink',
+    });
+  };
+
+  let slide=pptx.addSlide();
+  slide.background={color:C.white};
+  addHeader(slide);
+  addPptText(slide,'GOLF PROPOSAL',margin,portrait?2.85:2.25,contentW,0.22,{
+    fontSize:10,
+    color:C.gold,
+    bold:true,
+    charSpace:2.4,
+  });
+  addPptText(slide,data.title,margin,portrait?3.25:2.62,contentW,0.72,{
+    fontFace:'Cormorant Garamond',
+    fontSize:portrait?30:28,
+    color:C.pine,
+    bold:true,
+    fit:'shrink',
+  });
+  addPptBar(slide,margin,portrait?4.18:3.45,0.42,0.018,C.gold);
+  addPptText(slide,data.meta.join('  ·  '),margin+0.55,portrait?4.08:3.35,contentW-0.55,0.22,{
+    fontSize:9,
+    color:C.muted,
+    fit:'shrink',
+  });
+  addPptBar(slide,margin,portrait?4.84:4.0,contentW,0.01,C.border);
+  let coverY=portrait?5.55:4.45;
+  if(data.intro){
+    addPptText(slide,data.intro,margin,coverY,contentW,0.5,{fontSize:10.5,color:C.muted,breakLine:true});
+    coverY+=0.65;
+  }
+  if(data.notes){
+    addPptText(slide,data.notes,margin,coverY,contentW,0.5,{fontSize:10.5,color:C.deep,fill:{color:C.cream},line:{color:C.cream},breakLine:true,margin:0.11});
+    coverY+=0.68;
+  }
+  if(data.conditions.length){
+    addPptText(slide,data.conditions.join('\n'),margin,coverY,contentW,portrait?1.0:0.65,{fontSize:9.2,color:'8A7F74',breakLine:true,margin:0.06});
+  }
+  addFooter(slide);
+
+  data.rows.forEach(row=>{
+    const s=pptx.addSlide();
+    s.background={color:C.white};
+    addHeader(s);
+    const bodyY=portrait?2.45:2.25;
+    const imgW=row.image?(portrait?contentW:5.0):0;
+    const imgH=row.image?(portrait?3.3:3.85):0;
+    if(row.image){
+      s.addImage({data:row.image,x:margin,y:bodyY,w:imgW,h:imgH});
+    }
+    const textX=row.image&&!portrait?margin+imgW+0.35:margin;
+    const textY=row.image&&portrait?bodyY+imgH+0.35:bodyY;
+    const textW=row.image&&!portrait?contentW-imgW-0.35:contentW;
+    addPptText(s,'ROUND '+row.roundNo,textX,textY,textW,0.24,{fontSize:10,color:C.gold,bold:true,charSpace:2.2});
+    addPptText(s,row.course.name,textX,textY+0.35,textW,0.58,{
+      fontFace:'Cormorant Garamond',
+      fontSize:portrait?28:27,
+      color:C.pine,
+      bold:true,
+      fit:'shrink',
+    });
+    addPptText(s,row.date+' · '+row.time,textX,textY+1.0,textW,0.24,{fontSize:11,color:C.muted});
+    const extras=[];
+    extras.push(row.players+' player'+(row.players>1?'s':''));
+    if(row.buggyQty) extras.push(row.buggyQty+(row.buggyQty===1?' buggy':' buggies'));
+    if(row.clubsQty) extras.push(row.clubsQty+' club hire');
+    if(row.licence) extras.push('license');
+    if(row.golfCard) extras.push('Golf Card');
+    addPptText(s,extras.join(' · '),textX,textY+1.38,textW,0.22,{fontSize:9.5,color:C.muted,bold:true,charSpace:1.0});
+    if(data.fmt==='itemised'){
+      const lines=[
+        'Green fee x '+row.players+'    EUR '+row.gfTotal,
+      ];
+      if(row.buggyQty) lines.push('Buggy hire x '+row.buggyQty+'    EUR '+row.buggyTotal);
+      if(row.clubsQty) lines.push('Club hire x '+row.clubsQty+'    EUR '+row.clubsTotal);
+      lines.push('Subtotal    EUR '+row.subtotal);
+      addPptText(s,lines.join('\n'),textX,textY+1.8,textW,1.0,{fontSize:10.2,color:C.deep,breakLine:true});
+    }
+    addFooter(s);
+  });
+
+  slide=pptx.addSlide();
+  slide.background={color:C.white};
+  addHeader(slide);
+  addPptText(slide,'PROPOSAL SUMMARY',margin,portrait?2.75:2.35,contentW,0.22,{fontSize:10,color:C.gold,bold:true,charSpace:2.4});
+  addPptText(slide,data.wording.totalLabel,margin,portrait?3.25:2.8,contentW/2,0.52,{
+    fontFace:'Cormorant Garamond',
+    fontSize:30,
+    color:C.pine,
+    bold:true,
+  });
+  addPptText(slide,'EUR '+Math.round(data.total),slideW-margin-2.1,portrait?3.25:2.8,2.1,0.52,{
+    fontFace:'Cormorant Garamond',
+    fontSize:30,
+    color:C.pine,
+    bold:true,
+    align:'right',
+  });
+  let y=portrait?4.05:3.58;
+  if(data.fmt==='itemised'||data.feeMode==='separate'){
+    addPptText(slide,data.wording.courseTotalLabel+': EUR '+Math.round(data.courseTotal),margin,y,contentW,0.24,{fontSize:10.2,color:C.muted});
+    y+=0.32;
+    if(data.includeFee&&data.feeMode==='separate'){
+      addPptText(slide,data.wording.managementLabel+': EUR '+Math.round(data.managementFee),margin,y,contentW,0.24,{fontSize:10.2,color:C.muted});
+      y+=0.32;
+    }
+  }
+  if(data.includeItems.length){
+    addPptText(slide,'Includes',margin,y+0.15,contentW,0.25,{fontSize:12,color:C.pine,bold:true});
+    addPptText(slide,data.includeItems.map(x=>'- '+x).join('\n'),margin,y+0.52,contentW,portrait?1.3:0.85,{fontSize:10.2,color:C.muted,breakLine:true});
+    y+=portrait?1.95:1.35;
+  }
+  if(data.conditions.length){
+    addPptText(slide,'Important notes',margin,y,contentW,0.25,{fontSize:12,color:C.pine,bold:true});
+    addPptText(slide,data.conditions.map(x=>'- '+x).join('\n'),margin,y+0.35,contentW,portrait?1.4:0.9,{fontSize:9.6,color:C.muted,breakLine:true});
+  }
+  addFooter(slide);
+
+  pptx.writeFile({fileName:safeFilenamePart(data.clientName||'mmg')+'-proposal.pptx'});
 }
 
 function calculateQuoteSummary(data){
