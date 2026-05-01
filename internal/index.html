@@ -1705,20 +1705,51 @@ function renderProposal(){
     <div style="margin-top:9px;padding:12px 16px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
     <div style="font-size:8pt;line-height:1.35;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:8px;margin-top:12px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-align:center;">${footerText}</div>`;
   const pageHtml=(body)=>`<div class="proposal-page" style="${pageStyle}">${headerHtml}${body}</div>`;
-  const firstCapacity=orientation==='landscape'?(notes||wording.intro||conditionItems.length?2:3):(notes||wording.intro||conditionItems.length?3:4);
-  const regularCapacity=orientation==='landscape'?4:4;
-  let cursor=0;
+  const continuationHeading=`<div style="padding:14px 0 8px;font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Golf itinerary continued</div>`;
+  const summaryHeading=`<div style="padding:14px 0 8px;font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Proposal summary</div>`;
+  const maxContentHeight=paperHeight-36;
+  const headerHeight=91;
+  const headingHeight=44;
+  const roundHeight=(orientation==='landscape'?128:158)+(fmt==='itemised'?34:0);
+  const lineEstimate=(text,charsPerLine)=>Math.max(1,Math.ceil(String(text||'').length/charsPerLine));
+  const firstIntroHeight=titleHtml?142:0;
+  const acceptedHeight=acceptedHtml?46:0;
+  const introHeight=wording.intro?Math.max(34,lineEstimate(wording.intro,orientation==='landscape'?130:90)*22):0;
+  const noteHeight=notes?Math.max(50,lineEstimate(notes,orientation==='landscape'?115:80)*24+24):0;
+  const conditionsHeight=conditionItems.length?Math.max(42,conditionItems.length*20+20):0;
+  const includesHeight=includeItems.length?Math.max(70,Math.ceil(includeItems.length/2)*24+42):0;
+  const totalsHeight=fmt==='itemised'||(includeFee&&feeMode==='separate')?150:118;
+  const summaryHeight=headingHeight+includesHeight+totalsHeight+50;
   const pages=[];
-  pages.push(pageHtml(titleHtml+acceptedHtml+introHtml+notesHtml+conditionsHtml+roundCards.slice(cursor,cursor+firstCapacity).join('')));
-  cursor+=firstCapacity;
-  while(cursor<roundCards.length){
-    pages.push(pageHtml(`<div style="padding:14px 0 8px;font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Golf itinerary continued</div>`+roundCards.slice(cursor,cursor+regularCapacity).join('')));
-    cursor+=regularCapacity;
+  let current={
+    chunks:[titleHtml,acceptedHtml,introHtml,notesHtml,conditionsHtml],
+    used:headerHeight+firstIntroHeight+acceptedHeight+introHeight+noteHeight+conditionsHeight
+  };
+  const startPage=function(withHeading){
+    current={
+      chunks:withHeading?[continuationHeading]:[],
+      used:headerHeight+(withHeading?headingHeight:0)
+    };
+    pages.push(current);
+  };
+  pages.push(current);
+  roundCards.forEach(card=>{
+    if(current.used+roundHeight>maxContentHeight&&current.chunks.length){
+      startPage(true);
+    }
+    current.chunks.push(card);
+    current.used+=roundHeight;
+  });
+  if(current.used+summaryHeight<=maxContentHeight){
+    current.chunks.push(summaryHeading+summaryHtml);
+    current.used+=summaryHeight;
+  } else {
+    pages.push({chunks:[summaryHeading+summaryHtml],used:headerHeight+summaryHeight});
   }
-  pages.push(pageHtml(`<div style="padding:14px 0 8px;font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Proposal summary</div>`+summaryHtml));
+  const pageStrings=pages.map(p=>pageHtml(p.chunks.join('')));
   el.innerHTML=`
     <div id="printProposal" data-orientation="${orientation}" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:transparent;width:${paperWidth}px;max-width:${paperWidth}px;margin:0 auto;box-sizing:border-box;">
-      ${pages.join('')}
+      ${pageStrings.join('')}
     </div>`;
   fitProposalPreview();
   requestAnimationFrame(fitProposalPreview);
