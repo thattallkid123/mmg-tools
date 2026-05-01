@@ -796,10 +796,15 @@ let proposalConditionOrder = [];
 
 // ---- LOCK ----
 function tryUnlock(){
-  sessionStorage.setItem('mmg_unlocked','1');
-  document.getElementById('lock').style.display='none';
-  document.getElementById('app').style.display='block';
-  init();
+  const v=document.getElementById('lockInput').value;
+  if(v===PASSCODE){
+    sessionStorage.setItem('mmg_unlocked','1');
+    document.getElementById('lock').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  } else {
+    document.getElementById('lockErr').textContent='Incorrect passcode.';
+  }
 }
 
 // ---- INIT ----
@@ -879,19 +884,28 @@ function fitProposalPreview(){
   paper.style.margin='0 auto';
   out.style.height='';
   out.style.minHeight='';
-  const available=out.clientWidth-38;
-  const base=paper.scrollWidth||paper.offsetWidth||711;
+  const outW=out.clientWidth||800;
+  const padding=38; // 1.2rem each side approx
+  const available=outW-padding;
+  const naturalW=paper.scrollWidth||paper.offsetWidth||711;
+  const naturalH=paper.scrollHeight||paper.offsetHeight||1039;
   let scale=1;
-  if(available>0&&available<base){
-    scale=available/base;
-    paper.style.transform='scale('+scale+')';
+  if(available>0&&naturalW>0&&available<naturalW){
+    scale=available/naturalW;
+    paper.style.transform='scale('+scale+') translateZ(0)';
     paper.style.margin='0';
+    paper.style.position='relative';
+  } else {
+    paper.style.position='';
   }
-  const scaledH=Math.ceil(paper.scrollHeight*scale);
-  const height=scaledH+38;
-  out.style.height=height+'px';
-  out.style.minHeight=height+'px';
+  // Size the container to exactly the scaled content — no bleed
+  const scaledW=Math.ceil(naturalW*scale);
+  const scaledH=Math.ceil(naturalH*scale);
+  out.style.width='';
+  out.style.height=(scaledH+padding)+'px';
+  out.style.minHeight=(scaledH+padding)+'px';
   out.style.marginBottom='1rem';
+  out.style.overflow='hidden';
 }
 window.addEventListener('resize',fitProposalPreview);
 window.addEventListener('orientationchange',function(){setTimeout(fitProposalPreview,150);});
@@ -1661,7 +1675,7 @@ function renderMargin(){
       +'<td>'+players+'</td>'
       +'<td>€'+myCost.toFixed(0)+'/pp<br><span style="color:#888;font-size:.75rem;">€'+rGFCost.toFixed(0)+' total</span></td>'
       +'<td style="color:#B8973C;">€'+charge+'/pp<br><span style="font-size:.75rem;">€'+rCharge.toFixed(0)+' total</span></td>'
-      +'<td class="'+(rGFMargin>=0?'profit-pos':'profit-neg')+'">€'+rGFMargin.toFixed(0)+'</td>'
+      +'<td class="'+(rGFMargin>=0?'profit-pos':'profit-neg')+'">€'+(rGFMargin/players).toFixed(0)+'/pp<br><span style="font-size:.75rem;">€'+rGFMargin.toFixed(0)+' total</span></td>'
       +'<td><span style="color:#B8973C;">€'+rExtras.toFixed(0)+'</span><br><span style="color:#888;font-size:.75rem;">'+extrasLabel+'</span></td>'
       +'<td style="color:#B8973C;"><strong>€'+rClientTotal.toFixed(0)+'</strong></td>'
       +'<td class="'+(rProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+rProfit.toFixed(0)+'</strong></td>'
@@ -1679,7 +1693,7 @@ function renderMargin(){
     +'<td colspan="3">TOTALS</td>'
     +'<td>€'+totalCost.toFixed(0)+'</td>'
     +'<td style="color:#B8973C;">€'+totalCharge.toFixed(0)+'</td>'
-    +'<td class="'+(totalGFProfit>=0?'profit-pos':'profit-neg')+'">€'+totalGFProfit.toFixed(0)+'</td>'
+    +'<td class="'+(totalGFProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+totalGFProfit.toFixed(0)+'</strong></td>'
     +'<td style="color:#B8973C;">€'+totalExtras.toFixed(0)+'</td>'
     +'<td style="color:#B8973C;"><strong>€'+clientGrandTotal.toFixed(0)+'</strong></td>'
     +'<td class="'+(grandProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+grandProfit.toFixed(0)+'</strong></td>'
@@ -2991,10 +3005,11 @@ function fillConsecutiveDates(){
 }
 
 // ---- BOOT ----
-// Lock temporarily disabled
-document.getElementById('lock').style.display='none';
-document.getElementById('app').style.display='block';
-init();
+if(sessionStorage.getItem('mmg_unlocked')==='1'){
+  document.getElementById('lock').style.display='none';
+  document.getElementById('app').style.display='block';
+  init();
+}
 </script>
 </body>
 </html>
