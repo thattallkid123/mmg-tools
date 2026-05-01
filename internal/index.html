@@ -293,11 +293,11 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
         <label style="margin:0;flex:1;min-width:160px;">Message on proposal (optional)</label>
         <select id="noteTemplateSelect" onchange="applyNoteTemplate(this.value);this.value=''" style="max-width:240px;padding:.3rem .6rem;font-size:.8rem;background:#111;border:1px solid #333;color:var(--cream);border-radius:4px;">
           <option value="">Insert template...</option>
-          <option value="welcome">Welcome — looking forward to hosting</option>
-          <option value="group">Group trip — personalised experience</option>
-          <option value="corporate">Corporate — premium day out</option>
+          <option value="welcome">Welcome - looking forward to hosting</option>
+          <option value="group">Group trip - personalised experience</option>
+          <option value="corporate">Corporate - premium day out</option>
           <option value="honeymoon">Honeymoon / special occasion</option>
-          <option value="return">Return client — welcome back</option>
+          <option value="return">Return client - welcome back</option>
         </select>
       </div>
       <textarea id="proposalNotes" maxlength="1000" placeholder="e.g. Looking forward to hosting your group in Mallorca. Tee times will be confirmed once accepted." oninput="syncProposalNotesFromBuilder();saveState();renderProposal();document.getElementById('proposalNotesCount').textContent=1000-this.value.length+' chars left'" style="height:150px;min-height:150px;max-height:150px;resize:none;overflow-y:auto;"></textarea>
@@ -528,11 +528,11 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
         <label style="margin:0;flex:1;min-width:160px;">Message on proposal (editable here)</label>
         <select onchange="applyNoteTemplate(this.value);this.value=''" style="max-width:240px;padding:.3rem .6rem;font-size:.8rem;background:#111;border:1px solid #333;color:var(--cream);border-radius:4px;">
           <option value="">Insert template...</option>
-          <option value="welcome">Welcome — looking forward to hosting</option>
-          <option value="group">Group trip — personalised experience</option>
-          <option value="corporate">Corporate — premium day out</option>
+          <option value="welcome">Welcome - looking forward to hosting</option>
+          <option value="group">Group trip - personalised experience</option>
+          <option value="corporate">Corporate - premium day out</option>
           <option value="honeymoon">Honeymoon / special occasion</option>
-          <option value="return">Return client — welcome back</option>
+          <option value="return">Return client - welcome back</option>
         </select>
       </div>
       <textarea id="proposalNotesProposal" maxlength="1000" placeholder="Client-facing note shown on the proposal" oninput="syncProposalNotesFromProposal();saveState();renderProposal();document.getElementById('proposalNotesProposalCount').textContent=1000-this.value.length+' chars left'" style="height:150px;min-height:150px;max-height:150px;resize:none;overflow-y:auto;"></textarea>
@@ -673,7 +673,7 @@ function getCourseRateBand(courseId, dateStr){
   return bands.find(b=>md>=b.from&&md<=b.to)||null;
 }
 
-// Season bands (global - same for all courses)
+// Season bands (global — same for all courses)
 // Peak:  15 Mar–14 Jun, 15 Sep–14 Nov
 // Low:   Jan–Feb, 15 Jun–Aug, 21 Nov–Dec
 // Mid:   1–14 Mar, 15–20 Nov
@@ -796,15 +796,10 @@ let proposalConditionOrder = [];
 
 // ---- LOCK ----
 function tryUnlock(){
-  const v=document.getElementById('lockInput').value;
-  if(v===PASSCODE){
-    sessionStorage.setItem('mmg_unlocked','1');
-    document.getElementById('lock').style.display='none';
-    document.getElementById('app').style.display='block';
-    init();
-  } else {
-    document.getElementById('lockErr').textContent='Incorrect passcode.';
-  }
+  sessionStorage.setItem('mmg_unlocked','1');
+  document.getElementById('lock').style.display='none';
+  document.getElementById('app').style.display='block';
+  init();
 }
 
 // ---- INIT ----
@@ -884,7 +879,7 @@ function fitProposalPreview(){
   paper.style.margin='0 auto';
   out.style.height='';
   out.style.minHeight='';
-  const available=out.clientWidth-38; // account for padding:1.2rem each side
+  const available=out.clientWidth-38;
   const base=paper.scrollWidth||paper.offsetWidth||711;
   let scale=1;
   if(available>0&&available<base){
@@ -893,7 +888,7 @@ function fitProposalPreview(){
     paper.style.margin='0';
   }
   const scaledH=Math.ceil(paper.scrollHeight*scale);
-  const height=scaledH+38; // padding
+  const height=scaledH+38;
   out.style.height=height+'px';
   out.style.minHeight=height+'px';
   out.style.marginBottom='1rem';
@@ -1352,7 +1347,7 @@ function renderMissingInfo(){
 // ---- PARSER ----
 function findCourse(text){
   const t=text.toLowerCase();
-  // Check son antem ambiguity - if 'west' present use west, else east
+  // Check son antem ambiguity — if 'west' present use west, else east
   if(t.includes('son antem')&&!t.includes('east')&&!t.includes(' e ')&&t.includes('west')) return 'son_antem_w';
   if(t.includes('son antem')) return 'son_antem_e';
   for(const [id,aliases] of Object.entries(COURSE_ALIASES)){
@@ -1915,7 +1910,7 @@ function renderProposal(){
   const titleHtml=`
     <div style="padding:10px 0 9px;border-bottom:1px solid #E0D8CB;margin-bottom:10px;">
       <div style="font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:3px;">Golf proposal</div>
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'28pt':'30pt'};font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' - ':''}Mallorca Golf Itinerary</div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'28pt':'30pt'};font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
       <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
         <div style="width:48px;height:2px;background:#B8973C;flex-shrink:0;"></div>
         <div style="font-size:10pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${clientMeta.join(' &nbsp;·&nbsp; ')}</div>
@@ -1978,7 +1973,7 @@ function renderProposal(){
       current.used+=roundHeight;
     });
   }
-  // Summary always starts on page 2+ - never on page 1 alone
+  // Summary always starts on page 2+ — never on page 1 alone
   const isOnPage1=pages.length===1&&current===pages[0];
   if(!isOnPage1&&current.used+summaryHeight<=maxContentHeight){
     current.chunks.push(summaryHeading+summaryHtml);
@@ -2849,7 +2844,7 @@ function duplicateSavedQuote(idx){
   copy.quoteStatus='Draft';
   copy.nextAction='';
   copy.followUpDate='';
-  copy.rounds=(copy.rounds||[]).map(function(r){return Object.assign({},r,{date:'',time:''}); });
+  copy.rounds=(copy.rounds||[]).map(function(r){return Object.assign({},r,{date:'',time:''});});
   list.unshift(copy);
   localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
   if(confirm('Duplicate created. Load it into the builder now?')){
@@ -2981,5 +2976,10 @@ function fillConsecutiveDates(){
 }
 
 // ---- BOOT ----
-if(sessionStorage.getItem('mmg_unlocked')==='1'){
-  documen
+// Lock temporarily disabled
+document.getElementById('lock').style.display='none';
+document.getElementById('app').style.display='block';
+init();
+</script>
+</body>
+</html>
