@@ -409,6 +409,21 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
         <input id="nextActionMirror" placeholder="e.g. Send deposit link" oninput="document.getElementById('nextAction').value=this.value;saveState();renderMissingInfo()">
       </div>
     </div>
+    <div class="card" style="margin-bottom:.8rem;">
+      <h3 style="margin-top:0;">Includes shown on proposal</h3>
+      <div class="grid3" style="gap:.55rem 1rem;">
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incGreenFees" checked onchange="saveState();renderProposal()"> Green fees</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incBuggies" checked onchange="saveState();renderProposal()"> Buggies when selected</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incClubs" checked onchange="saveState();renderProposal()"> Club hire when selected</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incLicenses" checked onchange="saveState();renderProposal()"> Golf licenses where required</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incPlanning" checked onchange="saveState();renderProposal()"> Planning support</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="incPgaGuidance" onchange="saveState();renderProposal()"> PGA guidance where selected</label>
+      </div>
+      <div style="margin-top:.7rem;">
+        <label>Extra include lines</label>
+        <textarea id="incCustom" rows="2" placeholder="One extra include per line" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:56px;"></textarea>
+      </div>
+    </div>
     <div id="proposalMissingInfo" class="card" style="display:none;margin-bottom:.8rem;"></div>
     <div id="proposalOut" style="background:#fff;border-radius:6px;padding:0;overflow:hidden;"></div>
     <div id="courseDrafts" class="card" style="margin-top:.8rem;"></div>
@@ -728,6 +743,7 @@ function fitProposalPreview(){
   paper.style.transform='';
   paper.style.margin='0 auto';
   out.style.height='';
+  out.style.minHeight='';
   const available=out.clientWidth;
   const base=paper.offsetWidth||900;
   let scale=1;
@@ -736,7 +752,9 @@ function fitProposalPreview(){
     paper.style.transform='scale('+scale+')';
     paper.style.margin='0';
   }
-  out.style.height=Math.ceil(paper.offsetHeight*scale)+'px';
+  const height=Math.ceil(paper.offsetHeight*scale);
+  out.style.height=height+'px';
+  out.style.minHeight=height+'px';
 }
 window.addEventListener('resize',fitProposalPreview);
 window.addEventListener('orientationchange',function(){setTimeout(fitProposalPreview,150);});
@@ -915,6 +933,15 @@ function saveState(){
     propIncludeFee:normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value),
     managementFee:(document.getElementById('managementFee')||{}).value||'0',
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
+    proposalIncludes:{
+      greenFees:isChecked('incGreenFees'),
+      buggies:isChecked('incBuggies'),
+      clubs:isChecked('incClubs'),
+      licenses:isChecked('incLicenses'),
+      planning:isChecked('incPlanning'),
+      pgaGuidance:isChecked('incPgaGuidance'),
+      custom:(document.getElementById('incCustom')||{}).value||''
+    },
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
     nextAction:(document.getElementById('nextAction')||{}).value||'',
     quoteExpiryDays:parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0,
@@ -927,6 +954,14 @@ function saveState(){
 function setValue(id,val){
   const el=document.getElementById(id);
   if(el) el.value=val||'';
+}
+function setChecked(id,val){
+  const el=document.getElementById(id);
+  if(el) el.checked=!!val;
+}
+function isChecked(id){
+  const el=document.getElementById(id);
+  return !!(el&&el.checked);
 }
 function normaliseFeeMode(mode){
   if(mode==='yes') return 'separate';
@@ -970,6 +1005,16 @@ function applyQuoteData(data){
   setValue('propIncludeFee',normaliseFeeMode(data.propIncludeFee));
   setValue('managementFee',data.managementFee!=null?data.managementFee:'0');
   if(data.propShowPhotos) setValue('propShowPhotos',data.propShowPhotos);
+  if(data.proposalIncludes){
+    setChecked('incGreenFees',data.proposalIncludes.greenFees);
+    setChecked('incBuggies',data.proposalIncludes.buggies);
+    setChecked('incClubs',data.proposalIncludes.clubs);
+    setChecked('incLicenses',data.proposalIncludes.licenses);
+    setChecked('incPlanning',data.proposalIncludes.planning);
+    setChecked('incPgaGuidance',data.proposalIncludes.pgaGuidance);
+    setValue('incCustom',data.proposalIncludes.custom||'');
+    autoGrow(document.getElementById('incCustom'));
+  }
   setValue('quoteStatus',data.quoteStatus||data.status||'Draft');
   setValue('nextAction',data.nextAction||data.next_action||'');
   setValue('quoteExpiryDays',data.quoteExpiryDays!=null?data.quoteExpiryDays:7);
@@ -1384,6 +1429,20 @@ function formatRoundDate(dateStr, opts){
   if(!dateStr) return 'Date TBC';
   return new Date(dateStr+'T12:00:00').toLocaleDateString('en-GB',opts||{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
+function getProposalIncludeItems(){
+  const items=[];
+  if(isChecked('incGreenFees')) items.push('Listed green fees');
+  if(isChecked('incBuggies')&&rounds.some(r=>r.buggyQty>0)) items.push('Buggy hire where selected');
+  if(isChecked('incClubs')&&rounds.some(r=>r.clubsQty>0)) items.push('Club hire where selected');
+  if(isChecked('incLicenses')&&rounds.some(r=>r.licence)) items.push('Golf license fees where required');
+  if(isChecked('incPlanning')) items.push('Planning and tee-time support');
+  if(isChecked('incPgaGuidance')) items.push('PGA guidance where selected');
+  const custom=((document.getElementById('incCustom')||{}).value||'')
+    .split(/\n+/)
+    .map(x=>x.trim())
+    .filter(Boolean);
+  return items.concat(custom);
+}
 function renderProposal(){
   const fmt=document.getElementById('propFormat').value;
   const showPhotos=document.getElementById('propShowPhotos').value==='yes';
@@ -1480,7 +1539,10 @@ function renderProposal(){
 
   const notesHtml=notes
     ?`<div style="margin:0 0 10px;padding:10px 16px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:11.5pt;line-height:1.45;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;">${notes.replace(/\n/g,'<br>')}</div>`:'';
-  const inclusionsHtml=`<div style="margin:0 0 9px;padding:10px 14px;border:1px solid #E0D8CB;background:#fff;font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;line-height:1.45;"><strong style="color:#2D4A3E;">Includes:</strong> listed green fees${rounds.some(r=>r.buggyQty>0)?', buggies':''}${rounds.some(r=>r.clubsQty>0)?', club hire':''}, planning support, and PGA guidance where selected.</div>`;
+  const includeItems=getProposalIncludeItems();
+  const inclusionsHtml=includeItems.length
+    ?`<div style="margin:0 0 9px;padding:10px 14px;border:1px solid #E0D8CB;background:#fff;font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;line-height:1.4;"><strong style="display:block;color:#2D4A3E;margin-bottom:5px;">Includes</strong><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;">${includeItems.map(item=>`<div style="display:flex;gap:6px;align-items:flex-start;"><span style="color:#B8973C;font-weight:700;">✓</span><span>${escapeHtml(item)}</span></div>`).join('')}</div></div>`
+    :'';
   const expiryHtml=expiryDays>0
     ?`<div style="margin:0 0 9px;font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;">This proposal is valid for ${expiryDays} day${expiryDays>1?'s':''}. Tee times remain subject to availability until confirmed by the golf courses.</div>`:'';
   const acceptedHtml=(quoteStatus==='Accepted'||quoteStatus==='Booked')
@@ -1518,6 +1580,10 @@ function renderProposal(){
       <div style="font-size:8pt;line-height:1.35;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:8px;margin-top:12px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
     </div>`;
   fitProposalPreview();
+  requestAnimationFrame(fitProposalPreview);
+  el.querySelectorAll('img').forEach(img=>{
+    if(!img.complete) img.addEventListener('load',fitProposalPreview,{once:true});
+  });
   renderCourseDrafts();
 }
 
@@ -1964,6 +2030,15 @@ function getCurrentQuoteData(name){
     propIncludeFee:normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value),
     managementFee:(document.getElementById('managementFee')||{}).value||'0',
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
+    proposalIncludes:{
+      greenFees:isChecked('incGreenFees'),
+      buggies:isChecked('incBuggies'),
+      clubs:isChecked('incClubs'),
+      licenses:isChecked('incLicenses'),
+      planning:isChecked('incPlanning'),
+      pgaGuidance:isChecked('incPgaGuidance'),
+      custom:(document.getElementById('incCustom')||{}).value||''
+    },
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
     nextAction:(document.getElementById('nextAction')||{}).value||'',
     quoteExpiryDays:parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0,
