@@ -112,6 +112,10 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
 #pProposal #proposalOut{max-width:900px;margin:0 auto;overflow:hidden;position:relative;z-index:1;}
 #pProposal #printProposal{transform-origin:top left;white-space:normal;display:block;}
 #pProposal #previewClip{overflow:hidden;position:relative;}
+#pSettings input[type=number]:not(:placeholder-shown),
+#pSettings input[type=text]:not(:placeholder-shown){background:#1e1e1e;color:#fff;}
+#pSettings input[type=number]:placeholder-shown,
+#pSettings input[type=text]:placeholder-shown{background:#141414;color:#666;}
 #pProposal .proposal-page{box-shadow:0 0 0 1px #ddd,0 12px 32px rgba(0,0,0,.22);}
 #pProposal #courseDrafts{position:relative;z-index:2;clear:both;}
 details.proposal-tools{border:1px solid #2a2a2a;border-radius:6px;background:#10100f;margin-bottom:.8rem;}
@@ -292,14 +296,7 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     <div style="margin-bottom:.8rem;">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem;flex-wrap:wrap;">
         <label style="margin:0;flex:1;min-width:160px;">Message on proposal (optional)</label>
-        <select id="noteTemplateSelect" onchange="applyNoteTemplate(this.value);this.value=''" style="max-width:240px;padding:.3rem .6rem;font-size:.8rem;background:#111;border:1px solid #333;color:var(--cream);border-radius:4px;">
-          <option value="">Insert template...</option>
-          <option value="welcome">Welcome - looking forward to hosting</option>
-          <option value="group">Group trip - personalised experience</option>
-          <option value="corporate">Corporate - premium day out</option>
-          <option value="honeymoon">Honeymoon / special occasion</option>
-          <option value="return">Return client - welcome back</option>
-        </select>
+        <button class="btn btn-pine btn-sm" onclick="applyNoteTemplate('default')" type="button">Insert default</button>
       </div>
       <textarea id="proposalNotes" maxlength="1000" placeholder="e.g. Looking forward to hosting your group in Mallorca. Tee times will be confirmed once accepted." oninput="syncProposalNotesFromBuilder();saveState();renderProposal();document.getElementById('proposalNotesCount').textContent=1000-this.value.length+' chars left'" style="height:150px;min-height:150px;max-height:150px;resize:none;overflow-y:auto;"></textarea>
       <div id="proposalNotesCount" style="font-size:.75rem;color:#888;text-align:right;margin-top:2px;">1000 chars left</div>
@@ -366,8 +363,6 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
         <button class="btn btn-gold btn-sm" onclick="openTab('proposal')">Preview proposal</button>
         <button class="btn btn-gold btn-sm" onclick="saveQuoteToList()">Save in app</button>
         <button class="btn btn-pine btn-sm" onclick="toggleSavedQuotes()">Load saved</button>
-        <button class="btn btn-gold btn-sm" onclick="saveQuoteFile()">&#8659; Save file</button>
-        <label class="btn btn-pine btn-sm" style="cursor:pointer;margin:0;">&#8657; Load quote<input type="file" accept=".json" onchange="loadQuoteFile(this)" style="display:none;"></label>
       </span>
     </div>
   </div>
@@ -546,8 +541,6 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
       <button class="btn btn-gold btn-sm" onclick="saveQuoteToList()">Save proposal</button>
       <button class="btn btn-pine btn-sm" onclick="toggleSavedQuotes()">Load saved</button>
       <button class="btn btn-gold btn-sm" onclick="copyClientEmail()">Client email draft</button>
-      <button class="btn btn-gold btn-sm" onclick="copyProposal()">Copy plain text</button>
-      <button class="btn btn-pine btn-sm" onclick="copyWhatsapp()">WhatsApp copy</button>
       <button class="btn btn-pine btn-sm" onclick="copyAllCourseEmails()">Copy course requests</button>
       <button class="btn btn-pine btn-sm" onclick="printProposal()">Save PDF (A4)</button>
       <button class="btn btn-pine btn-sm" onclick="exportPowerPoint()">Export PowerPoint</button>
@@ -1043,7 +1036,7 @@ function renderSettingsTable(){
       +'<td><select data-cost-mode="'+c.id+'" title="How auto cost should be calculated" style="width:145px;" onchange="saveSettings();renderSettingsTable()">'+COURSE_COST_MODES.map(opt=>'<option value="'+opt.id+'"'+(opt.id===mode?' selected':'')+'>'+opt.label+'</option>').join('')+'</select></td>'
       +'<td><input type="number" data-buggy-rate="'+c.id+'" value="'+(saved.buggyRate||'')+'" placeholder="'+(defBuggy||'N/A')+'" title="Buggy rate" style="width:65px;" oninput="saveSettings()"></td>'
       +'<td><input type="number" data-clubs-rate="'+c.id+'" value="'+(saved.clubsRate||'')+'" placeholder="'+(defClubs||'N/A')+'" title="Club hire rate" style="width:65px;" oninput="saveSettings()"></td>'
-      +'<td><input type="checkbox" data-course-lic="'+c.id+'" '+(saved.licence?'checked':'')+' onchange="saveSettings()"> Yes</td>'
+      +'<td style="text-align:center;"><input type="checkbox" data-course-lic="'+c.id+'" '+(saved.licence?'checked':'')+' onchange="saveSettings()"></td>'
       +'<td><input data-course-email="'+c.id+'" value="'+escapeHtml(contact.email||'')+'" placeholder="bookings@..." title="Booking email" style="width:180px;" oninput="saveSettings()"></td>'
       +'<td><input data-course-phone="'+c.id+'" value="'+escapeHtml(contact.phone||'')+'" placeholder="+34..." title="Booking phone" style="width:130px;" oninput="saveSettings()"></td>'
       +'<td><input data-pricing-notes="'+c.id+'" value="'+escapeHtml(contact.pricingNotes||'')+'" placeholder="Rates / time bands / terms" title="Internal pricing notes" style="width:260px;" oninput="saveSettings()"></td>'
@@ -2872,6 +2865,9 @@ function renderSavedQuotesList(){
       +(next?'<span style="color:#666;margin-left:.45rem;">Next: '+escapeHtml(next)+'</span>':'')
       +'</div></div>'
       +'<div style="display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end;">'
+      +'<select onchange="updateQuoteStatus('+i+',this.value)" style="font-size:.75rem;padding:.2rem .3rem;background:#111;color:#ccc;border:1px solid #333;border-radius:3px;">'
+      +['Draft','Sent','Deposit received','Confirmed','Booked','Lost','Archived'].map(function(s){return '<option value="'+s+'"'+(s===status?' selected':'')+'>'+s+'</option>';}).join('')
+      +'</select>'
       +'<button class="btn btn-pine btn-sm" onclick="loadSavedQuote('+i+')" style="font-size:.75rem;">Load</button>'
       +'<button class="btn btn-gold btn-sm" onclick="duplicateSavedQuote('+i+')" style="font-size:.75rem;">Duplicate</button>'
       +'<button class="btn btn-red btn-sm" onclick="deleteSavedQuote('+i+')" style="font-size:.75rem;">&#10005;</button>'
@@ -2905,6 +2901,8 @@ function loadSavedQuote(idx){
   var data=list[idx]; if(!data) return;
   if(!confirm('Load "'+data.name+'"? Current quote will be replaced.')) return;
   applyQuoteData(data);
+  localStorage.removeItem('mmg_email_draft'); // regenerate email for new quote
+  renderSendingEmail();
   document.getElementById('savedQuotesPanel').style.display='none';
 }
 async function deleteSavedQuote(idx){
@@ -2926,11 +2924,7 @@ async function deleteSavedQuote(idx){
 
 // ---- NOTE TEMPLATES ----
 const NOTE_TEMPLATES={
-  welcome:'Looking forward to welcoming you to Mallorca. I have put together a selection of courses that I think you will enjoy - please feel free to get in touch if you would like to adjust anything.',
-  group:'It is a pleasure to be arranging this trip for your group. Each round has been chosen with your schedule in mind. I will handle all the tee-time bookings once you are happy to go ahead.',
-  corporate:'Thank you for choosing Mr Mallorca Golf for your company day. I will ensure everything runs smoothly from the first tee to the 19th hole - please let me know if you have any specific requirements.',
-  honeymoon:'Congratulations on your upcoming wedding. I would love to make your time in Mallorca extra special - if there are any surprises or personal touches you would like added to the day, just say the word.',
-  return:'It is great to be working with you again. I have put together a fresh selection for this trip - I hope you enjoy some new courses alongside a few favourites.',
+  default:'Thanks again for letting us plan your trip. Included are the green fees, buggies and also the license / insurance that golf clubs here require unless you are a member of the Spanish Golf Federation.\n\nAs a special offer as a new client, I would like to offer a few bonuses:\n\n- Reduction of the management fee from 15% to 5%, but still have everything taken care of.\n- Dates permitting, 1 round Play with a Pro given at individual rate (495) vs. group rate (950).\n- Alcanada and Son Servera will have free range balls before the round for you added in.\n\nThanks for the trust and hope to confirm this shortly. Once the deposit is in place I will get the tee times booked and send over the full terms including the cancellation policy from the courses.',
 };
 function applyNoteTemplate(key){
   if(!key) return;
