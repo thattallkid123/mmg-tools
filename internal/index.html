@@ -124,6 +124,13 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
 .include-order-item.dragging{opacity:.45;}
 .include-order-item .drag-handle{color:var(--gold);font-weight:700;letter-spacing:.08em;}
 .include-order-item .include-muted{color:#777;font-size:.76rem;margin-left:auto;}
+.text-block-editor{display:grid;gap:.45rem;margin-top:.65rem;}
+.text-block-item{border:1px solid #2a2a2a;background:#0b0b0b;border-radius:4px;padding:.5rem;cursor:grab;}
+.text-block-item.dragging{opacity:.45;}
+.text-block-top{display:flex;gap:.5rem;align-items:center;margin-bottom:.35rem;}
+.text-block-top .drag-handle{color:var(--gold);font-weight:700;letter-spacing:.08em;}
+.text-block-top label{margin:0!important;color:#ddd!important;font-size:.82rem!important;}
+.text-block-item textarea{min-height:52px!important;font-size:.86rem;}
 @media(max-width:700px){
   #pProposal #proposalOut{max-width:none;width:100%;padding:0;overflow:hidden!important;}
 }
@@ -481,20 +488,16 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowEmail" checked onchange="saveState();renderProposal()"> Show client email</label>
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowPhone" checked onchange="saveState();renderProposal()"> Show client phone</label>
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowPrepared" checked onchange="saveState();renderProposal()"> Show prepared date</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordValidity" checked onchange="saveState();renderProposal()"> Validity note</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordAvailability" checked onchange="saveState();renderProposal()"> Tee-time availability note</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordBuggyAvailability" onchange="saveState();renderProposal()"> Buggy availability note</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordLicenseNote" onchange="saveState();renderProposal()"> License note</label>
           </div>
-          <div class="grid2">
-            <div>
-              <label>Extra important notes</label>
-              <textarea id="wordCustomNotes" rows="3" placeholder="One note per line" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:70px;"></textarea>
-            </div>
-            <div>
-              <label>Footer text</label>
-              <textarea id="wordFooter" rows="3" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:70px;">All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com</textarea>
-            </div>
+          <div style="margin-bottom:.8rem;">
+            <label>Important note blocks</label>
+            <div class="help">Tick notes to show, edit the wording directly, and drag them into the order you want.</div>
+            <button class="btn btn-pine btn-sm" type="button" onclick="addConditionBlock()" style="margin-top:.5rem;">Add custom note</button>
+            <div id="conditionBlockEditor" class="text-block-editor"></div>
+          </div>
+          <div>
+            <label>Footer text</label>
+            <textarea id="wordFooter" rows="3" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:70px;">All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com</textarea>
           </div>
         </div>
       </div>
@@ -757,6 +760,7 @@ let nextId = 1;
 let currentSupabaseId = '';
 let includeTourOperatorNote = false;
 let proposalIncludeOrder = [];
+let proposalConditionOrder = [];
 
 // ---- LOCK ----
 function tryUnlock(){
@@ -786,7 +790,7 @@ function init(){
   syncWorkflowMirrors();
   renderMissingInfo();
   autoGrow(document.getElementById('parseInput'));
-  ['incCustom','wordIntro','wordCustomNotes','wordFooter'].forEach(id=>autoGrow(document.getElementById(id)));
+  ['incCustom','wordIntro','wordFooter'].forEach(id=>autoGrow(document.getElementById(id)));
   textImportArmed=!!((document.getElementById('parseInput')||{}).value&&rounds.length);
   // set nav logo src from lock logo
   const lockImg = document.querySelector('#lock img');
@@ -1067,6 +1071,7 @@ function getTextValue(id, fallback){
   return val!==''?val:fallback;
 }
 function getProposalWording(){
+  const conditionBlocks=getConditionBlocksFromEditor();
   return {
     totalLabel:getTextValue('wordTotalLabel','Total'),
     courseTotalLabel:getTextValue('wordCourseTotalLabel','Golf fees & extras'),
@@ -1075,13 +1080,92 @@ function getProposalWording(){
     showEmail:isChecked('wordShowEmail'),
     showPhone:isChecked('wordShowPhone'),
     showPrepared:isChecked('wordShowPrepared'),
-    validity:isChecked('wordValidity'),
-    availability:isChecked('wordAvailability'),
-    buggyAvailability:isChecked('wordBuggyAvailability'),
-    licenseNote:isChecked('wordLicenseNote'),
-    customNotes:(document.getElementById('wordCustomNotes')||{}).value||'',
+    validity:!!((conditionBlocks.find(x=>x.id==='validity')||{}).active),
+    availability:!!((conditionBlocks.find(x=>x.id==='availability')||{}).active),
+    buggyAvailability:!!((conditionBlocks.find(x=>x.id==='buggyAvailability')||{}).active),
+    licenseNote:!!((conditionBlocks.find(x=>x.id==='licenseNote')||{}).active),
+    customNotes:conditionBlocks.filter(x=>x.id.indexOf('custom:')===0&&x.text.trim()).map(x=>x.text.trim()).join('\n'),
+    conditionBlocks,
+    conditionOrder:proposalConditionOrder||[],
     footer:getTextValue('wordFooter','All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com')
   };
+}
+function defaultConditionBlocks(){
+  const expiryDays=parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0;
+  return [
+    {id:'validity', label:'Validity', active:true, text:'This proposal is valid for '+(expiryDays||7)+' days.'},
+    {id:'availability', label:'Tee-time availability', active:true, text:'Tee times remain subject to availability until confirmed by the golf courses.'},
+    {id:'buggyAvailability', label:'Buggy availability', active:false, text:'Buggies remain subject to course availability.'},
+    {id:'licenseNote', label:'License', active:false, text:'Golf license fees may be required at selected courses.'},
+  ];
+}
+function getConditionBlocksFromEditor(){
+  const editor=document.getElementById('conditionBlockEditor');
+  if(!editor||!editor.children.length) return defaultConditionBlocks();
+  return [...editor.querySelectorAll('.text-block-item')].map(item=>({
+    id:item.dataset.id,
+    label:item.dataset.label||'Note',
+    active:!!item.querySelector('input[type=checkbox]').checked,
+    text:(item.querySelector('textarea')||{}).value||''
+  }));
+}
+function reconcileConditionBlocks(blocks){
+  const defaults=defaultConditionBlocks();
+  const byId={};
+  blocks.forEach(b=>{byId[b.id]=b;});
+  defaults.forEach(d=>{if(!byId[d.id]) byId[d.id]=d;});
+  const custom=(blocks||[]).filter(b=>b.id&&b.id.indexOf('custom:')===0&&b.text.trim());
+  if(!custom.length) byId['custom:0']={id:'custom:0',label:'Custom',active:false,text:''};
+  const all=Object.values(byId);
+  const ids=all.map(x=>x.id);
+  const order=(proposalConditionOrder||[]).filter(id=>ids.includes(id));
+  ids.forEach(id=>{if(!order.includes(id)) order.push(id);});
+  proposalConditionOrder=order;
+  return order.map(id=>all.find(x=>x.id===id)).filter(Boolean);
+}
+function renderConditionBlockEditor(blocks){
+  const editor=document.getElementById('conditionBlockEditor');
+  if(!editor) return;
+  const items=reconcileConditionBlocks(blocks||getConditionBlocksFromEditor());
+  editor.innerHTML=items.map(item=>'<div class="text-block-item" draggable="true" data-id="'+escapeHtml(item.id)+'" data-label="'+escapeHtml(item.label)+'">'
+    +'<div class="text-block-top"><span class="drag-handle">::</span><label><input type="checkbox" '+(item.active?'checked':'')+' onchange="saveState();renderProposal()"> '+escapeHtml(item.label)+'</label></div>'
+    +'<textarea rows="2" oninput="autoGrow(this);saveState();renderProposal()">'+escapeHtml(item.text)+'</textarea>'
+    +'</div>').join('');
+  editor.querySelectorAll('textarea').forEach(autoGrow);
+  let draggingId='';
+  editor.querySelectorAll('.text-block-item').forEach(item=>{
+    item.addEventListener('dragstart',e=>{
+      draggingId=item.dataset.id;
+      item.classList.add('dragging');
+      if(e.dataTransfer) e.dataTransfer.effectAllowed='move';
+    });
+    item.addEventListener('dragend',()=>{item.classList.remove('dragging');draggingId='';});
+    item.addEventListener('dragover',e=>e.preventDefault());
+    item.addEventListener('drop',e=>{
+      e.preventDefault();
+      const targetId=item.dataset.id;
+      if(!draggingId||draggingId===targetId) return;
+      const next=proposalConditionOrder.filter(id=>id!==draggingId);
+      const idx=next.indexOf(targetId);
+      next.splice(idx,0,draggingId);
+      proposalConditionOrder=next;
+      const current=getConditionBlocksFromEditor();
+      renderConditionBlockEditor(current);
+      saveState();
+      renderProposal();
+    });
+  });
+}
+function addConditionBlock(){
+  const blocks=getConditionBlocksFromEditor();
+  const id='custom:'+Date.now();
+  blocks.push({id,label:'Custom',active:true,text:''});
+  proposalConditionOrder=(proposalConditionOrder||[]).concat(id);
+  renderConditionBlockEditor(blocks);
+  const item=document.querySelector('.text-block-item[data-id="'+id+'"] textarea');
+  if(item) item.focus();
+  saveState();
+  renderProposal();
 }
 function normaliseFeeMode(mode){
   if(mode==='yes') return 'separate';
@@ -1145,16 +1229,19 @@ function applyQuoteData(data){
     setValue('wordCourseTotalLabel',data.proposalWording.courseTotalLabel||'Golf fees & extras');
     setValue('wordManagementLabel',data.proposalWording.managementLabel||'Management fee');
     setValue('wordIntro',data.proposalWording.intro||'');
+    const blocks=Array.isArray(data.proposalWording.conditionBlocks)?data.proposalWording.conditionBlocks:[
+      {id:'validity',label:'Validity',active:data.proposalWording.validity!==false,text:'This proposal is valid for '+((data.quoteExpiryDays!=null?data.quoteExpiryDays:7)||7)+' days.'},
+      {id:'availability',label:'Tee-time availability',active:data.proposalWording.availability!==false,text:'Tee times remain subject to availability until confirmed by the golf courses.'},
+      {id:'buggyAvailability',label:'Buggy availability',active:!!data.proposalWording.buggyAvailability,text:'Buggies remain subject to course availability.'},
+      {id:'licenseNote',label:'License',active:!!data.proposalWording.licenseNote,text:'Golf license fees may be required at selected courses.'}
+    ].concat((data.proposalWording.customNotes||'').split(/\n+/).map((x,i)=>({id:'custom:'+i,label:'Custom',active:!!x.trim(),text:x.trim()})).filter(x=>x.text));
+    proposalConditionOrder=Array.isArray(data.proposalWording.conditionOrder)?data.proposalWording.conditionOrder:[];
+    renderConditionBlockEditor(blocks);
     setChecked('wordShowEmail',data.proposalWording.showEmail!==false);
     setChecked('wordShowPhone',data.proposalWording.showPhone!==false);
     setChecked('wordShowPrepared',data.proposalWording.showPrepared!==false);
-    setChecked('wordValidity',data.proposalWording.validity!==false);
-    setChecked('wordAvailability',data.proposalWording.availability!==false);
-    setChecked('wordBuggyAvailability',data.proposalWording.buggyAvailability);
-    setChecked('wordLicenseNote',data.proposalWording.licenseNote);
-    setValue('wordCustomNotes',data.proposalWording.customNotes||'');
     setValue('wordFooter',data.proposalWording.footer||'All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com');
-    ['wordIntro','wordCustomNotes','wordFooter'].forEach(id=>autoGrow(document.getElementById(id)));
+    ['wordIntro','wordFooter'].forEach(id=>autoGrow(document.getElementById(id)));
   }
   setValue('quoteStatus',data.quoteStatus||data.status||'Draft');
   setValue('nextAction',data.nextAction||data.next_action||'');
@@ -1748,12 +1835,11 @@ function renderProposal(){
   const inclusionsHtml=includeItems.length
     ?`<div style="margin:0 0 9px;padding:10px 14px;border:1px solid #E0D8CB;background:#fff;font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;line-height:1.4;"><strong style="display:block;color:#2D4A3E;margin-bottom:5px;">Includes</strong><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;">${includeItems.map(item=>`<div style="display:flex;gap:6px;align-items:flex-start;"><span style="color:#B8973C;font-weight:700;">✓</span><span>${escapeHtml(item)}</span></div>`).join('')}</div></div>`
     :'';
-  const conditionItems=[];
-  if(wording.validity&&expiryDays>0) conditionItems.push(`This proposal is valid for ${expiryDays} day${expiryDays>1?'s':''}.`);
-  if(wording.availability) conditionItems.push('Tee times remain subject to availability until confirmed by the golf courses.');
-  if(wording.buggyAvailability&&rounds.some(r=>r.buggyQty>0)) conditionItems.push('Buggies remain subject to course availability.');
-  if(wording.licenseNote&&rounds.some(r=>r.licence)) conditionItems.push('Golf license fees may be required at selected courses.');
-  ((wording.customNotes||'').split(/\n+/).map(x=>x.trim()).filter(Boolean)).forEach(x=>conditionItems.push(x));
+  const conditionItems=(wording.conditionBlocks||[])
+    .filter(x=>x.active&&x.text.trim())
+    .filter(x=>x.id!=='buggyAvailability'||rounds.some(r=>r.buggyQty>0))
+    .filter(x=>x.id!=='licenseNote'||rounds.some(r=>r.licence))
+    .map(x=>x.text.trim());
   const conditionsHtml=conditionItems.length
     ?`<div style="margin:0 0 9px;padding:9px 14px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;line-height:1.45;">${conditionItems.map(x=>escapeHtml(x)).join('<br>')}</div>`:'';
   const acceptedHtml=(quoteStatus==='Accepted'||quoteStatus==='Booked')
@@ -1842,6 +1928,7 @@ function renderProposal(){
     </div>`;
   fitProposalPreview();
   renderIncludeOrderEditor();
+  renderConditionBlockEditor(wording.conditionBlocks||[]);
   requestAnimationFrame(fitProposalPreview);
   el.querySelectorAll('img').forEach(img=>{
     if(!img.complete) img.addEventListener('load',fitProposalPreview,{once:true});
