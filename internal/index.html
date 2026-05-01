@@ -230,6 +230,15 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
   <div id="pQuote" class="panel active">
     <h2>Quote Builder</h2>
 
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.7rem;">
+      <select id="clientProfileSelect" onchange="loadClientProfile(this.value);this.value=''" style="max-width:220px;padding:.35rem .6rem;font-size:.82rem;background:#111;border:1px solid #333;color:var(--cream);border-radius:4px;">
+        <option value="">Load client profile...</option>
+      </select>
+      <button class="btn btn-pine btn-sm" onclick="saveClientProfile()">Save profile</button>
+      <button class="btn btn-red btn-sm" onclick="deleteClientProfile()">Delete profile</button>
+      <span class="help" style="margin:0;" id="profileStatus"></span>
+    </div>
+
     <div class="grid4" style="margin-bottom:1rem;">
       <div>
         <label>Client name</label>
@@ -280,7 +289,17 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
       </div>
     </div>
     <div style="margin-bottom:.8rem;">
-      <label>Message on proposal (optional)</label>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem;flex-wrap:wrap;">
+        <label style="margin:0;flex:1;min-width:160px;">Message on proposal (optional)</label>
+        <select id="noteTemplateSelect" onchange="applyNoteTemplate(this.value);this.value=''" style="max-width:240px;padding:.3rem .6rem;font-size:.8rem;background:#111;border:1px solid #333;color:var(--cream);border-radius:4px;">
+          <option value="">Insert template...</option>
+          <option value="welcome">Welcome — looking forward to hosting</option>
+          <option value="group">Group trip — personalised experience</option>
+          <option value="corporate">Corporate — premium day out</option>
+          <option value="honeymoon">Honeymoon / special occasion</option>
+          <option value="return">Return client — welcome back</option>
+        </select>
+      </div>
       <textarea id="proposalNotes" maxlength="1000" placeholder="e.g. Looking forward to hosting your group in Mallorca. Tee times will be confirmed once accepted." oninput="syncProposalNotesFromBuilder();saveState();renderProposal();document.getElementById('proposalNotesCount').textContent=1000-this.value.length+' chars left'" style="height:150px;min-height:150px;max-height:150px;resize:none;overflow-y:auto;"></textarea>
       <div id="proposalNotesCount" style="font-size:.75rem;color:#888;text-align:right;margin-top:2px;">1000 chars left</div>
     </div>
@@ -340,6 +359,7 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     <div style="margin-top:.8rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
       <button class="btn btn-pine btn-sm" onclick="addRow()">+ Blank round</button>
       <button class="btn btn-pine btn-sm" onclick="syncPlayers()" title="Apply the player count above to every round in the list">Set all rounds to <strong id="syncNum">2</strong> players</button>
+      <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;color:#aaa;white-space:nowrap;">Arrival date <input type="date" id="arrivalDate" style="max-width:150px;padding:.3rem .5rem;font-size:.82rem;" onchange="fillConsecutiveDates()"></label>
       <button class="btn btn-red btn-sm" onclick="clearRounds()">Clear all</button>
       <span style="margin-left:auto;display:flex;gap:.5rem;">
         <button class="btn btn-gold btn-sm" onclick="openTab('proposal')">Preview proposal</button>
@@ -504,7 +524,17 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
       </div>
     </details>
     <div style="margin-bottom:.8rem;">
-      <label>Message on proposal (editable here)</label>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem;flex-wrap:wrap;">
+        <label style="margin:0;flex:1;min-width:160px;">Message on proposal (editable here)</label>
+        <select onchange="applyNoteTemplate(this.value);this.value=''" style="max-width:240px;padding:.3rem .6rem;font-size:.8rem;background:#111;border:1px solid #333;color:var(--cream);border-radius:4px;">
+          <option value="">Insert template...</option>
+          <option value="welcome">Welcome — looking forward to hosting</option>
+          <option value="group">Group trip — personalised experience</option>
+          <option value="corporate">Corporate — premium day out</option>
+          <option value="honeymoon">Honeymoon / special occasion</option>
+          <option value="return">Return client — welcome back</option>
+        </select>
+      </div>
       <textarea id="proposalNotesProposal" maxlength="1000" placeholder="Client-facing note shown on the proposal" oninput="syncProposalNotesFromProposal();saveState();renderProposal();document.getElementById('proposalNotesProposalCount').textContent=1000-this.value.length+' chars left'" style="height:150px;min-height:150px;max-height:150px;resize:none;overflow-y:auto;"></textarea>
       <div id="proposalNotesProposalCount" style="font-size:.75rem;color:#888;text-align:right;margin-top:2px;">1000 chars left</div>
     </div>
@@ -794,6 +824,7 @@ function init(){
   autoGrow(document.getElementById('parseInput'));
   ['incCustom','wordIntro','wordFooter'].forEach(id=>autoGrow(document.getElementById(id)));
   textImportArmed=!!((document.getElementById('parseInput')||{}).value&&rounds.length);
+  renderProfileSelect();
   // set nav logo src from lock logo
   const lockImg = document.querySelector('#lock img');
   if(lockImg) document.getElementById('navLogo').src = lockImg.src;
@@ -2809,13 +2840,22 @@ function duplicateSavedQuote(idx){
   var list=getSavedQuotes();
   var data=list[idx]; if(!data) return;
   var copy=JSON.parse(JSON.stringify(data));
-  copy.name=(copy.name||'Quote')+' copy';
+  var newClient=prompt('New client name for this copy:',copy.clientName||'');
+  if(newClient===null) return;
+  copy.clientName=newClient||copy.clientName;
+  copy.name=(newClient||copy.clientName||'Quote')+' — '+new Date().toLocaleDateString('en-GB');
   copy.savedAt=new Date().toISOString();
   copy.supabaseId='';
   copy.quoteStatus='Draft';
-  copy.nextAction='Review copied quote';
+  copy.nextAction='';
+  copy.followUpDate='';
+  copy.rounds=(copy.rounds||[]).map(function(r){return Object.assign({},r,{date:'',time:''}); });
   list.unshift(copy);
   localStorage.setItem('mmg_saved_quotes',JSON.stringify(list));
+  if(confirm('Duplicate created. Load it into the builder now?')){
+    applyQuoteData(copy);
+    document.getElementById('savedQuotesPanel').style.display='none';
+  }
   renderSavedQuotesList(); renderDashboard();
 }
 function loadSavedQuote(idx){
@@ -2840,6 +2880,104 @@ async function deleteSavedQuote(idx){
     }
   }
   renderSavedQuotesList(); renderDashboard();
+}
+
+// ---- NOTE TEMPLATES ----
+const NOTE_TEMPLATES={
+  welcome:'Looking forward to welcoming you to Mallorca. I have put together a selection of courses that I think you will enjoy — please feel free to get in touch if you would like to adjust anything.',
+  group:'It is a pleasure to be arranging this trip for your group. Each round has been chosen with your schedule in mind. I will handle all the tee-time bookings once you are happy to go ahead.',
+  corporate:'Thank you for choosing Mr Mallorca Golf for your company day. I will ensure everything runs smoothly from the first tee to the 19th hole — please let me know if you have any specific requirements.',
+  honeymoon:'Congratulations on your upcoming wedding. I would love to make your time in Mallorca extra special — if there are any surprises or personal touches you would like added to the day, just say the word.',
+  return:'It is great to be working with you again. I have put together a fresh selection for this trip — I hope you enjoy some new courses alongside a few favourites.',
+};
+function applyNoteTemplate(key){
+  if(!key) return;
+  const el=document.getElementById('proposalNotes');
+  const el2=document.getElementById('proposalNotesProposal');
+  const text=NOTE_TEMPLATES[key]||'';
+  if(el) el.value=text;
+  if(el2) el2.value=text;
+  const cnt=document.getElementById('proposalNotesCount');
+  const cnt2=document.getElementById('proposalNotesProposalCount');
+  if(cnt) cnt.textContent=(1000-text.length)+' chars left';
+  if(cnt2) cnt2.textContent=(1000-text.length)+' chars left';
+  saveState(); renderProposal();
+}
+
+// ---- CLIENT PROFILES ----
+function getClientProfiles(){
+  try{return JSON.parse(localStorage.getItem('mmg_client_profiles')||'[]');}catch(e){return [];}
+}
+function renderProfileSelect(){
+  const sel=document.getElementById('clientProfileSelect');
+  if(!sel) return;
+  const profiles=getClientProfiles();
+  sel.innerHTML='<option value="">Load client profile...</option>'
+    +profiles.map(function(p,i){return '<option value="'+i+'">'+escapeHtml(p.name)+'</option>';}).join('');
+}
+function saveClientProfile(){
+  const name=document.getElementById('clientName').value.trim();
+  if(!name){alert('Enter a client name first.');return;}
+  const profiles=getClientProfiles();
+  const existing=profiles.findIndex(function(p){return p.name.toLowerCase()===name.toLowerCase();});
+  const profile={
+    name:name,
+    email:document.getElementById('clientEmail').value,
+    phone:document.getElementById('clientPhone').value,
+    nationality:document.getElementById('clientNationality').value,
+    numPlayers:document.getElementById('numPlayers').value,
+  };
+  if(existing>=0){
+    if(!confirm('Update existing profile for "'+name+'"?')) return;
+    profiles[existing]=profile;
+  } else {
+    profiles.unshift(profile);
+    if(profiles.length>30) profiles.length=30;
+  }
+  localStorage.setItem('mmg_client_profiles',JSON.stringify(profiles));
+  renderProfileSelect();
+  const s=document.getElementById('profileStatus');
+  if(s){s.textContent='Profile saved.';setTimeout(function(){s.textContent='';},2500);}
+}
+function loadClientProfile(idx){
+  if(idx==='') return;
+  const profiles=getClientProfiles();
+  const p=profiles[parseInt(idx)];
+  if(!p) return;
+  document.getElementById('clientName').value=p.name||'';
+  document.getElementById('clientEmail').value=p.email||'';
+  document.getElementById('clientPhone').value=p.phone||'';
+  document.getElementById('clientNationality').value=p.nationality||'';
+  if(p.numPlayers) document.getElementById('numPlayers').value=p.numPlayers;
+  updateSyncNum(); saveState(); renderProposal(); renderMissingInfo();
+  const s=document.getElementById('profileStatus');
+  if(s){s.textContent='Profile loaded.';setTimeout(function(){s.textContent='';},2500);}
+}
+function deleteClientProfile(){
+  const sel=document.getElementById('clientProfileSelect');
+  if(!sel||sel.value===''){alert('Select a profile to delete.');return;}
+  const profiles=getClientProfiles();
+  const p=profiles[parseInt(sel.value)];
+  if(!p||!confirm('Delete profile for "'+p.name+'"?')) return;
+  profiles.splice(parseInt(sel.value),1);
+  localStorage.setItem('mmg_client_profiles',JSON.stringify(profiles));
+  renderProfileSelect();
+  const s=document.getElementById('profileStatus');
+  if(s){s.textContent='Profile deleted.';setTimeout(function(){s.textContent='';},2500);}
+}
+
+// ---- ARRIVAL DATE -> CONSECUTIVE DATES ----
+function fillConsecutiveDates(){
+  const arrival=document.getElementById('arrivalDate').value;
+  if(!arrival) return;
+  if(!rounds.length){alert('No rounds in the list yet.');return;}
+  const base=new Date(arrival+'T12:00:00');
+  rounds.forEach(function(r,i){
+    const d=new Date(base);
+    d.setDate(base.getDate()+i);
+    r.date=d.toISOString().slice(0,10);
+  });
+  saveState(); renderTable(); renderMargin(); renderProposal();
 }
 
 // ---- BOOT ----
