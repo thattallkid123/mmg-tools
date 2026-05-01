@@ -1782,7 +1782,7 @@ function renderProposal(){
     const dateStr=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'Date TBC';
 
     const photoHtml=showPhotos&&img
-      ?`<div style="width:${orientation==='landscape'?200:220}px;min-width:${orientation==='landscape'?200:220}px;align-self:stretch;overflow:hidden;flex-shrink:0;background:#F7F4EF;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:${orientation==='landscape'?105:118}px;"></div>`
+      ?`<div style="width:${orientation==='landscape'?190:200}px;min-width:${orientation==='landscape'?190:200}px;align-self:stretch;overflow:hidden;flex-shrink:0;background:#F7F4EF;"><img src="${img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;min-height:${orientation==='landscape'?98:108}px;"></div>`
       :'';
 
     const gcBadge=gcValid.ok
@@ -1802,18 +1802,18 @@ function renderProposal(){
       const extrasLabel=[];
       if(r.buggyQty>0) extrasLabel.push(r.buggyQty+(r.buggyQty===1?' buggy':' buggies'));
       if(r.clubsQty>0) extrasLabel.push(r.clubsQty+' club hire');
-      detailHtml=`<div style="font-size:9.5pt;color:#5A5550;margin-top:6px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.07em;text-transform:uppercase;">${players} player${players>1?'s':''}${extrasLabel.length?' · '+extrasLabel.join(' · '):''}</div>`;
+      detailHtml=`<div style="font-size:9pt;color:#5A5550;margin-top:4px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.07em;text-transform:uppercase;">${players} player${players>1?'s':''}${extrasLabel.length?' · '+extrasLabel.join(' · '):''}</div>`;
     }
 
     roundCards.push(`
-      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:5px;border:1px solid #E0D8CB;border-left:4px solid #B8973C;break-inside:avoid;page-break-inside:avoid;background:#fff;">
+      <div style="display:flex;gap:0;align-items:stretch;margin-bottom:4px;border:1px solid #E0D8CB;border-left:4px solid #B8973C;break-inside:avoid;page-break-inside:avoid;background:#fff;">
         ${photoHtml}
-        <div style="flex:1;min-width:0;padding:${orientation==='landscape'?'9px 16px':'10px 18px'};display:flex;flex-direction:column;justify-content:center;">
-          <div style="font-family:'Jost',sans-serif;font-size:8.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:4px;">Round ${i+1}</div>
-          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
-            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'20pt':'22pt'};font-weight:600;color:#2D4A3E;line-height:1.05;">${c.name}</span>${gcBadge}
+        <div style="flex:1;min-width:0;padding:${orientation==='landscape'?'7px 14px':'8px 16px'};display:flex;flex-direction:column;justify-content:center;">
+          <div style="font-family:'Jost',sans-serif;font-size:8pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;margin-bottom:3px;">Round ${i+1}</div>
+          <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:2px;">
+            <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:${orientation==='landscape'?'19pt':'21pt'};font-weight:600;color:#2D4A3E;line-height:1.05;">${c.name}</span>${gcBadge}
           </div>
-          <div style="font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;margin-bottom:3px;">${dateStr}${r.time?' · '+r.time:''}</div>
+          <div style="font-size:10pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;margin-bottom:2px;">${dateStr}${r.time?' · '+r.time:''}</div>
           ${detailHtml}
         </div>
       </div>`);
@@ -1840,7 +1840,7 @@ function renderProposal(){
     totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>${escapeHtml(wording.totalLabel)}</span><span>€${grandTotal}</span></div>`;
   }
 
-  const NOTE_BOX_H=orientation==='landscape'?160:239;
+  const NOTE_BOX_H=orientation==='landscape'?170:306;
   const notesHtml=notes
     ?`<div style="margin:0 0 8px;padding:8px 14px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:10pt;line-height:1.35;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;height:${NOTE_BOX_H}px;box-sizing:border-box;overflow:hidden;">${notes.replace(/\n/g,'<br>')}</div>`:'';
   const introHtml=wording.intro
@@ -1891,24 +1891,24 @@ function renderProposal(){
     </div>`;
   const summaryHtml=`
     ${inclusionsHtml}
-    <div style="margin-top:9px;padding:12px 16px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
-    <div style="font-size:8pt;line-height:1.35;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:8px;margin-top:12px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-align:center;">${footerText}</div>`;
+    <div style="margin-top:6px;padding:8px 14px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
+    <div style="font-size:7.5pt;line-height:1.3;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:6px;margin-top:8px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-align:center;">${footerText}</div>`;
   const pageHtml=(body)=>`<div class="proposal-page" style="${pageStyle}">${headerHtml}${body}</div>`;
-  const continuationHeading=`<div style="padding:18px 0 10px;font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Golf itinerary continued</div>`;
-  const summaryHeading=`<div style="padding:18px 0 10px;font-family:'Jost',sans-serif;font-size:9.5pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Proposal summary</div>`;
+  const continuationHeading=`<div style="padding:12px 0 8px;font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Golf itinerary continued</div>`;
+  const summaryHeading=`<div style="padding:12px 0 8px;font-family:'Jost',sans-serif;font-size:9pt;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#B8973C;">Proposal summary</div>`;
   const maxContentHeight=paperHeight-92;
   const headerHeight=118;
-  const headingHeight=48;
-  const roundHeight=(orientation==='landscape'?125:145)+(fmt==='itemised'?35:0);
+  const headingHeight=40;
+  const roundHeight=(orientation==='landscape'?115:120)+(fmt==='itemised'?32:0);
   const lineEstimate=(text,charsPerLine)=>Math.max(1,Math.ceil(String(text||'').length/charsPerLine));
   const firstIntroHeight=titleHtml?115:0;
   const acceptedHeight=acceptedHtml?46:0;
   const introHeight=wording.intro?Math.max(26,lineEstimate(wording.intro,orientation==='landscape'?140:100)*18+16):0;
-  const noteHeight=notes?(orientation==='landscape'?160:239)+8:0;
+  const noteHeight=notes?(orientation==='landscape'?170:306)+8:0;
   const conditionsHeight=conditionItems.length?Math.max(42,conditionItems.length*20+20):0;
-  const includesHeight=includeItems.length?Math.max(70,Math.ceil(includeItems.length/2)*24+42):0;
-  const totalsHeight=fmt==='itemised'||(includeFee&&feeMode==='separate')?150:118;
-  const summaryHeight=headingHeight+includesHeight+totalsHeight+50;
+  const includesHeight=includeItems.length?Math.max(60,Math.ceil(includeItems.length/2)*22+36):0;
+  const totalsHeight=fmt==='itemised'||(includeFee&&feeMode==='separate')?130:100;
+  const summaryHeight=headingHeight+includesHeight+totalsHeight+34;
   const pages=[];
   let current={
     chunks:[titleHtml,acceptedHtml,introHtml,notesHtml,conditionsHtml],
@@ -1922,31 +1922,31 @@ function renderProposal(){
     pages.push(current);
   };
   pages.push(current);
-  const remainingCards=[...roundCards];
-  while(remainingCards.length){
-    const card=remainingCards[0];
-    const isLast=remainingCards.length===1;
-    const spaceAfterCard=maxContentHeight-(current.used+roundHeight);
-    const summaryFitsAfter=spaceAfterCard>=summaryHeight;
-    const summaryFitsIfSkip=maxContentHeight-(current.used)>=summaryHeight;
-    // If this card doesn't fit at all, start a new page
-    if(current.used+roundHeight>maxContentHeight){
-      startPage(true);
+  // PAGE 1: max 3 rounds (fixed note block already placed)
+  const MAX_P1=3;
+  let p1count=0;
+  const overflow=[];
+  roundCards.forEach(card=>{
+    if(p1count<MAX_P1&&current.used+roundHeight<=maxContentHeight){
+      current.chunks.push(card);
+      current.used+=roundHeight;
+      p1count++;
+    } else {
+      overflow.push(card);
     }
-    // If this is the last card and summary won't fit after it,
-    // but summary WOULD fit on a fresh page with just 3 rounds — leave room
-    // by starting a new page now if current page already has enough rounds
-    else if(isLast&&!summaryFitsAfter&&current.chunks.filter(Boolean).length>1){
-      // Check if stopping here and doing last card + summary on new page works
-      const spaceOnNewPage=maxContentHeight-(headerHeight+headingHeight+roundHeight);
-      if(spaceOnNewPage>=summaryHeight){
+  });
+  // PAGE 2+: place remaining rounds, try to fit summary on same page
+  if(overflow.length){
+    startPage(true);
+    overflow.forEach(card=>{
+      if(current.used+roundHeight>maxContentHeight){
         startPage(true);
       }
-    }
-    remainingCards.shift();
-    current.chunks.push(card);
-    current.used+=roundHeight;
+      current.chunks.push(card);
+      current.used+=roundHeight;
+    });
   }
+  // Place summary: on current page if it fits, else new page
   if(current.used+summaryHeight<=maxContentHeight){
     current.chunks.push(summaryHeading+summaryHtml);
     current.used+=summaryHeight;
