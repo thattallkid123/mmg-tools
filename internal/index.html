@@ -1840,7 +1840,7 @@ function renderProposal(){
     totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>${escapeHtml(wording.totalLabel)}</span><span>€${grandTotal}</span></div>`;
   }
 
-  const NOTE_BOX_H=orientation==='landscape'?170:306;
+  const NOTE_BOX_H=orientation==='landscape'?155:200;
   const notesHtml=notes
     ?`<div style="margin:0 0 8px;padding:8px 14px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:10pt;line-height:1.35;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;height:${NOTE_BOX_H}px;box-sizing:border-box;overflow:hidden;">${notes.replace(/\n/g,'<br>')}</div>`:'';
   const introHtml=wording.intro
@@ -1899,16 +1899,16 @@ function renderProposal(){
   const maxContentHeight=paperHeight-92;
   const headerHeight=118;
   const headingHeight=40;
-  const roundHeight=(orientation==='landscape'?115:120)+(fmt==='itemised'?32:0);
+  const roundHeight=(orientation==='landscape'?110:115)+(fmt==='itemised'?32:0);
   const lineEstimate=(text,charsPerLine)=>Math.max(1,Math.ceil(String(text||'').length/charsPerLine));
   const firstIntroHeight=titleHtml?115:0;
   const acceptedHeight=acceptedHtml?46:0;
   const introHeight=wording.intro?Math.max(26,lineEstimate(wording.intro,orientation==='landscape'?140:100)*18+16):0;
-  const noteHeight=notes?(orientation==='landscape'?170:306)+8:0;
+  const noteHeight=notes?(orientation==='landscape'?155:200)+8:0;
   const conditionsHeight=conditionItems.length?Math.max(42,conditionItems.length*20+20):0;
   const includesHeight=includeItems.length?Math.max(60,Math.ceil(includeItems.length/2)*22+36):0;
-  const totalsHeight=fmt==='itemised'||(includeFee&&feeMode==='separate')?130:100;
-  const summaryHeight=headingHeight+includesHeight+totalsHeight+34;
+  const totalsHeight=fmt==='itemised'||(includeFee&&feeMode==='separate')?125:95;
+  const summaryHeight=headingHeight+includesHeight+totalsHeight+30;
   const pages=[];
   let current={
     chunks:[titleHtml,acceptedHtml,introHtml,notesHtml,conditionsHtml],
@@ -1946,8 +1946,9 @@ function renderProposal(){
       current.used+=roundHeight;
     });
   }
-  // Place summary: on current page if it fits, else new page
-  if(current.used+summaryHeight<=maxContentHeight){
+  // Summary always starts on page 2+ — never on page 1 alone
+  const isOnPage1=pages.length===1&&current===pages[0];
+  if(!isOnPage1&&current.used+summaryHeight<=maxContentHeight){
     current.chunks.push(summaryHeading+summaryHtml);
     current.used+=summaryHeight;
   } else {
