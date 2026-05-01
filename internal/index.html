@@ -281,7 +281,8 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     </div>
     <div style="margin-bottom:.8rem;">
       <label>Message on proposal (optional)</label>
-      <textarea id="proposalNotes" rows="3" placeholder="e.g. Looking forward to hosting your group in Mallorca. Tee times will be confirmed once accepted." oninput="syncProposalNotesFromBuilder();saveState();renderProposal()" style="min-height:70px;"></textarea>
+      <textarea id="proposalNotes" rows="3" maxlength="1000" placeholder="e.g. Looking forward to hosting your group in Mallorca. Tee times will be confirmed once accepted." oninput="syncProposalNotesFromBuilder();saveState();renderProposal();document.getElementById('proposalNotesCount').textContent=1000-this.value.length+' chars left'" style="min-height:70px;"></textarea>
+      <div id="proposalNotesCount" style="font-size:.75rem;color:#888;text-align:right;margin-top:2px;">1000 chars left</div>
     </div>
     <div class="grid2" style="margin-bottom:.8rem;">
       <div>
@@ -504,7 +505,8 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     </details>
     <div style="margin-bottom:.8rem;">
       <label>Message on proposal (editable here)</label>
-      <textarea id="proposalNotesProposal" rows="4" placeholder="Client-facing note shown on the proposal" oninput="syncProposalNotesFromProposal();autoGrow(this);saveState();renderProposal()" style="min-height:86px;"></textarea>
+      <textarea id="proposalNotesProposal" rows="4" maxlength="1000" placeholder="Client-facing note shown on the proposal" oninput="syncProposalNotesFromProposal();autoGrow(this);saveState();renderProposal();document.getElementById('proposalNotesProposalCount').textContent=1000-this.value.length+' chars left'" style="min-height:86px;"></textarea>
+      <div id="proposalNotesProposalCount" style="font-size:.75rem;color:#888;text-align:right;margin-top:2px;">1000 chars left</div>
     </div>
     <div id="proposalMissingInfo" class="card" style="display:none;margin-bottom:.8rem;"></div>
     <div id="proposalOut" style="background:#fff;border-radius:6px;padding:0;overflow:hidden;"></div>
@@ -810,15 +812,25 @@ function autoGrow(el){
   el.style.height='auto';
   el.style.height=Math.max(90,el.scrollHeight)+'px';
 }
+function refreshNotesCounters(){
+  const n=document.getElementById('proposalNotes');
+  const c1=document.getElementById('proposalNotesCount');
+  const c2=document.getElementById('proposalNotesProposalCount');
+  const len=n?n.value.length:0;
+  if(c1) c1.textContent=(1000-len)+' chars left';
+  if(c2) c2.textContent=(1000-len)+' chars left';
+}
 function syncProposalNotesFromProposal(){
   const src=document.getElementById('proposalNotesProposal');
   const dest=document.getElementById('proposalNotes');
   if(src&&dest) dest.value=src.value;
+  refreshNotesCounters();
 }
 function syncProposalNotesFromBuilder(){
   const src=document.getElementById('proposalNotes');
   const dest=document.getElementById('proposalNotesProposal');
   if(src&&dest) dest.value=src.value;
+  refreshNotesCounters();
 }
 function openDatePicker(el){
   if(el&&typeof el.showPicker==='function'){
@@ -1207,6 +1219,7 @@ function applyQuoteData(data){
   setValue('proposalNotes',data.proposalNotes);
   setValue('proposalNotesProposal',data.proposalNotes);
   autoGrow(document.getElementById('proposalNotesProposal'));
+  refreshNotesCounters();
   if(data.propFormat) setValue('propFormat',data.propFormat);
   setValue('propIncludeFee',normaliseFeeMode(data.propIncludeFee));
   setValue('managementFee',data.managementFee!=null?data.managementFee:'0');
@@ -1827,8 +1840,9 @@ function renderProposal(){
     totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>${escapeHtml(wording.totalLabel)}</span><span>€${grandTotal}</span></div>`;
   }
 
+  const NOTE_BOX_H=orientation==='landscape'?160:239;
   const notesHtml=notes
-    ?`<div style="margin:0 0 8px;padding:8px 14px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:10pt;line-height:1.35;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;">${notes.replace(/\n/g,'<br>')}</div>`:'';
+    ?`<div style="margin:0 0 8px;padding:8px 14px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:10pt;line-height:1.35;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;height:${NOTE_BOX_H}px;box-sizing:border-box;overflow:hidden;">${notes.replace(/\n/g,'<br>')}</div>`:'';
   const introHtml=wording.intro
     ?`<div style="margin:0 0 8px;font-size:10pt;line-height:1.35;color:#5A5550;font-family:'Jost',sans-serif;">${escapeHtml(wording.intro).replace(/\n/g,'<br>')}</div>`:'';
   const includeItems=getProposalIncludeItems();
@@ -1890,7 +1904,7 @@ function renderProposal(){
   const firstIntroHeight=titleHtml?115:0;
   const acceptedHeight=acceptedHtml?46:0;
   const introHeight=wording.intro?Math.max(26,lineEstimate(wording.intro,orientation==='landscape'?140:100)*18+16):0;
-  const noteHeight=notes?Math.max(40,lineEstimate(notes,orientation==='landscape'?125:90)*18+16):0;
+  const noteHeight=notes?(orientation==='landscape'?160:239)+8:0;
   const conditionsHeight=conditionItems.length?Math.max(42,conditionItems.length*20+20):0;
   const includesHeight=includeItems.length?Math.max(70,Math.ceil(includeItems.length/2)*24+42):0;
   const totalsHeight=fmt==='itemised'||(includeFee&&feeMode==='separate')?150:118;
