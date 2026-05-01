@@ -193,13 +193,6 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     </nav>
   </header>
 
-  <div id="savedQuotesPanel" style="display:none;max-width:1680px;margin:.9rem auto 0;padding:.7rem .9rem;background:#f5f2ec;color:#1A1916;border-radius:4px;border:1px solid #ddd7cc;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
-      <strong style="font-size:.9rem;">Saved quotes & proposals</strong>
-      <button class="btn btn-red btn-sm" onclick="toggleSavedQuotes()">&#10005;</button>
-    </div>
-    <div id="savedQuotesList" style="font-size:.82rem;"></div>
-  </div>
 
   <!-- DASHBOARD -->
   <div id="pDashboard" class="panel">
@@ -211,7 +204,8 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
         <option value="">All statuses</option>
         <option>Draft</option>
         <option>Sent</option>
-        <option>Accepted</option>
+        <option>Deposit received</option>
+        <option>Confirmed</option>
         <option>Booked</option>
         <option>Lost</option>
         <option>Archived</option>
@@ -362,7 +356,7 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
       <span style="margin-left:auto;display:flex;gap:.5rem;">
         <button class="btn btn-gold btn-sm" onclick="openTab('proposal')">Preview proposal</button>
         <button class="btn btn-gold btn-sm" onclick="saveQuoteToList()">Save in app</button>
-        <button class="btn btn-pine btn-sm" onclick="toggleSavedQuotes()">Load saved</button>
+        <button class="btn btn-pine btn-sm" onclick="openTab('dashboard')">Saved quotes</button>
       </span>
     </div>
   </div>
@@ -539,7 +533,7 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     <div id="courseDrafts" class="card" style="margin-top:.8rem;"></div>
     <div class="copy-bar" style="margin-top:.8rem;">
       <button class="btn btn-gold btn-sm" onclick="saveQuoteToList()">Save proposal</button>
-      <button class="btn btn-pine btn-sm" onclick="toggleSavedQuotes()">Load saved</button>
+
       <button class="btn btn-gold btn-sm" onclick="copyClientEmail()">Client email draft</button>
       <button class="btn btn-pine btn-sm" onclick="copyAllCourseEmails()">Copy course requests</button>
       <button class="btn btn-pine btn-sm" onclick="printProposal()">Save PDF (A4)</button>
@@ -626,28 +620,28 @@ const COURSE_LIST = [
 const COURSE_CONTACTS = {
   son_gual:      {email:'info@son-gual.com', phone:'+34 971 785 888', discountPct:10, pricingNotes:'TO rate confirmed: 10% off tee times only.', contactNotes:'Vivien / Maja'},
   alcanada:      {email:'info@golf-alcanada.com', phone:'+34 971 549 560', contactNotes:'Jenny. Pro rate €12 green fee + €3 golf insurance (€15 total). Book via Jenny. Supplement of 50% of official green fee per unused slot to guarantee exclusivity.'},
-  santa_ponsa:   {email:'golf1@golf-santaponsa.com', phone:'', contactNotes:'Currently member here'},
-  santa_ponsa2:  {email:'golf1@golf-santaponsa.com', phone:'', contactNotes:'Currently member here'},
-  santa_ponsa3:  {email:'golf1@golf-santaponsa.com', phone:'', contactNotes:'Currently member here'},
+  santa_ponsa:   {email:'golf1@golf-santaponsa.com', phone:'+34 971 690 211', contactNotes:'Currently member here'},
+  santa_ponsa2:  {email:'golf1@golf-santaponsa.com', phone:'+34 971 695 703', contactNotes:'Currently member here'},
+  santa_ponsa3:  {email:'golf1@golf-santaponsa.com', phone:'+34 971 695 703', contactNotes:'Currently member here'},
   bendinat:      {email:'info@realgolfbendinat.com', phone:'+34 971 405 200', contactNotes:'Elena Ramos. 1 free courtesy round per month. Email Elena with preferred date/time.'},
-  son_termes:    {email:'reservas@golfsontermes.com', phone:'', contactNotes:'Carlos Sastre. Free tee times to PGA accredited players.'},
-  pollenca:      {email:'rec@golfpollensa.com', phone:'', contactNotes:'Free courtesy round - email to reserve, bring PGA card on the day.'},
-  vall_dor:      {email:'valldorgolf@valldorgolf.com', phone:'', contactNotes:'Free twice per year.'},
+  son_termes:    {email:'reservas@golfsontermes.com', phone:'+34 971 617 862', contactNotes:'Carlos Sastre. Free tee times to PGA accredited players.'},
+  pollenca:      {email:'rec@golfpollensa.com', phone:'+34 683 248 469', contactNotes:'Free courtesy round - email to reserve, bring PGA card on the day.'},
+  vall_dor:      {email:'valldorgolf@valldorgolf.com', phone:'+34 971 837 001', contactNotes:'Free twice per year.'},
   maioris:       {email:'recepcion@golfmaioris.es', phone:'+34 971 748 315', contactNotes:'€49.50 (half price) for a green fee.'},
   son_servera:   {email:'reservas@golfsonservera.com', phone:'+34 971 840 096', costMode:'partner18', pricingNotes:'2026 partner voucher 18H net rates: Low €65, Mid €80, High €105. Group discount on net: 11-20 players 5%, 21+ 10%. Buggy €49, club rental €39.', contactNotes:'Felipe Nicholson / reservations. Contract valid 01 Jan-31 Dec 2026. Pro: low season invited; mid/high 50% rack; free with 9+ players.'},
-  capdepera:     {email:'info@golfcapdepera.com', phone:'', costMode:'rack', pricingNotes:'No TO/pro discount confirmed; use public/dynamic rack rates unless agreed otherwise. No buggy or club packages.', contactNotes:'Mattias. No TO prices for Pros. Can discuss client rates if coming regularly.'},
-  canyamel:      {email:'casaclub@canyamelgolf.com', phone:'', contactNotes:'Tomasi. 1 free round per year. No tee times 9am-1pm during peak season.'},
-  andratx:       {email:'info@golfdeandratx.com', phone:'', contactNotes:'Frank Schossig. Free round upon availability - email Frank with requested date.'},
+  capdepera:     {email:'info@golfcapdepera.com', phone:'+34 971 818 500', costMode:'rack', pricingNotes:'No TO/pro discount confirmed; use public/dynamic rack rates unless agreed otherwise. No buggy or club packages.', contactNotes:'Mattias. No TO prices for Pros. Can discuss client rates if coming regularly.'},
+  canyamel:      {email:'casaclub@canyamelgolf.com', phone:'+34 971 841 313', contactNotes:'Tomasi. 1 free round per year. No tee times 9am-1pm during peak season.'},
+  andratx:       {email:'info@golfdeandratx.com', phone:'+34 971 236 280', contactNotes:'Frank Schossig. Free round upon availability - email Frank with requested date.'},
   son_muntaner:  {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 783 030', contactNotes:'Inés Sanchez. Up to 6 free rounds/year across Arabella group. Advance/walk-in = 50% rate. Must book within 24hrs. Check with Arabella group.'},
   son_vida:      {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 791 210', contactNotes:'Inés Sanchez. Up to 6 free rounds/year across Arabella group. Advance/walk-in = 50% rate. Must book within 24hrs. Check with Arabella group.'},
   son_quint:     {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 606 175', contactNotes:'Inés Sanchez. Up to 6 free rounds/year across Arabella group. Advance/walk-in = 50% rate. Must book within 24hrs. Check with Arabella group.'},
-  palma_pp:      {email:'golf.mallorca@arabellagolf.com', phone:'', contactNotes:'Inés Sanchez. Check with Arabella group.'},
-  t_golf_palma:  {email:'palma@t-golf.club', phone:'', costMode:'rack', pricingNotes:'No fixed TO amateur rates; green fees and rentals are dynamic. Pro free with 7 amateurs; otherwise pro industry rate is usually €110. Driving range teaching requires same-day green fee; tokens €100 = 10.', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
-  t_golf_calvia: {email:'calvia@t-golf.club', phone:'', costMode:'rack', pricingNotes:'No fixed TO amateur rates; green fees and rentals are dynamic. Pro free with 7 amateurs; otherwise pro industry rate is usually €110. Driving range teaching requires same-day green fee; tokens €100 = 10.', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
-  pula:          {email:'reservas@pulagolf.com', phone:'', contactNotes:'Followed up 9/4/26'},
-  son_antem_e:   {email:'mallorca.golfclub@vacationclub.com', phone:'', contactNotes:'Sophie Duroisin. 4x free then 50% off.'},
-  son_antem_w:   {email:'mallorca.golfclub@vacationclub.com', phone:'', contactNotes:'Sophie Duroisin. 4x free then 50% off.'},
-  rotana:        {email:'', phone:'', contactNotes:''},
+  palma_pp:      {email:'golf.mallorca@arabellagolf.com', phone:'+34 971 606 175', contactNotes:'Inés Sanchez. Check with Arabella group.'},
+  t_golf_palma:  {email:'palma@t-golf.club', phone:'+34 971 797 330', costMode:'rack', pricingNotes:'No fixed TO amateur rates; green fees and rentals are dynamic. Pro free with 7 amateurs; otherwise pro industry rate is usually €110. Driving range teaching requires same-day green fee; tokens €100 = 10.', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
+  t_golf_calvia: {email:'calvia@t-golf.club', phone:'+34 971 130 148', costMode:'rack', pricingNotes:'No fixed TO amateur rates; green fees and rentals are dynamic. Pro free with 7 amateurs; otherwise pro industry rate is usually €110. Driving range teaching requires same-day green fee; tokens €100 = 10.', contactNotes:'Alejandra Taronji (ataronji@t-golf.club) / Borja Ochoa GM (bochoa@t-golf.club)'},
+  pula:          {email:'reservas@pulagolf.com', phone:'+34 971 817 034', contactNotes:'Followed up 9/4/26'},
+  son_antem_e:   {email:'mallorca.golfclub@vacationclub.com', phone:'+34 971 129 200', contactNotes:'Sophie Duroisin. 4x free then 50% off.'},
+  son_antem_w:   {email:'mallorca.golfclub@vacationclub.com', phone:'+34 971 129 200', contactNotes:'Sophie Duroisin. 4x free then 50% off.'},
+  rotana:        {email:'golf@laReservaRotana.com', phone:'+34 971 845 685', contactNotes:''},
 };
 
 const COURSE_COST_MODES = [
