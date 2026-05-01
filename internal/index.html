@@ -391,6 +391,13 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
           <option value="no">No</option>
         </select>
       </div>
+      <div>
+        <label>PDF layout</label>
+        <select id="propOrientation" onchange="saveState();renderProposal()">
+          <option value="portrait">Portrait A4</option>
+          <option value="landscape">Landscape A4</option>
+        </select>
+      </div>
     </div>
     <div class="grid2" style="margin-bottom:.8rem;display:none;">
       <div>
@@ -422,6 +429,46 @@ td input,td select{padding:.3rem .5rem;font-size:.82rem;}
       <div style="margin-top:.7rem;">
         <label>Extra include lines</label>
         <textarea id="incCustom" rows="2" placeholder="One extra include per line" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:56px;"></textarea>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:.8rem;">
+      <h3 style="margin-top:0;">Proposal wording</h3>
+      <div class="grid3" style="margin-bottom:.7rem;">
+        <div>
+          <label>Total label</label>
+          <input id="wordTotalLabel" value="Total" placeholder="e.g. Golf package total" oninput="saveState();renderProposal()">
+        </div>
+        <div>
+          <label>Golf subtotal label</label>
+          <input id="wordCourseTotalLabel" value="Golf fees & extras" oninput="saveState();renderProposal()">
+        </div>
+        <div>
+          <label>Management label</label>
+          <input id="wordManagementLabel" value="Management fee" oninput="saveState();renderProposal()">
+        </div>
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label>Intro line under title</label>
+        <textarea id="wordIntro" rows="2" placeholder="Optional short intro line for the proposal" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:56px;"></textarea>
+      </div>
+      <div class="grid3" style="gap:.55rem 1rem;margin-bottom:.7rem;">
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowEmail" checked onchange="saveState();renderProposal()"> Show client email</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowPhone" checked onchange="saveState();renderProposal()"> Show client phone</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordShowPrepared" checked onchange="saveState();renderProposal()"> Show prepared date</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordValidity" checked onchange="saveState();renderProposal()"> Validity note</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordAvailability" checked onchange="saveState();renderProposal()"> Tee-time availability note</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordBuggyAvailability" onchange="saveState();renderProposal()"> Buggy availability note</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;"><input type="checkbox" id="wordLicenseNote" onchange="saveState();renderProposal()"> License note</label>
+      </div>
+      <div class="grid2">
+        <div>
+          <label>Extra important notes</label>
+          <textarea id="wordCustomNotes" rows="3" placeholder="One note per line" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:70px;"></textarea>
+        </div>
+        <div>
+          <label>Footer text</label>
+          <textarea id="wordFooter" rows="3" oninput="autoGrow(this);saveState();renderProposal()" style="min-height:70px;">All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com</textarea>
+        </div>
       </div>
     </div>
     <div id="proposalMissingInfo" class="card" style="display:none;margin-bottom:.8rem;"></div>
@@ -705,6 +752,7 @@ function init(){
   syncWorkflowMirrors();
   renderMissingInfo();
   autoGrow(document.getElementById('parseInput'));
+  ['incCustom','wordIntro','wordCustomNotes','wordFooter'].forEach(id=>autoGrow(document.getElementById(id)));
   textImportArmed=!!((document.getElementById('parseInput')||{}).value&&rounds.length);
   // set nav logo src from lock logo
   const lockImg = document.querySelector('#lock img');
@@ -933,6 +981,7 @@ function saveState(){
     propIncludeFee:normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value),
     managementFee:(document.getElementById('managementFee')||{}).value||'0',
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
+    propOrientation:(document.getElementById('propOrientation')||{}).value||'portrait',
     proposalIncludes:{
       greenFees:isChecked('incGreenFees'),
       buggies:isChecked('incBuggies'),
@@ -942,6 +991,7 @@ function saveState(){
       pgaGuidance:isChecked('incPgaGuidance'),
       custom:(document.getElementById('incCustom')||{}).value||''
     },
+    proposalWording:getProposalWording(),
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
     nextAction:(document.getElementById('nextAction')||{}).value||'',
     quoteExpiryDays:parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0,
@@ -962,6 +1012,28 @@ function setChecked(id,val){
 function isChecked(id){
   const el=document.getElementById(id);
   return !!(el&&el.checked);
+}
+function getTextValue(id, fallback){
+  const el=document.getElementById(id);
+  const val=el?el.value:'';
+  return val!==''?val:fallback;
+}
+function getProposalWording(){
+  return {
+    totalLabel:getTextValue('wordTotalLabel','Total'),
+    courseTotalLabel:getTextValue('wordCourseTotalLabel','Golf fees & extras'),
+    managementLabel:getTextValue('wordManagementLabel','Management fee'),
+    intro:(document.getElementById('wordIntro')||{}).value||'',
+    showEmail:isChecked('wordShowEmail'),
+    showPhone:isChecked('wordShowPhone'),
+    showPrepared:isChecked('wordShowPrepared'),
+    validity:isChecked('wordValidity'),
+    availability:isChecked('wordAvailability'),
+    buggyAvailability:isChecked('wordBuggyAvailability'),
+    licenseNote:isChecked('wordLicenseNote'),
+    customNotes:(document.getElementById('wordCustomNotes')||{}).value||'',
+    footer:getTextValue('wordFooter','All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com')
+  };
 }
 function normaliseFeeMode(mode){
   if(mode==='yes') return 'separate';
@@ -1005,6 +1077,7 @@ function applyQuoteData(data){
   setValue('propIncludeFee',normaliseFeeMode(data.propIncludeFee));
   setValue('managementFee',data.managementFee!=null?data.managementFee:'0');
   if(data.propShowPhotos) setValue('propShowPhotos',data.propShowPhotos);
+  if(data.propOrientation) setValue('propOrientation',data.propOrientation);
   if(data.proposalIncludes){
     setChecked('incGreenFees',data.proposalIncludes.greenFees);
     setChecked('incBuggies',data.proposalIncludes.buggies);
@@ -1014,6 +1087,22 @@ function applyQuoteData(data){
     setChecked('incPgaGuidance',data.proposalIncludes.pgaGuidance);
     setValue('incCustom',data.proposalIncludes.custom||'');
     autoGrow(document.getElementById('incCustom'));
+  }
+  if(data.proposalWording){
+    setValue('wordTotalLabel',data.proposalWording.totalLabel||'Total');
+    setValue('wordCourseTotalLabel',data.proposalWording.courseTotalLabel||'Golf fees & extras');
+    setValue('wordManagementLabel',data.proposalWording.managementLabel||'Management fee');
+    setValue('wordIntro',data.proposalWording.intro||'');
+    setChecked('wordShowEmail',data.proposalWording.showEmail!==false);
+    setChecked('wordShowPhone',data.proposalWording.showPhone!==false);
+    setChecked('wordShowPrepared',data.proposalWording.showPrepared!==false);
+    setChecked('wordValidity',data.proposalWording.validity!==false);
+    setChecked('wordAvailability',data.proposalWording.availability!==false);
+    setChecked('wordBuggyAvailability',data.proposalWording.buggyAvailability);
+    setChecked('wordLicenseNote',data.proposalWording.licenseNote);
+    setValue('wordCustomNotes',data.proposalWording.customNotes||'');
+    setValue('wordFooter',data.proposalWording.footer||'All prices in euros · Subject to tee-time availability · Andy Griffiths PGA Advanced Professional · mrmallorcagolf.com');
+    ['wordIntro','wordCustomNotes','wordFooter'].forEach(id=>autoGrow(document.getElementById(id)));
   }
   setValue('quoteStatus',data.quoteStatus||data.status||'Draft');
   setValue('nextAction',data.nextAction||data.next_action||'');
@@ -1455,6 +1544,9 @@ function renderProposal(){
   const feeMode=normaliseFeeMode(document.getElementById('propIncludeFee').value);
   const expiryDays=parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0;
   const quoteStatus=(document.getElementById('quoteStatus')||{}).value||'Draft';
+  const orientation=(document.getElementById('propOrientation')||{}).value||'portrait';
+  const paperWidth=orientation==='landscape'?1120:900;
+  const wording=getProposalWording();
 
   const el=document.getElementById('proposalOut');
   if(!rounds.length){el.innerHTML='<p style="padding:1rem;color:#999;font-family:sans-serif;">No rounds added yet.</p>';return;}
@@ -1521,30 +1613,38 @@ function renderProposal(){
   const includeFee=feeMode!=='no'&&managementFee>0;
   let totalsHtml='';
   if(fmt==='itemised'){
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Green fees &amp; extras</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>${escapeHtml(wording.courseTotalLabel)}</span><span>€${grandTotal}</span></div>`;
     if(includeFee&&feeMode==='separate'){
-      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Management fee</span><span>€${managementFee}</span></div>`;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>${escapeHtml(wording.managementLabel)}</span><span>€${managementFee}</span></div>`;
     }
     if(includeFee) grandTotal+=managementFee;
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>Total</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>${escapeHtml(wording.totalLabel)}</span><span>€${grandTotal}</span></div>`;
   } else {
     // Clean version: single total line at end
     if(includeFee&&feeMode==='separate'){
-      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Golf fees &amp; extras (${rounds.length} round${rounds.length>1?'s':''})</span><span>€${grandTotal}</span></div>`;
-      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>Management fee</span><span>€${managementFee}</span></div>`;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>${escapeHtml(wording.courseTotalLabel)} (${rounds.length} round${rounds.length>1?'s':''})</span><span>€${grandTotal}</span></div>`;
+      totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;"><span>${escapeHtml(wording.managementLabel)}</span><span>€${managementFee}</span></div>`;
     }
     if(includeFee) grandTotal+=managementFee;
-    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>Total</span><span>€${grandTotal}</span></div>`;
+    totalsHtml+=`<div style="display:flex;justify-content:space-between;padding:18px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:28pt;font-weight:600;color:#2D4A3E;border-top:2px solid #B8973C;margin-top:12px;"><span>${escapeHtml(wording.totalLabel)}</span><span>€${grandTotal}</span></div>`;
   }
 
   const notesHtml=notes
     ?`<div style="margin:0 0 10px;padding:10px 16px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:11.5pt;line-height:1.45;color:#2C2A27;font-family:'Jost',sans-serif;font-weight:400;">${notes.replace(/\n/g,'<br>')}</div>`:'';
+  const introHtml=wording.intro
+    ?`<div style="margin:0 0 10px;font-size:11pt;line-height:1.5;color:#5A5550;font-family:'Jost',sans-serif;">${escapeHtml(wording.intro).replace(/\n/g,'<br>')}</div>`:'';
   const includeItems=getProposalIncludeItems();
   const inclusionsHtml=includeItems.length
     ?`<div style="margin:0 0 9px;padding:10px 14px;border:1px solid #E0D8CB;background:#fff;font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;line-height:1.4;"><strong style="display:block;color:#2D4A3E;margin-bottom:5px;">Includes</strong><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;">${includeItems.map(item=>`<div style="display:flex;gap:6px;align-items:flex-start;"><span style="color:#B8973C;font-weight:700;">✓</span><span>${escapeHtml(item)}</span></div>`).join('')}</div></div>`
     :'';
-  const expiryHtml=expiryDays>0
-    ?`<div style="margin:0 0 9px;font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;">This proposal is valid for ${expiryDays} day${expiryDays>1?'s':''}. Tee times remain subject to availability until confirmed by the golf courses.</div>`:'';
+  const conditionItems=[];
+  if(wording.validity&&expiryDays>0) conditionItems.push(`This proposal is valid for ${expiryDays} day${expiryDays>1?'s':''}.`);
+  if(wording.availability) conditionItems.push('Tee times remain subject to availability until confirmed by the golf courses.');
+  if(wording.buggyAvailability&&rounds.some(r=>r.buggyQty>0)) conditionItems.push('Buggies remain subject to course availability.');
+  if(wording.licenseNote&&rounds.some(r=>r.licence)) conditionItems.push('Golf license fees may be required at selected courses.');
+  ((wording.customNotes||'').split(/\n+/).map(x=>x.trim()).filter(Boolean)).forEach(x=>conditionItems.push(x));
+  const conditionsHtml=conditionItems.length
+    ?`<div style="margin:0 0 9px;padding:9px 14px;background:#F7F4EF;border-left:4px solid #B8973C;font-size:9.5pt;color:#8A7F74;font-family:'Jost',sans-serif;line-height:1.45;">${conditionItems.map(x=>escapeHtml(x)).join('<br>')}</div>`:'';
   const acceptedHtml=(quoteStatus==='Accepted'||quoteStatus==='Booked')
     ?`<div style="margin:0 0 9px;padding:9px 14px;background:#F4EDD8;border-left:4px solid #B8973C;font-size:10.5pt;color:#2D4A3E;font-family:'Jost',sans-serif;font-weight:500;">Status: ${quoteStatus}. Use the course booking drafts below to request/confirm tee times.</div>`:'';
 
@@ -1555,8 +1655,13 @@ function renderProposal(){
     :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20pt;font-weight:600;color:#1A1916;">Mr Mallorca Golf</span>`;
 
   const prepDate=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const clientMeta=[];
+  if(wording.showEmail&&clientEmail) clientMeta.push(clientEmail);
+  if(wording.showPhone&&clientPhone) clientMeta.push(clientPhone);
+  if(wording.showPrepared) clientMeta.push('<span style="color:#8A7F74;">Prepared '+prepDate+'</span>');
+  const footerText=escapeHtml(wording.footer).replace(/\n/g,'<br>');
   el.innerHTML=`
-    <div id="printProposal" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;width:900px;max-width:900px;margin:0 auto;padding:14px 34px 22px;box-sizing:border-box;">
+    <div id="printProposal" data-orientation="${orientation}" style="font-family:'Jost',Arial,sans-serif;color:#1A1916;background:#fff;width:${paperWidth}px;max-width:${paperWidth}px;margin:0 auto;padding:14px 34px 22px;box-sizing:border-box;">
       <div style="height:5px;background:#B8973C;margin:0 0 5px;"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;min-height:74px;margin:0;">
         <div style="line-height:0;">${logoHtml}</div>
@@ -1568,16 +1673,17 @@ function renderProposal(){
         <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34pt;font-weight:600;color:#2D4A3E;line-height:1;">${clientName?clientName+' — ':''}Mallorca Golf Itinerary</div>
         <div style="display:flex;align-items:center;gap:12px;margin-top:7px;">
           <div style="width:48px;height:2px;background:#B8973C;flex-shrink:0;"></div>
-          <div style="font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${[clientEmail,clientPhone].filter(Boolean).join(' · ')}${(clientEmail||clientPhone)?' &nbsp;·&nbsp; ':''}<span style="color:#8A7F74;">Prepared ${prepDate}</span></div>
+          <div style="font-size:10.5pt;color:#5A5550;font-family:'Jost',sans-serif;font-weight:400;letter-spacing:.01em;">${clientMeta.join(' &nbsp;·&nbsp; ')}</div>
         </div>
       </div>
       ${acceptedHtml}
+      ${introHtml}
       ${notesHtml}
-      ${expiryHtml}
+      ${conditionsHtml}
       ${roundsHtml}
       ${inclusionsHtml}
       <div style="margin-top:9px;padding:12px 16px;background:#F7F4EF;border:1px solid #E0D8CB;">${totalsHtml}</div>
-      <div style="font-size:8pt;line-height:1.35;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:8px;margin-top:12px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-align:center;">All prices in euros &nbsp;·&nbsp; Subject to tee-time availability &nbsp;·&nbsp; Andy Griffiths PGA Advanced Professional &nbsp;·&nbsp; mrmallorcagolf.com</div>
+      <div style="font-size:8pt;line-height:1.35;color:#8A7F74;border-top:1px solid #E0D8CB;padding-top:8px;margin-top:12px;font-family:'Jost',sans-serif;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-align:center;">${footerText}</div>
     </div>`;
   fitProposalPreview();
   requestAnimationFrame(fitProposalPreview);
@@ -1735,17 +1841,20 @@ function printProposal(){
   const printNode=inner.cloneNode(true);
   printNode.style.transform='';
   printNode.style.margin='0 auto';
+  const orientation=printNode.getAttribute('data-orientation')||'portrait';
+  const screenWidth=orientation==='landscape'?'277mm':'190mm';
+  const printWidth=orientation==='landscape'?'281mm':'194mm';
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><title>MMG Golf Itinerary</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Jost:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
       *{box-sizing:border-box;margin:0;padding:0;}
       body{background:#fff;font-family:'Jost',Arial,sans-serif;color:#1a1916;}
-      #printProposal{width:190mm!important;max-width:190mm!important;margin:0 auto!important;}
+      #printProposal{width:${screenWidth}!important;max-width:${screenWidth}!important;margin:0 auto!important;}
       @media print{
-        @page{size:A4;margin:8mm;}
+        @page{size:A4 ${orientation};margin:8mm;}
         body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-        #printProposal{width:194mm!important;max-width:194mm!important;margin:0 auto!important;}
+        #printProposal{width:${printWidth}!important;max-width:${printWidth}!important;margin:0 auto!important;}
       }
     </style>
   </head><body>${printNode.outerHTML}</body></html>`);
@@ -2030,6 +2139,7 @@ function getCurrentQuoteData(name){
     propIncludeFee:normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value),
     managementFee:(document.getElementById('managementFee')||{}).value||'0',
     propShowPhotos:(document.getElementById('propShowPhotos')||{}).value||'yes',
+    propOrientation:(document.getElementById('propOrientation')||{}).value||'portrait',
     proposalIncludes:{
       greenFees:isChecked('incGreenFees'),
       buggies:isChecked('incBuggies'),
@@ -2039,6 +2149,7 @@ function getCurrentQuoteData(name){
       pgaGuidance:isChecked('incPgaGuidance'),
       custom:(document.getElementById('incCustom')||{}).value||''
     },
+    proposalWording:getProposalWording(),
     quoteStatus:(document.getElementById('quoteStatus')||{}).value||'Draft',
     nextAction:(document.getElementById('nextAction')||{}).value||'',
     quoteExpiryDays:parseInt((document.getElementById('quoteExpiryDays')||{}).value)||0,
