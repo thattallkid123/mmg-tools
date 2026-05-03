@@ -1,4 +1,4 @@
-const CACHE = 'mmg-player-strokes-gained-v6';
+const CACHE = 'mmg-player-strokes-gained-v7';
 const ASSETS = ['./index.html', './manifest.webmanifest', './icon.svg', './favicon.svg'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));

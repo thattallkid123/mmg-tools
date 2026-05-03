@@ -363,7 +363,7 @@
               <div class="fact"><span class="label">Par</span><b id="holePar">--</b></div>
               <div class="fact"><span class="label">SI</span><b id="holeSi">--</b></div>
               <div class="fact"><span class="label">Length</span><b id="holeLength">--</b></div>
-              <div class="fact"><span class="label">Shots</span><b id="holeShots">--</b></div>
+              <div class="fact"><span class="label">HCP</span><b id="holeShots">--</b></div>
               <div class="fact"><span class="label">Score</span><b id="holeScore">--</b></div>
               <div class="fact"><span class="label">SG</span><b id="holeLiveSg">--</b></div>
               <div class="fact"><span class="label">Putts</span><b id="holePutts">--</b></div>
@@ -435,7 +435,7 @@
           </details>
           <div class="actions">
             <button class="primary" id="addShot">Add shot</button>
-            <button class="ghost" id="holedButton">Holed + next hole</button>
+            <button class="ghost" id="holedButton">Holed / next</button>
             <button class="secondary" id="addShotNext">Add shot + next</button>
             <button class="ghost" id="undoShot">Undo last shot</button>
           </div>
@@ -710,8 +710,17 @@
     function draftIsValid() {
       return Number.isFinite(draftValue());
     }
+    function lastShotOnHole(n) {
+      return state.shots.find(function(s) { return s.hole === (n || state.hole); });
+    }
     function completeHole() {
       const previousHole = state.hole;
+      const lastShot = lastShotOnHole(previousHole);
+      if (lastShot && lastShot.endLie === 'holed') {
+        setHole(previousHole + 1);
+        setStatus('Hole ' + previousHole + ' complete. Now on hole ' + state.hole + '.');
+        return;
+      }
       state.draft.endLie = 'holed';
       state.draft.endDistance = '0';
       normalizeDraft();
@@ -735,6 +744,7 @@
       if (state.draft.endLie === 'holed') state.draft.endDistance = '0';
       const wasEditing = Boolean(state.editingShotId);
       const previousHole = state.hole;
+      const completesHole = state.draft.endLie === 'holed' && !wasEditing;
       const shot = Object.assign({}, state.draft, {
         id: state.editingShotId || String(Date.now()),
         hole: state.hole,
@@ -753,7 +763,7 @@
         state.shots.unshift(shot);
       }
       state.lastUndo = { type: wasEditing ? 'edit' : 'add', shot: shot };
-      if (advance) {
+      if (advance || completesHole) {
         setHole(state.hole + 1);
       } else {
         state.draft = {
@@ -772,7 +782,7 @@
         };
         render();
       }
-      setStatus(advance ? 'Hole ' + previousHole + ' complete. Now on hole ' + state.hole + '.' : (wasEditing ? 'Shot updated: ' : 'Shot added: ') + signed(value));
+      setStatus((advance || completesHole) ? 'Hole ' + previousHole + ' complete. Now on hole ' + state.hole + '.' : (wasEditing ? 'Shot updated: ' : 'Shot added: ') + signed(value));
       return true;
     }
     function saveRound() {
