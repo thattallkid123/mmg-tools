@@ -369,7 +369,7 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     <div style="overflow-x:auto;">
       <table>
         <thead>
-          <tr><th>Course</th><th>Date</th><th>Players</th><th>My GF Cost/pp</th><th>My GF Cost</th><th>Extras Cost</th><th style="color:#B8973C;">Client GF/pp</th><th style="color:#B8973C;">Client GF</th><th style="color:#B8973C;">Client Extras</th><th style="color:#B8973C;">Client Total</th><th>GF Profit</th><th>Mgmt Fee</th><th>Total Profit</th></tr>
+          <tr><th>Course</th><th>Date</th><th>Players</th><th>My GF Cost/pp</th><th>My GF Cost</th><th style="color:#B8973C;">Client GF/pp</th><th style="color:#B8973C;">Client GF</th><th style="color:#B8973C;">Client Extras</th><th style="color:#B8973C;">Mgmt Fee</th><th style="color:#B8973C;">Client Total</th><th>GF Profit</th><th>Total Profit</th></tr>
         </thead>
         <tbody id="marginBody"></tbody>
         <tfoot id="marginFoot"></tfoot>
@@ -1680,7 +1680,7 @@ function renderMargin(){
   let totalCost=0,totalCharge=0,totalExtras=0;
   const tb=document.getElementById('marginBody');
   if(!rounds.length){
-    tb.innerHTML='<tr><td colspan="13" style="color:#666;text-align:center;padding:1rem;">No rounds.</td></tr>';
+    tb.innerHTML='<tr><td colspan="12" style="color:#666;text-align:center;padding:1rem;">No rounds.</td></tr>';
     document.getElementById('marginFoot').innerHTML='';
     document.getElementById('marginStats').innerHTML='';
     document.getElementById('tripSummary').innerHTML='';
@@ -1709,9 +1709,10 @@ function renderMargin(){
     if(gcValid.ok&&c.gcType==='2for1'){gcNote='GC 2FOR1';myCost=myCost/2;}
     else if(gcValid.ok) gcNote='GC disc';
     const rGFCost=myCost*players,rCharge=charge*players,rExtras=buggy+clubs;
-    const rClientTotal=rCharge+rExtras;
+    const rClientTotalBeforeMgmt=rCharge+rExtras;
     const rGFMargin=rCharge-rGFCost;
-    const rMgmtShare=courseClientTotalEstimate>0?proposalManagementFee*(rClientTotal/courseClientTotalEstimate):(proposalManagementFee/rounds.length);
+    const rMgmtShare=courseClientTotalEstimate>0?proposalManagementFee*(rClientTotalBeforeMgmt/courseClientTotalEstimate):(proposalManagementFee/rounds.length);
+    const rClientTotal=rClientTotalBeforeMgmt+rMgmtShare;
     const rProfit=rGFMargin+rMgmtShare; // extras pass-through at cost
     totalCost+=rGFCost;totalCharge+=rCharge;totalExtras+=rExtras;
     // Build extras label
@@ -1725,33 +1726,32 @@ function renderMargin(){
       +'<td>'+players+'</td>'
       +'<td>€'+myCost.toFixed(0)+'</td>'
       +'<td>€'+rGFCost.toFixed(0)+'</td>'
-      +'<td>€'+rExtras.toFixed(0)+'<br><span style="color:#888;font-size:.75rem;">'+extrasLabel+'</span></td>'
       +'<td style="color:#B8973C;">€'+charge+'</td>'
       +'<td style="color:#B8973C;">€'+rCharge.toFixed(0)+'</td>'
-      +'<td style="color:#B8973C;">€'+rExtras.toFixed(0)+'</td>'
+      +'<td style="color:#B8973C;">€'+rExtras.toFixed(0)+'<br><span style="color:#888;font-size:.75rem;">'+extrasLabel+'</span></td>'
+      +'<td style="color:#B8973C;">€'+rMgmtShare.toFixed(0)+'</td>'
       +'<td style="color:#B8973C;"><strong>€'+rClientTotal.toFixed(0)+'</strong></td>'
       +'<td class="'+(rGFMargin>=0?'profit-pos':'profit-neg')+'">€'+rGFMargin.toFixed(0)+'</td>'
-      +'<td>€'+rMgmtShare.toFixed(0)+'</td>'
       +'<td class="'+(rProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+rProfit.toFixed(0)+'</strong></td>'
       +'</tr>';
   }).join('');
 
   const totalGFProfit=totalCharge-totalCost;
   const courseClientTotal=totalCharge+totalExtras;
-  const grandProfit=totalGFProfit+proposalManagementFee+andyFee;
+  const tableProfit=totalGFProfit+proposalManagementFee;
+  const grandProfit=tableProfit+andyFee;
   const clientGrandTotal=courseClientTotal+proposalManagementFee;
   document.getElementById('marginFoot').innerHTML='<tr class="total-row">'
     +'<td colspan="3">TOTALS</td>'
     +'<td>-</td>'
     +'<td>€'+totalCost.toFixed(0)+'</td>'
-    +'<td>€'+totalExtras.toFixed(0)+'</td>'
     +'<td style="color:#B8973C;">-</td>'
     +'<td style="color:#B8973C;">€'+totalCharge.toFixed(0)+'</td>'
     +'<td style="color:#B8973C;">€'+totalExtras.toFixed(0)+'</td>'
+    +'<td style="color:#B8973C;"><strong>€'+proposalManagementFee.toFixed(0)+'</strong></td>'
     +'<td style="color:#B8973C;"><strong>€'+clientGrandTotal.toFixed(0)+'</strong></td>'
     +'<td class="'+(totalGFProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+totalGFProfit.toFixed(0)+'</strong></td>'
-    +'<td><strong>€'+proposalManagementFee.toFixed(0)+'</strong></td>'
-    +'<td class="'+(grandProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+grandProfit.toFixed(0)+'</strong></td>'
+    +'<td class="'+(tableProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+tableProfit.toFixed(0)+'</strong></td>'
     +'</tr>';
 
   document.getElementById('marginStats').innerHTML=
