@@ -369,7 +369,7 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     <div style="overflow-x:auto;">
       <table>
         <thead>
-          <tr><th>Course</th><th>Date</th><th>Players</th><th>My Cost/pp</th><th style="color:#B8973C;">GF Charge/pp</th><th>GF Margin</th><th>Extras</th><th style="color:#B8973C;">Client Total</th><th>Round Profit</th></tr>
+          <tr><th>Course</th><th>Date</th><th>Players</th><th>My GF Cost/pp</th><th>My GF Cost</th><th>Extras Cost</th><th style="color:#B8973C;">Client GF/pp</th><th style="color:#B8973C;">Client GF</th><th style="color:#B8973C;">Client Extras</th><th style="color:#B8973C;">Client Total</th><th>GF Profit</th><th>Mgmt Fee</th><th>Total Profit</th></tr>
         </thead>
         <tbody id="marginBody"></tbody>
         <tfoot id="marginFoot"></tfoot>
@@ -580,6 +580,7 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
     <div style="margin-top:1rem;">
       <button class="btn btn-gold" onclick="saveSettings()">Save settings</button>
       <span id="settingsSaved" style="margin-left:.8rem;color:var(--green);font-size:.85rem;display:none;">Saved.</span>
+      <span id="settingsCloudStatus" class="help" style="margin-left:.8rem;"></span>
     </div>
   </div>
 </div>
@@ -588,6 +589,8 @@ details.proposal-tools .proposal-tools-body{padding:0 1rem 1rem;}
 const PASSCODE = 'mmg2710';
 const SUPABASE_URL = 'https://ravorybcyptaqoqtxlaw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhdm9yeWJjeXB0YXFvcXR4bGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDIzMTMsImV4cCI6MjA5MzExODMxM30.90mYDMdHijTmegCR8ZjO1GEMy3PuCTCb1ZVG0FNE36g';
+const SETTINGS_RECORD_NAME = '__mmg_global_settings__';
+let settingsSaveTimer = null;
 
 const LOGO_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAAA5ZDbSAAArOElEQVR42u1dd5ydZZV+zi0zk8lkJpOZkEJIIAQIIUKEIEUKUkSUBVQQ17os'; // truncated for size - loaded from DOM
 
@@ -817,6 +820,7 @@ function init(){
   renderMargin();
   renderProposal();
   renderDashboard();
+  loadCloudSettings(true);
   loadCloudQuotes(true);
   toggleGCRow();
   updateSyncNum();
@@ -934,6 +938,9 @@ function openTab(name){
 function loadSettings(){
   try{ settings=JSON.parse(localStorage.getItem('mmg_settings')||'{}'); }catch(e){ settings={}; }
   migrateSettings();
+  applySettingsToForm();
+}
+function applySettingsToForm(){
   document.getElementById('setSoloFee').value=settings.soloFee||495;
   document.getElementById('setGroupFee').value=settings.groupFee||950;
   document.getElementById('soloFeeLabel').textContent='€'+(settings.soloFee||495)+'/day';
@@ -1005,11 +1012,22 @@ function saveSettings(){
     });
   });
   localStorage.setItem('mmg_settings',JSON.stringify(settings));
+  scheduleCloudSettingsSave();
   document.getElementById('soloFeeLabel').textContent='€'+settings.soloFee+'/day';
   document.getElementById('groupFeeLabel').textContent='€'+settings.groupFee+'/day';
   const s=document.getElementById('settingsSaved');
   s.style.display=''; setTimeout(()=>s.style.display='none',2000);
   renderTable(); renderMargin(); renderProposal(); renderCourseDrafts();
+}
+function setSettingsCloudStatus(text, ok){
+  const el=document.getElementById('settingsCloudStatus');
+  if(!el) return;
+  el.textContent=text||'';
+  el.style.color=ok?'var(--green)':'#888';
+}
+function scheduleCloudSettingsSave(){
+  clearTimeout(settingsSaveTimer);
+  settingsSaveTimer=setTimeout(function(){saveCloudSettings(true);},900);
 }
 function renderSettingsTable(){
   const tb=document.getElementById('settingsBody');
@@ -1662,12 +1680,21 @@ function renderMargin(){
   let totalCost=0,totalCharge=0,totalExtras=0;
   const tb=document.getElementById('marginBody');
   if(!rounds.length){
-    tb.innerHTML='<tr><td colspan="9" style="color:#666;text-align:center;padding:1rem;">No rounds.</td></tr>';
+    tb.innerHTML='<tr><td colspan="13" style="color:#666;text-align:center;padding:1rem;">No rounds.</td></tr>';
     document.getElementById('marginFoot').innerHTML='';
     document.getElementById('marginStats').innerHTML='';
     document.getElementById('tripSummary').innerHTML='';
     return;
   }
+  const courseClientTotalEstimate=rounds.reduce(function(sum,r){
+    const players=r.players||1;
+    const buggy=(r.buggyQty||0)*(r.buggyRate||getBuggyRate(r.cid));
+    const clubs=(r.clubsQty||0)*(r.clubsRate||getClubsRate(r.cid));
+    return sum+((r.gf||0)*players)+buggy+clubs;
+  },0);
+  const proposalFeeMode=normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value);
+  const proposalManagementFee=proposalFeeMode==='no'?0:getProposalManagementFee(courseClientTotalEstimate);
+  const managementRaw=String((document.getElementById('managementFee')||{}).value||'0').trim()||'0';
   tb.innerHTML=rounds.map(r=>{
     const c=COURSE_LIST.find(x=>x.id===r.cid)||{name:r.cid,rack:0,gcType:'none',golfcard:false};
     const players=r.players||1;
@@ -1684,7 +1711,8 @@ function renderMargin(){
     const rGFCost=myCost*players,rCharge=charge*players,rExtras=buggy+clubs;
     const rClientTotal=rCharge+rExtras;
     const rGFMargin=rCharge-rGFCost;
-    const rProfit=rGFMargin; // extras pass-through at cost
+    const rMgmtShare=courseClientTotalEstimate>0?proposalManagementFee*(rClientTotal/courseClientTotalEstimate):(proposalManagementFee/rounds.length);
+    const rProfit=rGFMargin+rMgmtShare; // extras pass-through at cost
     totalCost+=rGFCost;totalCharge+=rCharge;totalExtras+=rExtras;
     // Build extras label
     const extraParts=[];
@@ -1695,29 +1723,34 @@ function renderMargin(){
       +'<td>'+c.name+(gcNote?'<br><span class="tag-ok" style="font-size:.7rem">'+gcNote+'</span>':'')+'</td>'
       +'<td>'+(r.date||'-')+'</td>'
       +'<td>'+players+'</td>'
-      +'<td>€'+myCost.toFixed(0)+'/pp<br><span style="color:#888;font-size:.75rem;">€'+rGFCost.toFixed(0)+' total</span></td>'
-      +'<td style="color:#B8973C;">€'+charge+'/pp<br><span style="font-size:.75rem;">€'+rCharge.toFixed(0)+' total</span></td>'
-      +'<td class="'+(rGFMargin>=0?'profit-pos':'profit-neg')+'">€'+(rGFMargin/players).toFixed(0)+'/pp<br><span style="font-size:.75rem;">€'+rGFMargin.toFixed(0)+' total</span></td>'
-      +'<td><span style="color:#B8973C;">€'+rExtras.toFixed(0)+'</span><br><span style="color:#888;font-size:.75rem;">'+extrasLabel+'</span></td>'
+      +'<td>€'+myCost.toFixed(0)+'</td>'
+      +'<td>€'+rGFCost.toFixed(0)+'</td>'
+      +'<td>€'+rExtras.toFixed(0)+'<br><span style="color:#888;font-size:.75rem;">'+extrasLabel+'</span></td>'
+      +'<td style="color:#B8973C;">€'+charge+'</td>'
+      +'<td style="color:#B8973C;">€'+rCharge.toFixed(0)+'</td>'
+      +'<td style="color:#B8973C;">€'+rExtras.toFixed(0)+'</td>'
       +'<td style="color:#B8973C;"><strong>€'+rClientTotal.toFixed(0)+'</strong></td>'
+      +'<td class="'+(rGFMargin>=0?'profit-pos':'profit-neg')+'">€'+rGFMargin.toFixed(0)+'</td>'
+      +'<td>€'+rMgmtShare.toFixed(0)+'</td>'
       +'<td class="'+(rProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+rProfit.toFixed(0)+'</strong></td>'
       +'</tr>';
   }).join('');
 
   const totalGFProfit=totalCharge-totalCost;
   const courseClientTotal=totalCharge+totalExtras;
-  const proposalFeeMode=normaliseFeeMode((document.getElementById('propIncludeFee')||{}).value);
-  const proposalManagementFee=proposalFeeMode==='no'?0:getProposalManagementFee(courseClientTotal);
-  const managementRaw=String((document.getElementById('managementFee')||{}).value||'0').trim()||'0';
   const grandProfit=totalGFProfit+proposalManagementFee+andyFee;
   const clientGrandTotal=courseClientTotal+proposalManagementFee;
   document.getElementById('marginFoot').innerHTML='<tr class="total-row">'
     +'<td colspan="3">TOTALS</td>'
+    +'<td>-</td>'
     +'<td>€'+totalCost.toFixed(0)+'</td>'
+    +'<td>€'+totalExtras.toFixed(0)+'</td>'
+    +'<td style="color:#B8973C;">-</td>'
     +'<td style="color:#B8973C;">€'+totalCharge.toFixed(0)+'</td>'
-    +'<td class="'+(totalGFProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+totalGFProfit.toFixed(0)+'</strong></td>'
     +'<td style="color:#B8973C;">€'+totalExtras.toFixed(0)+'</td>'
     +'<td style="color:#B8973C;"><strong>€'+clientGrandTotal.toFixed(0)+'</strong></td>'
+    +'<td class="'+(totalGFProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+totalGFProfit.toFixed(0)+'</strong></td>'
+    +'<td><strong>€'+proposalManagementFee.toFixed(0)+'</strong></td>'
     +'<td class="'+(grandProfit>=0?'profit-pos':'profit-neg')+'"><strong>€'+grandProfit.toFixed(0)+'</strong></td>'
     +'</tr>';
 
@@ -2605,6 +2638,69 @@ async function saveQuoteCloud(data){
   });
   return rows&&rows[0]?rows[0]:null;
 }
+function settingsRecord(){
+  return {
+    name:SETTINGS_RECORD_NAME,
+    client_name:'',
+    status:'Settings',
+    next_action:'',
+    follow_up_date:null,
+    first_tee_date:null,
+    total_value:0,
+    data:{recordType:'global_settings',settings:settings,savedAt:new Date().toISOString()},
+    updated_at:new Date().toISOString(),
+  };
+}
+async function saveCloudSettings(silent){
+  try{
+    setSettingsCloudStatus('Syncing settings...',false);
+    const record=settingsRecord();
+    const headers={Prefer:'return=representation'};
+    const existing=await supabaseRequest('/rest/v1/proposals?select=id&name=eq.'+encodeURIComponent(SETTINGS_RECORD_NAME)+'&order=updated_at.desc&limit=1');
+    if(existing&&existing[0]&&existing[0].id){
+      await supabaseRequest('/rest/v1/proposals?id=eq.'+encodeURIComponent(existing[0].id),{
+        method:'PATCH',
+        headers,
+        body:JSON.stringify(record),
+      });
+    }else{
+      await supabaseRequest('/rest/v1/proposals',{
+        method:'POST',
+        headers,
+        body:JSON.stringify(record),
+      });
+    }
+    setSettingsCloudStatus('Settings synced across devices',true);
+  }catch(err){
+    setSettingsCloudStatus('Settings saved locally; cloud sync failed',false);
+    if(!silent) alert('Could not sync settings: '+err.message);
+  }
+}
+async function loadCloudSettings(silent){
+  try{
+    setSettingsCloudStatus('Loading shared settings...',false);
+    const rows=await supabaseRequest('/rest/v1/proposals?select=*&name=eq.'+encodeURIComponent(SETTINGS_RECORD_NAME)+'&order=updated_at.desc&limit=1');
+    const row=rows&&rows[0];
+    const cloudSettings=row&&row.data&&row.data.settings;
+    if(!cloudSettings){
+      setSettingsCloudStatus('Settings local only until first save',false);
+      return;
+    }
+    settings=cloudSettings;
+    localStorage.setItem('mmg_settings',JSON.stringify(settings));
+    migrateSettings();
+    applySettingsToForm();
+    renderSettingsTable();
+    renderTable();
+    renderMargin();
+    renderProposal();
+    renderCourseDrafts();
+    setSettingsCloudStatus('Shared settings loaded',true);
+  }catch(err){
+    setSettingsCloudStatus('Using local settings; cloud load failed',false);
+    if(!silent) alert('Could not load shared settings: '+err.message);
+  }
+}
 function mergeSavedQuotes(incoming){
   const current=getSavedQuotes();
   const seen=new Set();
@@ -2623,7 +2719,8 @@ async function loadCloudQuotes(silent){
   try{
     setCloudStatus('Loading cloud...',false);
     const rows=await supabaseRequest('/rest/v1/proposals?select=*&order=updated_at.desc');
-    const quotes=(rows||[]).map(row=>Object.assign({},row.data||{},{
+    const quoteRows=(rows||[]).filter(row=>row.name!==SETTINGS_RECORD_NAME&&(!row.data||row.data.recordType!=='global_settings'));
+    const quotes=quoteRows.map(row=>Object.assign({},row.data||{},{
       supabaseId:row.id,
       name:(row.data&&row.data.name)||row.name,
       quoteStatus:row.status||((row.data||{}).quoteStatus)||'Draft',
